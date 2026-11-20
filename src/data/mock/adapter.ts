@@ -1,11 +1,12 @@
 // Mock implementation of DataApi: in-memory, with fake latency and the wiki rules.
 import type { DataApi } from '../api';
-import { CITIES, PAGE_SIZE } from '../catalog';
+import { CITIES, DEFAULT_CITY, PAGE_SIZE } from '../catalog';
 import { DataError } from '../errors';
-import type { City, Id, Page, Session, Sign } from '../types';
+import type { Answer, City, Id, Page, Question, Session, Sign } from '../types';
 import { mockMode, simulate } from './behavior';
-import { LUCIA, fakeAddress, fakeTxHash, type MovementRec, type SignRec } from './fixtures';
+import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type MovementRec, type QuestionRec, type SignRec } from './fixtures';
 import {
+  assertCanAsk,
   authorOf,
   currentUserId,
   isHiddenFor,
@@ -15,7 +16,10 @@ import {
   requireProfile,
   requireUser,
   signsCreatedToday,
+  MAX_REWARDED_ANSWERS_PER_QUESTION,
   MAX_REWARDED_SIGNS_PER_DAY,
+  URGENT_COST,
+  URGENT_HOURS,
   validateLength,
   validateMapsUrl,
   validateTags,
@@ -237,5 +241,245 @@ export const mockSigns: DataApi['signs'] = {
       store.signs = store.signs.filter((s) => s.id !== id);
       store.signVotes = store.signVotes.filter((v) => v.signId !== id);
       store.saved = store.saved.filter((s) => !(s.kind === 'sign' && s.itemId === id));
+    }),
+};
+
+// ---------- questions and answers ----------
+
+const isUrgentActive = (q: QuestionRec) => q.urgentUntil !== null && Date.parse(q.urgentUntil) > Date.now();
+
+export function toQuestion(rec: QuestionRec): Question {
+  const viewer = currentUserId();
+  return {
+    id: rec.id,
+    text: rec.text,
+    photoUrl: rec.photoUrl,
+    city: rec.city,
+    zone: rec.zone,
+    tags: [...rec.tags],
+    author: authorOf(rec.authorId),
+    createdAt: rec.createdAt,
+    urgentUntil: isUrgentActive(rec) ? rec.urgentUntil : null,
+    status: rec.status,
+    answerCount: store.answers.filter((a) => a.questionId === rec.id).length,
+    savedByMe: store.saved.some((s) => s.userId === viewer && s.kind === 'question' && s.itemId === rec.id),
+    isMine: rec.authorId === viewer,
+    inReview: isInReview('question', rec.id),
+  };
+}
+
+export function toAnswer(rec: AnswerRec): Answer {
+  const viewer = currentUserId();
+  return {
+    id: rec.id,
+    questionId: rec.questionId,
+    text: rec.text,
+    author: authorOf(rec.authorId),
+    createdAt: rec.createdAt,
+    helpful: rec.helpful,
+    notHelpful: rec.notHelpful,
+    savedByMe: store.saved.some((s) => s.userId === viewer && s.kind === 'answer' && s.itemId === rec.id),
+    isMine: rec.authorId === viewer,
+    inReview: isInReview('answer', rec.id),
+  };
+}
+
+export function findVisibleQuestion(id: Id): QuestionRec {
+  const rec = store.questions.find((q) => q.id === id);
+  if (!rec || isHiddenFor(currentUserId(), 'question', rec.id, rec.authorId)) {
+    throw new DataError('not_found', 'This question is no longer available');
+  }
+  return rec;
+}
+
+export function findVisibleAnswer(id: Id): AnswerRec {
+  const rec = store.answers.find((a) => a.id === id);
+  if (!rec || isHiddenFor(currentUserId(), 'answer', rec.id, rec.authorId)) {
+    throw new DataError('not_found', 'This answer is no longer available');
+  }
+  return rec;
+}
+
+/** Wiki order: active urgent → your zone → rest of the city → solved and closed. Newest first inside each group. */
+function questionGroup(q: QuestionRec, myZone: string | null): number {
+  if (q.status !== 'open') return 3;
+  if (isUrgentActive(q)) return 0;
+  if (myZone && normalize(q.zone) === myZone) return 1;
+  return 2;
+}
+
+function viewerZone(city: City): string | null {
+  const session = sessionOf();
+  if (session.status !== 'signed-in' || !session.profile || session.profile.city !== city) return null;
+  return normalize(session.profile.zone);
+}
+
+export const mockQuestions: DataApi['questions'] = {
+  list: ({ city, search, tags, cursor }) =>
+    simulate(() => {
+      const viewer = currentUserId();
+      const myZone = viewerZone(city);
+      const items = store.questions
+        .filter((q) => q.city === city)
+        .filter((q) => !isHiddenFor(viewer, 'question', q.id, q.authorId))
+        .filter((q) => matchesSearch(q.text, search))
+        .filter((q) => !tags?.length || q.tags.some((t) => tags.includes(t)))
+        .sort((a, b) => questionGroup(a, myZone) - questionGroup(b, myZone) || Date.parse(b.createdAt) - Date.parse(a.createdAt))
+        .map(toQuestion);
+      return paginate(items, cursor);
+    }),
+
+  get: (id) =>
+    simulate(() => {
+      const viewer = currentUserId();
+      const question = findVisibleQuestion(id);
+      const answers = store.answers
+        .filter((a) => a.questionId === id && !isHiddenFor(viewer, 'answer', a.id, a.authorId))
+        .sort((a, b) => Number(b.helpful) - Number(a.helpful) || Date.parse(a.createdAt) - Date.parse(b.createdAt))
+        .map(toAnswer);
+      return { question: toQuestion(question), answers };
+    }),
+
+  /** «Preguntas parecidas»: from 3 typed words, up to 3 questions sharing words of 4+ letters. */
+  similar: (text) =>
+    simulate(() => {
+      const words = normalize(text).split(/\s+/).filter(Boolean);
+      if (words.length < 3) return [];
+      const keywords = words.filter((w) => w.length >= 4);
+      const session = sessionOf();
+      const city = session.status === 'signed-in' && session.profile ? session.profile.city : DEFAULT_CITY;
+      const viewer = currentUserId();
+      return store.questions
+        .filter((q) => q.city === city && !isHiddenFor(viewer, 'question', q.id, q.authorId))
+        .map((q) => ({ q, score: keywords.filter((k) => normalize(q.text).includes(k)).length }))
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3)
+        .map((x) => toQuestion(x.q));
+    }),
+
+  create: (input) =>
+    simulate(() => {
+      const user = requireProfile();
+      const text = validateLength('text', input.text, 3, 300);
+      const tags = validateTags(input.tags);
+      assertCanAsk(user.id, input.urgent);
+      // With ?mock=stellar-error the −5 charge fails: the question is published as normal (wiki rule).
+      const urgentCharged = input.urgent && mockMode !== 'stellar-error';
+      const rec: QuestionRec = {
+        id: nextId('question'),
+        authorId: user.id,
+        text,
+        photoUrl: input.photo instanceof Blob ? URL.createObjectURL(input.photo) : null,
+        city: user.city,
+        zone: input.zone?.trim() || user.zone,
+        tags,
+        createdAt: new Date().toISOString(),
+        urgentUntil: urgentCharged ? new Date(Date.now() + URGENT_HOURS * 3600 * 1000).toISOString() : null,
+        status: 'open',
+        closureRewarded: false,
+      };
+      store.questions.push(rec);
+      if (urgentCharged) addMovement(user.id, 'urgente', -URGENT_COST, null);
+      return { question: toQuestion(rec), urgentCharged };
+    }),
+
+  remove: (id) =>
+    simulate(() => {
+      const user = requireUser();
+      const rec = findVisibleQuestion(id);
+      if (rec.authorId !== user.id) throw new DataError('forbidden', 'You can only delete your own question');
+      if (store.answers.some((a) => a.questionId === id)) {
+        throw new DataError('forbidden', 'A question with answers cannot be deleted');
+      }
+      store.questions = store.questions.filter((q) => q.id !== id);
+      store.saved = store.saved.filter((s) => !(s.kind === 'question' && s.itemId === id));
+    }),
+
+  /** «Ninguna me sirvió»: closes an open question that has answers, +1 once. */
+  closeWithoutSolution: (id) =>
+    simulate(() => {
+      const user = requireUser();
+      const rec = findVisibleQuestion(id);
+      if (rec.authorId !== user.id) throw new DataError('forbidden', 'Only the asker can close the question');
+      if (rec.status !== 'open') throw new DataError('forbidden', 'The question is already closed');
+      if (!store.answers.some((a) => a.questionId === id)) {
+        throw new DataError('forbidden', 'A question without answers is deleted, not closed');
+      }
+      rec.status = 'closed';
+      if (!rec.closureRewarded) {
+        rec.closureRewarded = true;
+        addMovement(user.id, 'cierre', 1, null);
+      }
+      return toQuestion(rec);
+    }),
+};
+
+export const mockAnswers: DataApi['answers'] = {
+  create: (questionId, text) =>
+    simulate(() => {
+      const user = requireProfile();
+      const question = findVisibleQuestion(questionId);
+      if (question.authorId === user.id) throw new DataError('forbidden', 'You cannot answer your own question');
+      if (question.status !== 'open') throw new DataError('forbidden', 'The question no longer accepts answers');
+      if (store.answers.some((a) => a.questionId === questionId && a.authorId === user.id)) {
+        throw new DataError('forbidden', 'You already answered this question');
+      }
+      const rec: AnswerRec = {
+        id: nextId('answer'),
+        questionId,
+        authorId: user.id,
+        text: validateLength('text', text, 1, 1000),
+        createdAt: new Date().toISOString(),
+        helpful: false,
+        notHelpful: false,
+      };
+      store.answers.push(rec);
+      return toAnswer(rec);
+    }),
+
+  /** Only the asker. +5 to the helper (max 3 rewarded per question); the first one solves the question (+1 once). */
+  markHelpful: (id) =>
+    simulate(() => {
+      const user = requireUser();
+      const answer = findVisibleAnswer(id);
+      const question = findVisibleQuestion(answer.questionId);
+      if (question.authorId !== user.id) throw new DataError('forbidden', 'Only the asker can mark «Me sirvió»');
+      if (answer.helpful) return toAnswer(answer);
+      const alreadyRewarded = store.answers.filter((a) => a.questionId === question.id && a.helpful).length;
+      answer.helpful = true;
+      answer.notHelpful = false;
+      if (alreadyRewarded < MAX_REWARDED_ANSWERS_PER_QUESTION && pairCanBeRewarded(user.id, answer.authorId)) {
+        addMovement(answer.authorId, 'ayuda', 5, user.id);
+      }
+      if (question.status !== 'solved') {
+        question.status = 'solved';
+        if (!question.closureRewarded) {
+          question.closureRewarded = true;
+          addMovement(user.id, 'cierre', 1, null);
+        }
+      }
+      return toAnswer(answer);
+    }),
+
+  markNotHelpful: (id) =>
+    simulate(() => {
+      const user = requireUser();
+      const answer = findVisibleAnswer(id);
+      const question = findVisibleQuestion(answer.questionId);
+      if (question.authorId !== user.id) throw new DataError('forbidden', 'Only the asker can rate answers');
+      if (answer.helpful) throw new DataError('forbidden', '«Me sirvió» is final');
+      answer.notHelpful = true;
+      return toAnswer(answer);
+    }),
+
+  remove: (id) =>
+    simulate(() => {
+      const user = requireUser();
+      const answer = findVisibleAnswer(id);
+      if (answer.authorId !== user.id) throw new DataError('forbidden', 'You can only delete your own answer');
+      if (answer.helpful) throw new DataError('forbidden', 'An answer marked «Me sirvió» cannot be deleted');
+      store.answers = store.answers.filter((a) => a.id !== id);
+      store.saved = store.saved.filter((s) => !(s.kind === 'answer' && s.itemId === id));
     }),
 };
