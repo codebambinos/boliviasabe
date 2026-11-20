@@ -11,10 +11,8 @@ dev-dist/
 # Vercel local config
 .vercel/
 
-# Internal docs kept outside the repo (Spanish wiki and task plan)
+# Local link to the docs repo (CodeBambinos/boliviasabe-docs)
 /wiki
-references/
-TAREAS-Y-STACK.md
 
 # OS and editor files
 .DS_Store
