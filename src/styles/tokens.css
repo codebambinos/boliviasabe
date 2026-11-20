@@ -1,0 +1,89 @@
+/* BoliviaSabe design tokens: «Aguayo» palette (Yaeko, 20 Nov 2026).
+   Source: Design Assets/Colores y tipografia/tokens.css. English names here; Yaeko's name in comments.
+   Titles: Unbounded. Text: Lexend (loaded in index.html).
+
+   Contrast rule: orange, green and coral fail 4.5:1 as small text on light backgrounds.
+   Use them only as fills or icons with --color-ink on top. For brand-colored text use
+   --color-brand-text, never --color-brand. */
+
+:root {
+  /* Brand */
+  --color-brand: #c2185b; /* --marca: buttons, active chips */
+  --color-brand-text: #9c1449; /* --marca-texto: fuchsia text on light */
+  --color-yapita: #f28c28; /* --yapita: balance, star, active tab (fill only) */
+  --color-ok: #2e9e5b; /* --ok: «Solucionada» (fill only) */
+  --color-info: #1e5aa8; /* --azul: information */
+  --color-yellow: #f2c230; /* --amarillo: aguayo detail */
+  --color-urgent: #e4572e; /* --urgente: «Urgente» label (fill only) */
+  --color-urgent-soft: #fce3d3;
+  --color-urgent-text: #b23a1e;
+
+  /* Surfaces and text */
+  --color-bg: #f5f2ef; /* --fondo */
+  --color-card: #ffffff; /* --tarjeta */
+  --color-ink: #1f1a2e; /* --tinta */
+  --color-muted: #6a6275; /* --mut */
+  --color-soft: #f6e3ec; /* --suave */
+  --color-line: #e6dfe6; /* --linea */
+  --color-edge: #1f1a2e; /* thick borders and hard shadows */
+  --color-on-brand: #ffffff;
+
+  --aguayo: repeating-linear-gradient(
+    90deg,
+    #c2185b 0 18px,
+    #f28c28 18px 28px,
+    #2e9e5b 28px 38px,
+    #1e5aa8 38px 48px,
+    #f2c230 48px 52px
+  );
+
+  /* Type */
+  --font-title: Unbounded, Arial, sans-serif;
+  --font-body: Lexend, Arial, sans-serif;
+
+  /* Shape and depth (prototype style: thick edge + hard shadow) */
+  --border: 2px solid var(--color-edge);
+  --shadow: 0 4px 0 var(--color-edge);
+  --shadow-small: 0 3px 0 var(--color-edge);
+  --radius-card: 1.25rem;
+  --radius-button: 0.875rem;
+  --radius-pill: 999px;
+
+  /* Layout */
+  --touch: 2.75rem; /* 44 px minimum touch target */
+  --gutter: 1rem;
+  --content-max: 40rem;
+
+  color-scheme: light;
+}
+
+/* Dark theme: follows the system unless the user picked light in Ajustes. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-bg: #16131f;
+    --color-card: #231e30;
+    --color-ink: #f4eef6;
+    --color-muted: #b3a9bf;
+    --color-soft: #3b2235;
+    --color-line: #3a3150;
+    --color-edge: #4a3a55;
+    --color-brand-text: #f8a8c6;
+    --color-urgent-soft: #4a2a1c;
+    --color-urgent-text: #ffb48a;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #16131f;
+  --color-card: #231e30;
+  --color-ink: #f4eef6;
+  --color-muted: #b3a9bf;
+  --color-soft: #3b2235;
+  --color-line: #3a3150;
+  --color-edge: #4a3a55;
+  --color-brand-text: #f8a8c6;
+  --color-urgent-soft: #4a2a1c;
+  --color-urgent-text: #ffb48a;
+  color-scheme: dark;
+}
