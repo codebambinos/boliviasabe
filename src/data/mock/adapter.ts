@@ -2,12 +2,13 @@
 import type { DataApi } from '../api';
 import { CITIES, DEFAULT_CITY, PAGE_SIZE } from '../catalog';
 import { DataError } from '../errors';
-import type { Answer, City, Id, Page, Question, Session, Sign } from '../types';
+import type { Answer, City, ContentKind, Id, Movement, Page, Question, Session, Sign } from '../types';
 import { mockMode, simulate } from './behavior';
 import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type MovementRec, type QuestionRec, type SignRec } from './fixtures';
 import {
   assertCanAsk,
   authorOf,
+  confirmedBalance,
   currentUserId,
   isHiddenFor,
   isInReview,
@@ -482,4 +483,143 @@ export const mockAnswers: DataApi['answers'] = {
       store.answers = store.answers.filter((a) => a.id !== id);
       store.saved = store.saved.filter((s) => !(s.kind === 'answer' && s.itemId === id));
     }),
+};
+
+// ---------- saved, reports, wallet, activity ----------
+
+const EXPLORER_TX = 'https://stellar.expert/explorer/testnet/tx/';
+
+/** Author of any visible content item (not_found if deleted or hidden for the viewer). */
+function contentAuthor(kind: ContentKind, id: Id): Id {
+  if (kind === 'sign') return findVisibleSign(id).authorId;
+  if (kind === 'question') return findVisibleQuestion(id).authorId;
+  return findVisibleAnswer(id).authorId;
+}
+
+function toMovement(rec: MovementRec): Movement {
+  return {
+    id: rec.id,
+    reason: rec.reason,
+    amount: rec.amount,
+    createdAt: rec.createdAt,
+    status: rec.status,
+    txHash: rec.txHash,
+    explorerUrl: rec.txHash ? EXPLORER_TX + rec.txHash : null,
+  };
+}
+
+const newestFirst = <T extends { createdAt: string }>(a: T, b: T) => Date.parse(b.createdAt) - Date.parse(a.createdAt);
+
+export const mockSaved: DataApi['saved'] = {
+  toggle: (kind, id) =>
+    simulate(() => {
+      const user = requireUser();
+      contentAuthor(kind, id);
+      const index = store.saved.findIndex((s) => s.userId === user.id && s.kind === kind && s.itemId === id);
+      if (index >= 0) {
+        store.saved.splice(index, 1);
+        return false;
+      }
+      store.saved.push({ userId: user.id, kind, itemId: id });
+      return true;
+    }),
+
+  /** Saved items that still exist and are visible, most recently saved first. */
+  list: () =>
+    simulate(() => {
+      const user = requireUser();
+      const refs = store.saved.filter((s) => s.userId === user.id).reverse();
+      const visible = <T>(kind: ContentKind, find: (id: Id) => T) =>
+        refs.filter((r) => r.kind === kind).flatMap((r) => {
+          try {
+            return [find(r.itemId)];
+          } catch {
+            return [];
+          }
+        });
+      return {
+        signs: visible('sign', (id) => toSign(findVisibleSign(id))),
+        questions: visible('question', (id) => toQuestion(findVisibleQuestion(id))),
+        answers: visible('answer', (id) => toAnswer(findVisibleAnswer(id))),
+      };
+    }),
+};
+
+export const mockReports: DataApi['reports'] = {
+  /** One report per person; 3 different people hide it for everyone but its author. */
+  report: (kind, id, reason) =>
+    simulate(() => {
+      const user = requireUser();
+      if (contentAuthor(kind, id) === user.id) throw new DataError('forbidden', 'You cannot report your own content');
+      if (!store.reports.some((r) => r.userId === user.id && r.kind === kind && r.itemId === id)) {
+        store.reports.push({ userId: user.id, kind, itemId: id, reason });
+      }
+    }),
+
+  /** «Ya no quiero ver esto»: hidden for this user only; not a report. */
+  hideForMe: (kind, id) =>
+    simulate(() => {
+      const user = requireUser();
+      contentAuthor(kind, id);
+      if (!store.hidden.some((h) => h.userId === user.id && h.kind === kind && h.itemId === id)) {
+        store.hidden.push({ userId: user.id, kind, itemId: id });
+      }
+    }),
+};
+
+export const mockWallet: DataApi['wallet'] = {
+  get: () =>
+    simulate(() => {
+      const user = requireUser();
+      const ready = user.walletStatus === 'ready';
+      return { status: user.walletStatus, address: user.address, balance: ready ? confirmedBalance(user.id) : null };
+    }),
+
+  movements: (query) =>
+    simulate(() => {
+      const user = requireUser();
+      const items = store.movements.filter((m) => m.userId === user.id).sort(newestFirst).map(toMovement);
+      return paginate(items, query?.cursor);
+    }),
+
+  /** «Reintentar» on a failed movement: pending again, then confirmed. */
+  retry: (movementId) =>
+    simulate(() => {
+      const user = requireUser();
+      const rec = store.movements.find((m) => m.id === movementId && m.userId === user.id);
+      if (!rec) throw new DataError('not_found', 'Movement not found');
+      if (rec.status !== 'error') return toMovement(rec);
+      rec.status = 'pending';
+      settle(rec, 'confirmed');
+      return toMovement(rec);
+    }),
+};
+
+export const mockActivity: DataApi['activity'] = {
+  myQuestions: () =>
+    simulate(() => {
+      const user = requireUser();
+      return store.questions.filter((q) => q.authorId === user.id).sort(newestFirst).map(toQuestion);
+    }),
+  myAnswers: () =>
+    simulate(() => {
+      const user = requireUser();
+      return store.answers.filter((a) => a.authorId === user.id).sort(newestFirst).map(toAnswer);
+    }),
+  mySigns: () =>
+    simulate(() => {
+      const user = requireUser();
+      return store.signs.filter((s) => s.authorId === user.id).sort(newestFirst).map(toSign);
+    }),
+};
+
+export const mockAdapter: DataApi = {
+  auth: mockAuth,
+  signs: mockSigns,
+  questions: mockQuestions,
+  answers: mockAnswers,
+  saved: mockSaved,
+  reports: mockReports,
+  wallet: mockWallet,
+  activity: mockActivity,
 };
