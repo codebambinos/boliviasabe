@@ -49,3 +49,5 @@ the screen was tested on a phone at 360 px, and `git grep -i "SECRET\|SERVICE_RO
 ## Git
 - Short imperative commit subjects in English (`feat:`, `fix:`, `chore:`). No AI attribution.
 - `main` is protected: work in branches and open a PR.
+- One branch per task (e.g. `feat/t18-hoy`). Every PR links its board issue in the description
+  (`Closes #11`) so the card moves to Done on merge.
