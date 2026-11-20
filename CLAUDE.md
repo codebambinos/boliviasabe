@@ -8,7 +8,9 @@ Stellar testnet.
 **Read the wiki before writing code or answering product questions.** The wiki is the final
 contract for every flow and rule. Start with `wiki/index.md`, then `wiki/flujo-final.md`,
 `wiki/reglas-finales.md`, `wiki/stellar-final.md` and `wiki/tecnico.md`.
-`wiki/` is a local link to the team's Drive folder and is **not** in the repo.
+The wiki lives in the private repo `CodeBambinos/boliviasabe-docs`. Clone it next to this repo
+and link it: `ln -s ../boliviasabe-docs/wiki wiki` (the link is git-ignored). Run `git pull` there
+to get the latest version. Tasks live on the GitHub Projects board "BoliviaSabe – Delivery".
 
 ## Language
 - **Code is in English:** identifiers, file names, tables, comments, commits and PRs.
