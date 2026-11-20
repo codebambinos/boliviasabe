@@ -31,6 +31,8 @@ export type Sign = {
   id: Id;
   title: string;
   photoUrl: string;
+  /** 480 px thumbnail for the Hoy grid (wiki #142). Falls back to photoUrl while none exists. */
+  thumbUrl: string;
   price: string | null;
   city: City;
   zone: string;

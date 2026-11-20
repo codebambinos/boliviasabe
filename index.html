@@ -9,8 +9,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&family=Unbounded:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..600&family=Figtree:wght@400..600&display=swap"
     />
+    <meta name="theme-color" content="#151110" />
+    <!-- Theme before the first paint: dark by default (wiki #143); Ajustes can pick light or system.
+         Stored under "bs-theme" as "dark" | "light" | "system". -->
+    <script>
+      (function () {
+        var choice = 'dark';
+        try { choice = localStorage.getItem('bs-theme') || 'dark'; } catch (e) {}
+        if (choice === 'dark' || choice === 'light') document.documentElement.dataset.theme = choice;
+      })();
+    </script>
     <title>BoliviaSabe</title>
   </head>
   <body>

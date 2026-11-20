@@ -1,0 +1,98 @@
+/* Chip scroller (ChipRow.tsx). The row bleeds to the column's edges so chips scroll under the
+   gutter; the edges fade only where chips are hidden. Arrows exist only for a mouse. */
+.chip-scroller {
+  position: relative;
+  margin: var(--s-3) calc(var(--gutter) * -1) var(--s-4);
+}
+
+.chip-scroller .chip-row {
+  margin: 0;
+  padding: var(--s-1) var(--gutter);
+  scroll-padding-inline: var(--gutter);
+  overscroll-behavior-x: contain;
+  --clear-start: 0px;
+  --clear-end: 0px;
+  --fade-start: 0px;
+  --fade-end: 0px;
+  mask-image: linear-gradient(
+    to right,
+    transparent var(--clear-start),
+    #000 calc(var(--clear-start) + var(--fade-start)),
+    #000 calc(100% - var(--clear-end) - var(--fade-end)),
+    transparent calc(100% - var(--clear-end))
+  );
+}
+
+.chip-scroller[data-more-start] .chip-row {
+  --fade-start: 2.5rem;
+}
+
+.chip-scroller[data-more-end] .chip-row {
+  --fade-end: 2.5rem;
+}
+
+.chip-scroller__btn {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chip-scroller__btn {
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch);
+    height: var(--touch);
+    padding: 0;
+    border: var(--hairline);
+    border-radius: 50%;
+    background: var(--color-card);
+    color: var(--color-ink);
+    box-shadow: var(--shadow-hover);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%) scale(0.9);
+    transition:
+      opacity var(--m-out) var(--ease),
+      transform var(--m-out) var(--ease),
+      border-color var(--m-out) var(--ease);
+  }
+
+  /* Under an arrow the row is fully clear, then fades: no chip peeks out beside it */
+  .chip-scroller[data-more-start] .chip-row {
+    --clear-start: 3.25rem;
+    --fade-start: 2rem;
+  }
+
+  .chip-scroller[data-more-end] .chip-row {
+    --clear-end: 3.25rem;
+    --fade-end: 2rem;
+  }
+
+  .chip-scroller__btn--prev {
+    left: var(--s-2);
+  }
+
+  .chip-scroller__btn--next {
+    right: var(--s-2);
+  }
+
+  .chip-scroller[data-more-start] .chip-scroller__btn--prev,
+  .chip-scroller[data-more-end] .chip-scroller__btn--next {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%);
+  }
+
+  .chip-scroller__btn:hover {
+    border-color: var(--color-line-strong);
+    transition-duration: var(--m-in);
+  }
+
+  .chip-scroller__btn:active {
+    transform: translateY(-50%) scale(0.94);
+  }
+}

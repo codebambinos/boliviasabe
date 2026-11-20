@@ -1,32 +1,42 @@
-/* BoliviaSabe design tokens: «Aguayo» palette (Yaeko, 20 Nov 2026).
-   Source: Design Assets/Colores y tipografia/tokens.css. English names here; Yaeko's name in comments.
-   Titles: Unbounded. Text: Lexend (loaded in index.html).
+/* BoliviaSabe design tokens. Art direction: «Letrero» (DESIGN.md).
+   Aguayo palette (Yaeko, 20 Nov 2026) kept as is; neutrals are warm (never violet).
+   Titles: Bricolage Grotesque. Text: Figtree (loaded in index.html).
 
-   Contrast rule: orange, green and coral fail 4.5:1 as small text on light backgrounds.
-   Use them only as fills or icons with --color-ink on top. For brand-colored text use
-   --color-brand-text, never --color-brand. */
+   Color jobs, one each:
+   - fuchsia   = the action (primary button, links, focus, Me sirvió marked)
+   - orange    = yapitas only (the ★ glyph and the balance mark)
+   - green     = «Solucionada» only
+   - blue      = information notices only
+   - aguayo    = one 3 px stripe at the top of the app and the profile card; never a surface
+   Orange, green and urgent coral fail 4.5:1 as small text on light grounds:
+   use them as fills or glyphs with --color-ink on top, never as text. */
 
 :root {
-  /* Brand */
-  --color-brand: #c2185b; /* --marca: buttons, active chips */
+  /* Aguayo (unchanged) */
+  --color-brand: #c2185b; /* --marca: the action */
   --color-brand-text: #9c1449; /* --marca-texto: fuchsia text on light */
-  --color-yapita: #f28c28; /* --yapita: balance, star, active tab (fill only) */
-  --color-ok: #2e9e5b; /* --ok: «Solucionada» (fill only) */
+  --color-brand-soft: #fbe7ef; /* marked state behind fuchsia text */
+  --color-yapita: #f28c28; /* --yapita: fill and glyph only */
+  --color-yapita-soft: #fdebd8;
+  --color-ok: #2e9e5b; /* --ok: «Solucionada», fill only */
   --color-info: #1e5aa8; /* --azul: information */
+  --color-info-soft: #e3ecf8;
   --color-yellow: #f2c230; /* --amarillo: aguayo detail */
-  --color-urgent: #e4572e; /* --urgente: «Urgente» label (fill only) */
+  --color-urgent: #e4572e; /* --urgente: fill only */
   --color-urgent-soft: #fce3d3;
-  --color-urgent-text: #b23a1e;
+  --color-urgent-text: #a8361b;
 
-  /* Surfaces and text */
+  /* Warm neutrals: the interface is 90 % these */
   --color-bg: #f5f2ef; /* --fondo */
   --color-card: #ffffff; /* --tarjeta */
-  --color-ink: #1f1a2e; /* --tinta */
-  --color-muted: #6a6275; /* --mut */
-  --color-soft: #f6e3ec; /* --suave */
-  --color-line: #e6dfe6; /* --linea */
-  --color-edge: #1f1a2e; /* thick borders and hard shadows */
+  --color-sunken: #ece7e2; /* inputs at rest, skeletons, photo placeholder */
+  --color-ink: #1f1a17; /* text and glyphs, warm near-black */
+  --color-muted: #6b625b; /* meta, labels: 5.3:1 on --color-bg */
+  --color-line: rgb(31 26 23 / 0.12); /* the one hairline */
+  --color-line-strong: rgb(31 26 23 / 0.22); /* outlines of controls */
   --color-on-brand: #ffffff;
+  --color-focus: #c2185b;
+  --color-scrim: rgb(31 26 23 / 0.5);
 
   --aguayo: repeating-linear-gradient(
     90deg,
@@ -38,52 +48,97 @@
   );
 
   /* Type */
-  --font-title: Unbounded, Arial, sans-serif;
-  --font-body: Lexend, Arial, sans-serif;
+  --font-title: 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif;
+  --font-body: 'Figtree', system-ui, sans-serif;
+  --t-display: 1.75rem; /* 28: screen title */
+  --t-h2: 1.375rem; /* 22: section and sheet titles */
+  --t-card: 1.125rem; /* 18: card titles */
+  --t-body: 1rem; /* 16: everything people read */
+  --t-small: 0.875rem; /* 14: meta lines */
+  --t-label: 0.8125rem; /* 13: labels, tags, tab names; nothing smaller */
+  --w-title: 500;
+  --w-strong: 600;
 
-  /* Shape and depth (prototype style: thick edge + hard shadow) */
-  --border: 2px solid var(--color-edge);
-  --shadow: 0 4px 0 var(--color-edge);
-  --shadow-small: 0 3px 0 var(--color-edge);
-  --radius-card: 1.25rem;
-  --radius-button: 0.875rem;
-  --radius-pill: 999px;
+  /* Spacing: 4-based, every margin, gap and padding */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4rem;
+
+  /* Shape: one round family (consumer app) */
+  --r-sm: 0.625rem; /* 10: inputs, small controls */
+  --r-md: 1rem; /* 16: photos, panels */
+  --r-lg: 1.5rem; /* 24: cards, sheets */
+  --r-pill: 999px; /* buttons, chips, tags */
+
+  /* Depth: hairlines, not shadows. Only floating things (FAB, sheets) cast one. */
+  --hairline: 1px solid var(--color-line);
+  --shadow-float: 0 6px 20px rgb(31 26 23 / 0.16), 0 1px 3px rgb(31 26 23 / 0.12);
+  --shadow-hover: 0 8px 24px rgb(31 26 23 / 0.08);
+
+  /* Motion: one ease-out, no overshoot */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --m-in: 150ms;
+  --m-out: 120ms;
+  --m-press: 90ms;
+  --m-panel: 200ms;
+  --m-image: 600ms;
 
   /* Layout */
   --touch: 2.75rem; /* 44 px minimum touch target */
   --gutter: 1rem;
-  --content-max: 40rem;
+  --content-max: 40rem; /* reading measure: forms, sheets, the phone nav */
+  --frame: 64rem; /* the app frame: the same width on every tab (wiki #145) */
+  --top: 3.5rem; /* top bar height */
+  --nav-h: 4rem; /* bottom nav height, without the safe area */
 
   color-scheme: light;
 }
 
-/* Dark theme: follows the system unless the user picked light in Ajustes. */
+/* Dark: warm night, not violet. Follows the system unless the user picked light in Ajustes. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --color-bg: #16131f;
-    --color-card: #231e30;
-    --color-ink: #f4eef6;
-    --color-muted: #b3a9bf;
-    --color-soft: #3b2235;
-    --color-line: #3a3150;
-    --color-edge: #4a3a55;
-    --color-brand-text: #f8a8c6;
-    --color-urgent-soft: #4a2a1c;
-    --color-urgent-text: #ffb48a;
+    --color-bg: #151110;
+    --color-card: #1f1a18;
+    --color-sunken: #2a2421;
+    --color-ink: #f3ede8;
+    --color-muted: #b0a59c;
+    --color-line: rgb(243 237 232 / 0.12);
+    --color-line-strong: rgb(243 237 232 / 0.24);
+    --color-brand-text: #f6a3c3;
+    --color-brand-soft: #3a1a27;
+    --color-yapita-soft: #3a2614;
+    --color-info-soft: #172538;
+    --color-urgent-soft: #3d2117;
+    --color-urgent-text: #ffb08a;
+    --color-focus: #f6a3c3;
+    --shadow-float: 0 6px 20px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
+    --shadow-hover: 0 8px 24px rgb(0 0 0 / 0.35);
     color-scheme: dark;
   }
 }
 
 :root[data-theme='dark'] {
-  --color-bg: #16131f;
-  --color-card: #231e30;
-  --color-ink: #f4eef6;
-  --color-muted: #b3a9bf;
-  --color-soft: #3b2235;
-  --color-line: #3a3150;
-  --color-edge: #4a3a55;
-  --color-brand-text: #f8a8c6;
-  --color-urgent-soft: #4a2a1c;
-  --color-urgent-text: #ffb48a;
+  --color-bg: #151110;
+  --color-card: #1f1a18;
+  --color-sunken: #2a2421;
+  --color-ink: #f3ede8;
+  --color-muted: #b0a59c;
+  --color-line: rgb(243 237 232 / 0.12);
+  --color-line-strong: rgb(243 237 232 / 0.24);
+  --color-brand-text: #f6a3c3;
+  --color-brand-soft: #3a1a27;
+  --color-yapita-soft: #3a2614;
+  --color-info-soft: #172538;
+  --color-urgent-soft: #3d2117;
+  --color-urgent-text: #ffb08a;
+  --color-focus: #f6a3c3;
+  --shadow-float: 0 6px 20px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
+  --shadow-hover: 0 8px 24px rgb(0 0 0 / 0.35);
   color-scheme: dark;
 }

@@ -88,6 +88,7 @@ export function toSign(rec: SignRec): Sign {
     id: rec.id,
     title: rec.title,
     photoUrl: rec.photoUrl,
+    thumbUrl: rec.photoUrl,
     price: rec.price,
     city: rec.city,
     zone: rec.zone,

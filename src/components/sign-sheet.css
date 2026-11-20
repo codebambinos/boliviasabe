@@ -1,0 +1,186 @@
+/* Letrero detail sheet (SignSheet.tsx). Phone: full screen, rises 24 px while it fades in.
+   Desktop: a window over a scrim, max 36 rem wide. Leaves in 160 ms. */
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.sheet__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--color-scrim);
+  animation: sheet-fade var(--m-panel) var(--ease) both;
+}
+
+.sheet__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 100dvh;
+  background: var(--color-bg);
+  outline: none;
+  animation: sheet-in 260ms var(--ease-enter) both;
+}
+
+.sheet[data-closing] .sheet__panel {
+  animation: sheet-out 160ms var(--ease) both;
+}
+
+.sheet[data-closing] .sheet__scrim {
+  animation: sheet-fade-out 160ms var(--ease) both;
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@keyframes sheet-out {
+  to {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.sheet__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--top);
+  padding: env(safe-area-inset-top, 0px) var(--s-2) 0;
+  border-bottom: var(--hairline);
+  background: var(--color-bg);
+}
+
+.sheet__icon-desk {
+  display: none;
+}
+
+.sheet__bar-actions {
+  display: flex;
+}
+
+.sheet__body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The whole photo, never cropped: it is the letrero itself */
+.sheet__photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 62dvh;
+  background: var(--color-sunken);
+}
+
+.sheet__photo img {
+  max-width: 100%;
+  max-height: 62dvh;
+  object-fit: contain;
+}
+
+.sheet__info {
+  padding: var(--s-4) var(--gutter) var(--s-5);
+}
+
+.sheet__price {
+  margin: 0 0 var(--s-1);
+  font: var(--w-title) var(--t-display) / 1.1 var(--font-title);
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet__title {
+  margin-bottom: var(--s-2);
+  font-size: var(--t-h2);
+}
+
+.sheet__info .notice {
+  margin: var(--s-3) 0 0;
+}
+
+.sheet__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: var(--s-3) 0 0;
+}
+
+/* Actions stay at the thumb's reach, on the card ground with a hairline */
+.sheet__actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--s-2);
+  padding: var(--s-3) var(--gutter) calc(var(--s-3) + env(safe-area-inset-bottom, 0px));
+  border-top: var(--hairline);
+  background: var(--color-card);
+}
+
+.sheet__actions .btn {
+  min-height: 3rem;
+}
+
+.sheet__error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-urgent-text);
+  font-size: var(--t-small);
+}
+
+/* Desktop: a window over the grid */
+@media (min-width: 64rem) {
+  .sheet {
+    align-items: center;
+    padding: var(--s-6);
+  }
+
+  .sheet__panel {
+    max-width: 36rem;
+    max-height: min(90dvh, 52rem);
+    overflow: hidden;
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-float);
+  }
+
+  .sheet__photo,
+  .sheet__photo img {
+    max-height: 26rem;
+  }
+
+  .sheet__icon-phone {
+    display: none;
+  }
+
+  .sheet__icon-desk {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet__panel,
+  .sheet__scrim {
+    animation: none;
+  }
+}
