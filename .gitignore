@@ -1,0 +1,25 @@
+# Dependencies and build output
+node_modules/
+dist/
+dev-dist/
+
+# Secrets: never commit real keys (only .env.example is tracked)
+.env
+.env.*
+!.env.example
+
+# Vercel local config
+.vercel/
+
+# Internal docs kept outside the repo (Spanish wiki and task plan)
+/wiki
+references/
+TAREAS-Y-STACK.md
+
+# OS and editor files
+.DS_Store
+*.log
+*.local
+.idea/
+.vscode/*
+!.vscode/extensions.json
