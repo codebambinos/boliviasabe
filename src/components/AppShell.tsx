@@ -50,17 +50,19 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onFab,
 
       <div className="shell__column">
         <header className="shell__top">
+          <div className="shell__bar">
           <img className="shell__logo" src="/logo.svg" alt="BoliviaSabe" width={32} height={32} />
+          {/* Visible name + transparent native select on top: the phone's own picker, sized to the text */}
           <label className="shell__city">
-            <span className="sr-only">Ciudad</span>
-            <select value={city} onChange={(e) => onCityChange(e.target.value as City)}>
+            <span className="shell__city-name" aria-hidden="true">{city}</span>
+            <ChevronDownIcon size={16} />
+            <select aria-label="Ciudad" value={city} onChange={(e) => onCityChange(e.target.value as City)}>
               {CITIES.map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>
               ))}
             </select>
-            <ChevronDownIcon size={16} />
           </label>
           {account && (
             <div className="shell__account">
@@ -73,6 +75,7 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onFab,
               </button>
             </div>
           )}
+          </div>
         </header>
         <div className="aguayo shell__aguayo" />
 

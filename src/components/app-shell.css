@@ -17,11 +17,28 @@
   position: sticky;
   top: 0;
   z-index: 3;
+  container-type: inline-size;
+  padding: calc(0.625rem + env(safe-area-inset-top, 0px)) var(--gutter) 0.5rem;
+  background: var(--color-bg);
+}
+
+.shell__bar {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: calc(0.625rem + env(safe-area-inset-top, 0px)) var(--gutter) 0.5rem;
-  background: var(--color-bg);
+}
+
+/* Large text (e.g. 130 %): rem grows with it, so the city drops to its own line instead of
+   being cut. At 100 % on a 360 px phone the bar stays on one line. */
+@container (max-width: 20rem) {
+  .shell__bar {
+    flex-wrap: wrap;
+  }
+
+  .shell__city {
+    order: 3;
+    flex-basis: 100%;
+  }
 }
 
 .shell__logo {
@@ -32,27 +49,41 @@
   position: relative;
   display: inline-flex;
   align-items: center;
+  gap: 0.25rem;
+  flex: 0 1 auto;
   min-width: 0;
-  color: var(--color-ink);
-}
-
-.shell__city select {
-  appearance: none;
   min-height: var(--touch);
-  max-width: 11rem;
-  padding: 0 1.75rem 0 0.25rem;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: 700 1.0625rem var(--font-title);
-  text-overflow: ellipsis;
+  padding: 0 0.25rem;
+  border-radius: var(--radius-button);
+  color: var(--color-ink);
   cursor: pointer;
 }
 
+/* Lexend, not Unbounded: it is a control, and Unbounded is too wide for 360 px next to bell + balance */
+.shell__city-name {
+  overflow: hidden;
+  font: 700 1.0625rem var(--font-body);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .shell__city svg {
+  flex: none;
+}
+
+/* The real control: covers the label, invisible, keeps the native picker and focus */
+.shell__city select {
   position: absolute;
-  right: 0.375rem;
-  pointer-events: none;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.shell__city:focus-within {
+  outline: 3px solid var(--color-info);
+  outline-offset: 2px;
 }
 
 .shell__account {
@@ -93,6 +124,7 @@
   color: #1f1a2e;
   font: 700 0.9375rem var(--font-title);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   cursor: pointer;
 }
 
