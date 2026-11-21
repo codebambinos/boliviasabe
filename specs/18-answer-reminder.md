@@ -55,6 +55,11 @@
   - `log.md`, the `index.md` count, and `stack.md` › 3.2.
   - Issue #21: same wording.
 
+**Extra (asked by Diego while waiting for the production test; wiki #209):**
+
+- The top bar's «Entrar» becomes «Iniciar sesión». The sign-in sheet title becomes «Inicia sesión en BoliviaSabe», Yo says «Inicia sesión para guardarlas», and the e-mail submit says «Continuar».
+- The city picker no longer keeps its focus ring after a mouse or finger pick. The keyboard still shows it.
+
 **Out:**
 
 - The bell (T24, Aldrin).
