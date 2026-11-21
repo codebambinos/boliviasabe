@@ -250,10 +250,20 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
                       <button
                         type="button"
                         className="btn btn--small answer__helpful"
-                        disabled={markHelpful.isPending}
-                        onClick={() => sendHelpful(answer)}
+                        // Only the one being sent changes; the others keep their look and just ignore the tap
+                        disabled={markHelpful.isPending && markHelpful.variables === answer.id}
+                        aria-disabled={markHelpful.isPending || undefined}
+                        onClick={() => !markHelpful.isPending && sendHelpful(answer)}
                       >
-                        <ThumbIcon size={18} /> {markHelpful.isPending && markHelpful.variables === answer.id ? 'Enviando…' : 'Me sirvió'}
+                        {markHelpful.isPending && markHelpful.variables === answer.id ? (
+                          <>
+                            <span className="upload__spinner" aria-hidden="true" /> Enviando…
+                          </>
+                        ) : (
+                          <>
+                            <ThumbIcon size={18} /> Me sirvió
+                          </>
+                        )}
                       </button>
                     )}
                     <button

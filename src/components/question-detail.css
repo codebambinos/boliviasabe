@@ -215,3 +215,8 @@
   top: var(--s-1);
   right: var(--s-1);
 }
+
+/* While it is sent the button keeps its color (a spinner says «working»); dimming it read as a glitch */
+.answer__helpful:disabled {
+  opacity: 1;
+}
