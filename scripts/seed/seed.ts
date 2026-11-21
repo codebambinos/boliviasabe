@@ -153,7 +153,13 @@ async function ensureNeighbor(db: Db, users: { id: string; email?: string }[], n
   }
   const { data: existing, error } = await db.from('profiles').select('id').eq('auth_id', authId).maybeSingle();
   fail('profile', error);
-  if (existing) return existing.id as number;
+  if (existing) {
+    // The account belongs to the seed: its name and «Tu barrio» are always the seed's (someone may have signed up
+    // with this e-mail by hand)
+    const fields = { display_name: displayName(n.fullName), full_name: n.fullName, city: n.city, zone: n.zone };
+    fail('update profile', (await db.from('profiles').update(fields).eq('id', existing.id)).error);
+    return existing.id as number;
+  }
   const { data, error: insertError } = await db
     .from('profiles')
     .insert({ auth_id: authId, display_name: displayName(n.fullName), full_name: n.fullName, city: n.city, zone: n.zone })
