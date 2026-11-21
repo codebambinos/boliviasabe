@@ -1165,6 +1165,93 @@ select pg_temp.expect_select('the phone has no subscription', 'select id from pu
 select pg_temp.as_anon();
 select pg_temp.expect_error('a guest cannot save a subscription', 'select public.save_push_subscription(''https://push.example/x'', ''k'', ''a'')', '42501');
 
+-- ---------------------------------------------------------------------------
+-- 24 h reminder and resend of lost pushes (0009, SPEC 18). Same people n1..n6.
+-- ---------------------------------------------------------------------------
+select pg_temp.as_postgres();
+-- Earlier rows (and the seed) must not count in the resend checks
+update public.notifications set pushed_at = now() where pushed_at is null;
+
+-- A question of `p_author`, answered by `p_answerer` `p_age` ago (none when p_answerer is null), in `p_status`
+create or replace function pg_temp.asked(p_name text, p_author text, p_answerer text, p_age interval, p_status text default 'open')
+returns void language plpgsql as $$
+declare q bigint;
+begin
+  insert into public.questions (author_id, text, city, zone) values (pg_temp.id_of(p_author), 'Recordatorio ' || p_name, 'Oruro', 'Centro')
+  returning id into q;
+  insert into test_rows (name, id) values (p_name, q);
+  if p_answerer is not null then
+    insert into public.answers (question_id, author_id, text, created_at)
+    values (q, pg_temp.id_of(p_answerer), 'Respuesta ' || p_name, now() - p_age);
+  end if;
+  update public.questions set status = p_status where id = q;
+end;
+$$;
+
+-- How many reminders a question has
+create or replace function pg_temp.reminders(p_name text) returns bigint
+language sql as $$
+  select count(*) from public.notifications where kind = 'reminder' and ref_id = pg_temp.r(p_name);
+$$;
+
+select pg_temp.asked('rem_25h', 'n3', 'n1', interval '25 hours');
+select pg_temp.asked('rem_23h', 'n3', 'n1', interval '23 hours');
+select pg_temp.asked('rem_49h', 'n5', 'n1', interval '49 hours');
+select pg_temp.asked('rem_solved', 'n5', 'n2', interval '25 hours', 'solved');
+select pg_temp.asked('rem_closed', 'n6', 'n2', interval '25 hours', 'closed');
+select pg_temp.asked('rem_none', 'n6', null, null);
+update public.profiles set notif_prefs = '{"answers": false}'::jsonb where id = pg_temp.id_of('n4');
+select pg_temp.asked('rem_prefs_off', 'n4', 'n2', interval '30 hours');
+-- A later answer does not move «the first answer»
+insert into public.answers (question_id, author_id, text) values (pg_temp.r('rem_25h'), pg_temp.id_of('n2'), 'Respuesta nueva');
+
+select pg_temp.expect_text('the first run queues the reminders', 'select (public.queue_answer_reminders() >= 2)::text', 'true');
+select pg_temp.expect_text('an open question answered 25 h ago gets one reminder', 'select pg_temp.reminders(''rem_25h'')::text', '1');
+select pg_temp.expect_text('… for its author, about the question, caused by nobody',
+  format('select (user_id = %s and ref_kind = ''question'' and actor_id is null)::text from public.notifications
+          where kind = ''reminder'' and ref_id = %s', pg_temp.id_of('n3'), pg_temp.r('rem_25h')), 'true');
+select pg_temp.expect_text('a second run queues nothing', 'select public.queue_answer_reminders()::text', '0');
+select pg_temp.expect_error('a second reminder for the same question is refused',
+  format('insert into public.notifications (user_id, kind, ref_kind, ref_id) values (%s, ''reminder'', ''question'', %s)',
+    pg_temp.id_of('n3'), pg_temp.r('rem_25h')), '23505');
+select pg_temp.expect_text('no reminder 23 h after the first answer', 'select pg_temp.reminders(''rem_23h'')::text', '0');
+select pg_temp.expect_text('no reminder 49 h after the first answer', 'select pg_temp.reminders(''rem_49h'')::text', '0');
+select pg_temp.expect_text('no reminder for a solved question', 'select pg_temp.reminders(''rem_solved'')::text', '0');
+select pg_temp.expect_text('no reminder for a closed question', 'select pg_temp.reminders(''rem_closed'')::text', '0');
+select pg_temp.expect_text('no reminder without answers', 'select pg_temp.reminders(''rem_none'')::text', '0');
+select pg_temp.expect_text('with «Respuestas» off the row is still saved (only the push is skipped)', 'select pg_temp.reminders(''rem_prefs_off'')::text', '1');
+
+-- push_details of a reminder: the question, and not pushed if its author hid it
+select pg_temp.expect_text('push_details of a reminder quotes the question and opens it',
+  format('select (d->>''kind'') || '' '' || (d->>''text'') || '' '' || (d->>''url'') || '' '' || (d->>''visible'')
+          from (select public.push_details(id) d from public.notifications where kind = ''reminder'' and ref_id = %s) x', pg_temp.r('rem_25h')),
+  format('reminder Recordatorio rem_25h /p/%s true', pg_temp.r('rem_25h')));
+insert into public.hidden_items (user_id, kind, target_id) values (pg_temp.id_of('n3'), 'question', pg_temp.r('rem_25h'));
+select pg_temp.expect_text('a question its author hid is not pushed',
+  format('select public.push_details(id)->>''visible'' from public.notifications where kind = ''reminder'' and ref_id = %s', pg_temp.r('rem_25h')),
+  'false');
+
+-- Resend: only rows /api/push never processed, 5 to 65 minutes old
+update public.notifications set pushed_at = now() where pushed_at is null;
+insert into public.notifications (user_id, kind, ref_kind, ref_id, created_at, pushed_at) values
+  (pg_temp.id_of('n6'), 'answer', 'question', pg_temp.r('rem_none'), now() - interval '10 minutes', null),
+  (pg_temp.id_of('n6'), 'answer', 'question', pg_temp.r('rem_none'), now() - interval '2 minutes', null),
+  (pg_temp.id_of('n6'), 'answer', 'question', pg_temp.r('rem_none'), now() - interval '2 hours', null),
+  (pg_temp.id_of('n6'), 'answer', 'question', pg_temp.r('rem_none'), now() - interval '10 minutes', now());
+select pg_temp.expect_text('the resend asks again only for the 10-minute-old row without pushed_at',
+  'select public.resend_pending_pushes()::text', '1');
+select pg_temp.expect_text('run_hourly_push_jobs reports both counts',
+  'select (d->>''reminders'') || '' '' || (d->>''resent'') from (select public.run_hourly_push_jobs() d) x', '0 1');
+
+-- Only the database runs these
+select pg_temp.as_user('n1');
+select pg_temp.expect_error('a browser cannot call request_push', 'select public.request_push(1)', '42501');
+select pg_temp.expect_error('a browser cannot queue reminders', 'select public.queue_answer_reminders()', '42501');
+select pg_temp.expect_error('a browser cannot resend pushes', 'select public.resend_pending_pushes()', '42501');
+select pg_temp.expect_error('a browser cannot run the hourly job', 'select public.run_hourly_push_jobs()', '42501');
+select pg_temp.as_anon();
+select pg_temp.expect_error('a guest cannot run the hourly job', 'select public.run_hourly_push_jobs()', '42501');
+
 select pg_temp.as_postgres();
 do $$ begin raise notice 'rls ok'; end $$;
 
