@@ -1,6 +1,6 @@
 # SPEC 14 — Seed: 5 neighbors with Stellar accounts, letreros and questions
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 03 (tables, RLS, `photos` bucket), SPEC 08 (`provisionWallet`, welcome +5), SPEC 09 (`planReward`, `payReward`, `chargeUrgent`), SPEC 11 (photo paths, SQL reads), SPEC 13 (`reward_cap`, `rewards.source_id`, limits skip the service role). Board card: T09 (issue #3). T37 (`stellar:reset`, #26) will call it.
 > **Date:** 2026-11-21
 > **Objective:** One re-runnable script fills the real database with 5 neighbors who can sign in, each with a ready Stellar account, letreros made from Yaeko's photos, and questions with answers, ratings and comments, whose yapitas are really paid on testnet. Before that, it removes the `t39-*` test accounts and their content.
@@ -136,15 +136,38 @@ Branch `feat/t09-seed`, one commit per step.
 
 ## Acceptance criteria
 
-- [ ] No `t39-*@test.local` user and none of their content (letreros, questions, answers, comments, rewards, photos) remain in the remote project. The team's own accounts and content are untouched.
-- [ ] 5 neighbors exist. Each one signs in on the app with their e-mail and `SEED_PASSWORD`, lands on Hoy without «Tu barrio», and Yo shows their name, zone, a ready Stellar account and a balance read from Horizon.
-- [ ] Hoy in Cochabamba opens with the 9 photo letreros, each with its photo, thumbnail, price and «Me sirvió» counter.
-- [ ] ¿Alguien sabe? in Cochabamba opens with the urgent question on top, then the open questions, then the solved and closed ones. La Paz shows Rosa's 2 questions.
-- [ ] Every paid reward has a `confirmed` row and a transaction on testnet whose memo matches the table of the wiki. Every «Me sirvió» paid an account that exists.
-- [ ] The urgent question was charged −5 (`urgente:<id>` confirmed) and shows as urgent.
-- [ ] Running `npm run seed` a second time creates no new rows and pays nothing new. `--fresh` recreates the content with new ids and pays only the rewards whose memos are new.
-- [ ] `SEED_PASSWORD` and the service role key appear nowhere in the repo (`git grep`). The script stops with a clear message if either is missing.
-- [ ] `npm run typecheck` and `npm run build` pass. The seed screens were checked on a phone at 360 px, light and dark.
+- [x] No `t39-*@test.local` user and none of their content (letreros, questions, answers, comments, rewards, photos) remain in the remote project. The team's own accounts and content are untouched.
+- [x] 5 neighbors exist. Each one signs in on the app with their e-mail and `SEED_PASSWORD`, lands on Hoy without «Tu barrio», and Yo shows their name, zone, a ready Stellar account and a balance read from Horizon.
+- [x] Hoy in Cochabamba opens with the 9 photo letreros, each with its photo, thumbnail, price and «Me sirvió» counter.
+- [x] ¿Alguien sabe? in Cochabamba opens with the urgent question on top, then the open questions, then the solved and closed ones. La Paz shows Rosa's 2 questions.
+- [x] Every paid reward has a `confirmed` row and a transaction on testnet whose memo matches the table of the wiki. Every «Me sirvió» paid an account that exists.
+- [x] The urgent question was charged −5 (`urgente:<id>` confirmed) and shows as urgent.
+- [x] Running `npm run seed` a second time creates no new rows and pays nothing new. `--fresh` recreates the content with new ids and pays only the rewards whose memos are new.
+- [x] `SEED_PASSWORD` and the service role key appear nowhere in the repo (`git grep`). The script stops with a clear message if either is missing.
+- [x] `npm run typecheck` and `npm run build` pass. The seed screens were checked on a phone at 360 px, light and dark.
+
+> Verified on 2026-11-21.
+> - **Local stack:**
+>   - First run: 38 rewards confirmed on testnet and the urgent question charged.
+>   - Re-run: a fake `t39-1` was deleted with everything it owned, nothing was duplicated and nothing was paid twice.
+>   - `--dry-run` wrote nothing.
+>   - `--fresh` recreated the content; 12 rewards were capped by the pair rule of the same day, as in the app.
+> - **Production (with the user's OK):**
+>   - The `t39-1` to `t39-5` accounts are gone.
+>   - 5 neighbors exist: Lucía 12, Jorge 34, Ana 18, Marco 16 and Rosa 5 yapitas.
+>   - There are 9 photo letreros and 14 questions, and the urgent question was charged.
+>   - A re-run paid nothing new, and Lucía signs in with `SEED_PASSWORD`.
+>   - `jorge@example.com` had been created by hand by a teammate. Its test question #33 and answer #25 were deleted, and the seed now always sets the neighbor's name and zone.
+> - **Diego, on a phone:**
+>   - Hoy, ¿Alguien sabe? (Cochabamba and La Paz), the thread and Lucía's Yo (12 yapitas) work.
+>   - A «Me sirvió» from Lucía to Jorge paid +1.
+>   - The screens look right at 360 px, in light and dark.
+
+## Changes after the phone test
+
+- **Photos load smoothly (wiki #194, #196).** Tiles and question photos pulse while they load and fade in. In the letrero detail, a pulsing frame with the photo's final size is shown, then the photo fades in. The first try showed the thumbnail blurred, which looked like a halo, so it was replaced.
+- **The balance never shows the previous account's number (wiki #195).** It was a bug: signing in and out kept one person's cached wallet. Now everything personal (balance, movements, activity, saved, phone) is reset on a session change. While the balance loads, a small pulsing bar is shown.
+- Movimientos in Yo shows the 5 latest movements for now; the full paged list is T21.
 
 ## Decisions
 
