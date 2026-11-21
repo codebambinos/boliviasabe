@@ -27,10 +27,11 @@ function lazyAuth(): DataApi['auth'] {
 }
 
 function lazyWallet(): DataApi['wallet'] {
-  // Balance and status come from the chain; Movimientos stay on the mock until T17
+  // Balance and status come from the chain; Movimientos come from `rewards` (SPEC 11)
   const load = () => import('./supabase/wallet').then((module) => module.supabaseWallet);
   return {
-    ...mockAdapter.wallet,
+    movements: (query) => loadData().then((data) => data.movements.movements(query)),
+    retry: (movementId) => loadData().then((data) => data.movements.retry(movementId)),
     get: async () => {
       const wallet = await load().then((real) => real.get());
       followRealBalance(wallet.balance);
@@ -71,6 +72,14 @@ function lazyAnswers(): DataApi['answers'] {
   };
 }
 
+function lazyActivity(): DataApi['activity'] {
+  return {
+    myQuestions: () => loadData().then((data) => data.activity.myQuestions()),
+    myAnswers: () => loadData().then((data) => data.activity.myAnswers()),
+    mySigns: () => loadData().then((data) => data.activity.mySigns()),
+  };
+}
+
 function lazySaved(): DataApi['saved'] {
   return {
     toggle: (kind, id) => loadData().then((data) => data.saved.toggle(kind, id)),
@@ -87,7 +96,7 @@ function lazyReports(): DataApi['reports'] {
 
 function pickAdapter(): DataApi {
   const source = import.meta.env.VITE_DATA_SOURCE as string | undefined;
-  if (source === 'supabase') return { ...mockAdapter, auth: lazyAuth(), wallet: lazyWallet(), signs: lazySigns(), questions: lazyQuestions(), answers: lazyAnswers(), saved: lazySaved(), reports: lazyReports() };
+  if (source === 'supabase') return { ...mockAdapter, auth: lazyAuth(), wallet: lazyWallet(), signs: lazySigns(), questions: lazyQuestions(), answers: lazyAnswers(), saved: lazySaved(), reports: lazyReports(), activity: lazyActivity() };
   if (source && source !== 'mock') console.warn(`VITE_DATA_SOURCE="${source}" is unknown. Using the mock adapter.`);
   return mockAdapter;
 }

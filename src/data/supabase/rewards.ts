@@ -25,12 +25,14 @@ export function requestReward(reason: PremiarReason, refId: number): void {
     .finally(() => invalidate(queryClient, keys.wallet()));
 }
 
-/** Pays a reward again from «Reintentar». Resolves whether the server answered (paid or still pending). */
-export async function retryReward(reason: PremiarReason, refId: number): Promise<void> {
+/** «Reintentar» in Movimientos: the server pays the caller's own pending reward again, once. */
+export async function retryReward(rewardId: number): Promise<void> {
   try {
-    await post('/api/stellar/premiar', { reason, refId });
+    await post('/api/stellar/reintentar', { refId: rewardId });
   } catch {
     /* offline: the row stays as it was */
+  } finally {
+    invalidate(queryClient, keys.wallet());
   }
 }
 
