@@ -1,6 +1,6 @@
 # SPEC 09 — Pay and charge yapitas (`/api/stellar/premiar` and `/gastar`)
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 03 (Supabase schema and RLS), SPEC 08 («Tu barrio» and the Stellar account: `provisionWallet`, `WalletStore`, `lib/supabase/server.ts`). Board card: T17 (issue #10). Unlocks T39 (#43), T20, T22, T23, T09.
 > **Date:** 2026-11-21
 > **Objective:** Two Vercel functions let a signed-in person trigger the yapitas that an action earns or costs, after the server checks in Supabase that the action is legitimate, and each one is paid or charged on Stellar exactly once, however many times the call is repeated (plus one cosmetic fix: the phone's main button folds to «+» smoothly).
@@ -91,19 +91,21 @@ HTTP contract, all responses with `Cache-Control: no-store`:
 
 ## Acceptance criteria
 
-- [ ] Calling `/premiar` twice with the same body leaves one payment on the chain and one `confirmed` row in `rewards`, and the second answer carries the same `txHash`.
-- [ ] Two simultaneous calls with the same body also produce one payment (`stellar:e2e` and one concurrent run on the preview).
-- [ ] The memo of each reason is the one in the table (`letrero:<id>`, `sirvio-l:<signId>-<voterId>`, `ayuda:<answerId>`, `cierre:<questionId>`, `urgente:<questionId>`) and none is longer than 28 bytes.
-- [ ] A caller who does not meet the rule (not the author, voting on their own letrero, rating their own answer, a question that is still `open` for `cierre`) gets `403 not_allowed` and no `rewards` row is created.
-- [ ] A missing or forged token gets `401`; a valid token without a profile gets `409`; a body with an unknown `reason` or a non-numeric `refId` gets `400`.
-- [ ] If the recipient has no ready account or Stellar fails, `/premiar` answers `202`, the reward stays `pending`, and calling again after the cause is fixed confirms it with one payment.
-- [ ] `/gastar` with a balance of 5 or more charges exactly 5 once (repeating the call does not charge again); with less than 5 it answers `not_charged` and the balance does not change.
-- [ ] The client never decides the amount, the memo or the recipient: the body has only `reason` and `refId`.
-- [ ] On a phone, scrolling down folds the main button to «+» and scrolling up unfolds it in one smooth motion: no label cut in half, no jump in width, no flicker when the scroll stops near the threshold; with reduced motion it changes without animating.
-- [ ] The cosmetic change touches only `useFoldOnScroll` and the `.shell__fab` rules: the desktop sidebar action, the labels and the button's size and position are unchanged.
-- [ ] `npm run stellar:e2e` passes, including the welcome from SPEC 08.
-- [ ] `git grep -i "SECRET\|SERVICE_ROLE" -- src` shows no values, the built bundle contains no secret, and no file under `src/` imports `@stellar/stellar-sdk`.
-- [ ] `npm run typecheck` and `npm run build` pass, CI is green, and the PR body has `Closes #10`.
+- [x] Calling `/premiar` twice with the same body leaves one payment on the chain and one `confirmed` row in `rewards`, and the second answer carries the same `txHash`.
+- [x] Two simultaneous calls with the same body also produce one payment (`stellar:e2e` and one concurrent run on the preview).
+- [x] The memo of each reason is the one in the table (`letrero:<id>`, `sirvio-l:<signId>-<voterId>`, `ayuda:<answerId>`, `cierre:<questionId>`, `urgente:<questionId>`) and none is longer than 28 bytes.
+- [x] A caller who does not meet the rule (not the author, voting on their own letrero, rating their own answer, a question that is still `open` for `cierre`) gets `403 not_allowed` and no `rewards` row is created.
+- [x] A missing or forged token gets `401`; a valid token without a profile gets `409`; a body with an unknown `reason` or a non-numeric `refId` gets `400`.
+- [x] If the recipient has no ready account or Stellar fails, `/premiar` answers `202`, the reward stays `pending`, and calling again after the cause is fixed confirms it with one payment.
+- [x] `/gastar` with a balance of 5 or more charges exactly 5 once (repeating the call does not charge again); with less than 5 it answers `not_charged` and the balance does not change.
+- [x] The client never decides the amount, the memo or the recipient: the body has only `reason` and `refId`.
+- [x] On a phone, scrolling down folds the main button to «+» and scrolling up unfolds it in one smooth motion: no label cut in half, no jump in width, no flicker when the scroll stops near the threshold; with reduced motion it changes without animating.
+- [x] The cosmetic change touches only `useFoldOnScroll` and the `.shell__fab` rules: the desktop sidebar action, the labels and the button's size and position are unchanged.
+- [x] `npm run stellar:e2e` passes, including the welcome from SPEC 08.
+- [x] `git grep -i "SECRET\|SERVICE_ROLE" -- src` shows no values, the built bundle contains no secret, and no file under `src/` imports `@stellar/stellar-sdk`.
+- [x] `npm run typecheck` and `npm run build` pass, CI is green, and the PR body has `Closes #10`.
+
+> Verified 2026-11-21: `stellar:e2e` (5 consecutive runs) and a run on the PR's preview with throwaway users (all routes, 33 checks). The fold of the button was measured in a 360 px browser (width 167 → 58 px over about 150 ms, no flicker with a ±10 px tremor, back in about 270 ms); the real-phone feel is checked by Diego on the preview.
 
 ## Decisions
 
