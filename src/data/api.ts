@@ -5,11 +5,14 @@
 import type {
   Answer,
   City,
+  Comment,
+  ContactState,
   ContentKind,
   Id,
   Movement,
   Page,
   Question,
+  ReportKind,
   ReportReason,
   Session,
   Sign,
@@ -93,6 +96,28 @@ export interface DataApi {
     markNotHelpful(id: Id): Promise<Answer>;
     remove(id: Id): Promise<void>;
   };
+  comments: {
+    /** Up to 500 characters, on any visible answer (also on Solucionada and Cerrada questions). */
+    create(answerId: Id, text: string): Promise<Comment>;
+    /** Only one's own. */
+    remove(id: Id): Promise<void>;
+  };
+  contact: {
+    /** Only the asker, on someone else's answer to their question; once per answer. The phone is optional. */
+    request(answerId: Id, phone?: string): Promise<ContactState>;
+    /** Only the person asked, while pending: «Aceptar» (with an optional phone) or «Ahora no». */
+    respond(requestId: Id, accept: boolean, phone?: string): Promise<ContactState>;
+    /** The phone saved in the caller's profile, to prefill the field. */
+    myPhone(): Promise<string | null>;
+  };
+  live: {
+    /**
+     * Calls `onChange` when a comment, answer, rating or contact request that may belong to the question changes
+     * (`answerId` when the event only names the answer). `onStatus` says whether the channel is connected.
+     * Returns the unsubscribe. The mock never connects, so the screen keeps its 15 s refresh.
+     */
+    question(questionId: Id, onChange: (answerId: Id | null) => void, onStatus?: (connected: boolean) => void): () => void;
+  };
   saved: {
     /** Returns whether the item is saved after the toggle. */
     toggle(kind: ContentKind, id: Id): Promise<boolean>;
@@ -100,8 +125,8 @@ export interface DataApi {
   };
   reports: {
     /** Counts toward the 3 reports that hide it for everyone, and hides it for the reporter now (wiki #166). */
-    report(kind: ContentKind, id: Id, reason: ReportReason): Promise<void>;
-    hideForMe(kind: ContentKind, id: Id): Promise<void>;
+    report(kind: ReportKind, id: Id, reason: ReportReason): Promise<void>;
+    hideForMe(kind: ReportKind, id: Id): Promise<void>;
   };
   wallet: {
     get(): Promise<Wallet>;

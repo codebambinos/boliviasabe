@@ -69,6 +69,29 @@ export type Question = {
   inReview: boolean;
 };
 
+/** A comment in the public thread under an answer (one level, up to 500 characters). */
+export type Comment = {
+  id: Id;
+  answerId: Id;
+  text: string;
+  author: Author;
+  createdAt: string;
+  isMine: boolean;
+  inReview: boolean;
+};
+
+/** What each person shares when a contact request is accepted: the account e-mail and, if given, a phone (wiki #182). */
+export type ContactDetails = { email: string; phone: string | null };
+
+/** «Pedir contacto» on one answer. Only the asker and the answerer receive it; null for everyone else. */
+export type ContactState = {
+  requestId: Id;
+  status: 'pending' | 'accepted' | 'declined';
+  requestedByMe: boolean;
+  /** The other person's details, only once accepted. */
+  other: ContactDetails | null;
+};
+
 export type Answer = {
   id: Id;
   questionId: Id;
@@ -80,6 +103,9 @@ export type Answer = {
   savedByMe: boolean;
   isMine: boolean;
   inReview: boolean;
+  /** The visible thread, oldest first. */
+  comments: Comment[];
+  contact: ContactState | null;
 };
 
 /** 30 items per page. `nextCursor` is null on the last page. */
@@ -106,4 +132,6 @@ export type Wallet = {
 };
 
 export type ContentKind = 'sign' | 'question' | 'answer';
+/** What can be reported or hidden: any content, plus comments (which cannot be saved). */
+export type ReportKind = ContentKind | 'comment';
 export type ReportReason = (typeof REPORT_REASONS)[number]['value'];

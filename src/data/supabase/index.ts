@@ -5,11 +5,15 @@ import { supabaseAnswers } from './answers';
 import { supabaseQuestions } from './questions';
 import { supabaseReports, supabaseSaved } from './saved';
 import { supabaseSigns } from './signs';
+import { supabaseComments, supabaseContact, supabaseLive } from './threads';
 
 export const supabaseData = {
   signs: supabaseSigns,
   questions: supabaseQuestions,
   answers: supabaseAnswers,
+  comments: supabaseComments,
+  contact: supabaseContact,
+  live: supabaseLive,
   saved: supabaseSaved,
   reports: supabaseReports,
   activity: supabaseActivity,

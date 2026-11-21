@@ -4,6 +4,7 @@
 export * from './hooks/session';
 export * from './hooks/signs';
 export * from './hooks/questions';
+export * from './hooks/threads';
 export * from './hooks/saved';
 export * from './hooks/reports';
 export * from './hooks/wallet';

@@ -2,9 +2,9 @@
 import type { DataApi } from '../api';
 import { CITIES, DEFAULT_CITY, PAGE_SIZE } from '../catalog';
 import { DataError } from '../errors';
-import type { Answer, City, ContentKind, Id, Movement, Page, Question, Session, Sign } from '../types';
+import type { Answer, City, Comment, ContactState, ContentKind, Id, Movement, Page, Question, ReportKind, Session, Sign } from '../types';
 import { mockMode, simulate } from './behavior';
-import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type MovementRec, type QuestionRec, type SignRec } from './fixtures';
+import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type CommentRec, type ContactRec, type MovementRec, type QuestionRec, type SignRec } from './fixtures';
 import {
   assertCanAsk,
   authorOf,
@@ -314,6 +314,40 @@ export function toAnswer(rec: AnswerRec): Answer {
     savedByMe: store.saved.some((s) => s.userId === viewer && s.kind === 'answer' && s.itemId === rec.id),
     isMine: rec.authorId === viewer,
     inReview: isInReview('answer', rec.id),
+    comments: store.comments
+      .filter((c) => c.answerId === rec.id && !isHiddenFor(viewer, 'comment', c.id, c.authorId))
+      .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id - b.id)
+      .map(toComment),
+    contact: contactOf(rec.id),
+  };
+}
+
+export function toComment(rec: CommentRec): Comment {
+  const viewer = currentUserId();
+  return {
+    id: rec.id,
+    answerId: rec.answerId,
+    text: rec.text,
+    author: authorOf(rec.authorId),
+    createdAt: rec.createdAt,
+    isMine: rec.authorId === viewer,
+    inReview: isInReview('comment', rec.id),
+  };
+}
+
+/** The viewer's «Pedir contacto» on an answer: only the two people see it, and the details only once accepted. */
+function contactOf(answerId: Id): ContactState | null {
+  const viewer = currentUserId();
+  if (viewer === null) return null;
+  const rec = store.contacts.find((c) => c.answerId === answerId && (c.requesterId === viewer || c.ownerId === viewer));
+  if (!rec) return null;
+  const mine = rec.requesterId === viewer;
+  const other = store.users.find((u) => u.id === (mine ? rec.ownerId : rec.requesterId));
+  return {
+    requestId: rec.id,
+    status: rec.status,
+    requestedByMe: mine,
+    other: rec.status === 'accepted' && other ? { email: other.email, phone: mine ? rec.ownerPhone : rec.requesterPhone } : null,
   };
 }
 
@@ -513,6 +547,8 @@ export const mockAnswers: DataApi['answers'] = {
       if (answer.authorId !== user.id) throw new DataError('forbidden', 'You can only delete your own answer');
       if (answer.helpful) throw new DataError('forbidden', 'An answer marked «Me sirvió» cannot be deleted');
       store.answers = store.answers.filter((a) => a.id !== id);
+      store.comments = store.comments.filter((c) => c.answerId !== id); // goes with its thread (wiki #82)
+      store.contacts = store.contacts.filter((c) => c.answerId !== id);
       store.saved = store.saved.filter((s) => !(s.kind === 'answer' && s.itemId === id));
     }),
 };
@@ -522,11 +558,108 @@ export const mockAnswers: DataApi['answers'] = {
 const EXPLORER_TX = 'https://stellar.expert/explorer/testnet/tx/';
 
 /** Author of any visible content item (not_found if deleted or hidden for the viewer). */
-function contentAuthor(kind: ContentKind, id: Id): Id {
+function contentAuthor(kind: ReportKind, id: Id): Id {
   if (kind === 'sign') return findVisibleSign(id).authorId;
   if (kind === 'question') return findVisibleQuestion(id).authorId;
+  if (kind === 'comment') return findVisibleComment(id).authorId;
   return findVisibleAnswer(id).authorId;
 }
+
+function findVisibleComment(id: Id): CommentRec {
+  const rec = store.comments.find((c) => c.id === id);
+  if (!rec || isHiddenFor(currentUserId(), 'comment', rec.id, rec.authorId)) {
+    throw new DataError('not_found', 'This comment is no longer available');
+  }
+  return rec;
+}
+
+const PHONE = /^\+?[0-9][0-9 ()-]{5,19}$/;
+
+/** Empty → null; a phone that does not look like one → validation (same rule as the database). */
+function cleanPhone(phone?: string): string | null {
+  const value = phone?.trim() ?? '';
+  if (!value) return null;
+  if (!PHONE.test(value)) throw new DataError('validation', 'Invalid phone', { field: 'phone' });
+  return value;
+}
+
+export const mockComments: DataApi['comments'] = {
+  create: (answerId, text) =>
+    simulate(() => {
+      const user = requireProfile();
+      findVisibleAnswer(answerId);
+      const rec: CommentRec = {
+        id: nextId('comment'),
+        answerId,
+        authorId: user.id,
+        text: validateLength('text', text, 1, 500),
+        createdAt: new Date().toISOString(),
+      };
+      store.comments.push(rec);
+      return toComment(rec);
+    }),
+
+  remove: (id) =>
+    simulate(() => {
+      const user = requireUser();
+      const rec = findVisibleComment(id);
+      if (rec.authorId !== user.id) throw new DataError('forbidden', 'You can only delete your own comment');
+      store.comments = store.comments.filter((c) => c.id !== id);
+    }),
+};
+
+export const mockContact: DataApi['contact'] = {
+  request: (answerId, phone) =>
+    simulate(() => {
+      const user = requireProfile();
+      const answer = findVisibleAnswer(answerId);
+      const question = findVisibleQuestion(answer.questionId);
+      if (question.authorId !== user.id) throw new DataError('forbidden', 'Only the asker can ask for a contact');
+      if (answer.authorId === user.id) throw new DataError('forbidden', 'Not on your own answer');
+      const cleaned = cleanPhone(phone);
+      const existing = store.contacts.find((c) => c.answerId === answerId && c.requesterId === user.id);
+      if (existing?.status === 'declined') throw new DataError('forbidden', 'They chose not to share their contact');
+      if (!existing) {
+        const rec: ContactRec = {
+          id: nextId('contact'),
+          answerId,
+          requesterId: user.id,
+          ownerId: answer.authorId,
+          status: 'pending',
+          requesterPhone: cleaned,
+          ownerPhone: null,
+        };
+        store.contacts.push(rec);
+        if (cleaned) user.phone = cleaned;
+      }
+      return contactOf(answerId) as ContactState;
+    }),
+
+  respond: (requestId, accept, phone) =>
+    simulate(() => {
+      const user = requireUser();
+      const rec = store.contacts.find((c) => c.id === requestId && (c.ownerId === user.id || c.requesterId === user.id));
+      if (!rec) throw new DataError('not_found', 'This request is no longer available');
+      if (rec.ownerId !== user.id) throw new DataError('forbidden', 'Only the person asked can answer');
+      if (rec.status === 'pending') {
+        const cleaned = accept ? cleanPhone(phone) : null;
+        rec.status = accept ? 'accepted' : 'declined';
+        rec.ownerPhone = cleaned;
+        if (cleaned) user.phone = cleaned;
+      }
+      return contactOf(rec.answerId) as ContactState;
+    }),
+
+  myPhone: () => simulate(() => requireUser().phone ?? null),
+};
+
+/** The mock has no other devices: the channel never connects and the screen keeps its 15 s refresh. */
+export const mockLive: DataApi['live'] = {
+  question: (_questionId, _onChange, onStatus) => {
+    onStatus?.(false);
+    return () => undefined;
+  },
+};
 
 function toMovement(rec: MovementRec): Movement {
   return {
@@ -654,6 +787,9 @@ export const mockAdapter: DataApi = {
   signs: mockSigns,
   questions: mockQuestions,
   answers: mockAnswers,
+  comments: mockComments,
+  contact: mockContact,
+  live: mockLive,
   saved: mockSaved,
   reports: mockReports,
   wallet: mockWallet,

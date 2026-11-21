@@ -16,6 +16,7 @@ export const keys = {
   question: (id: Id) => ['data', 'questions', 'detail', id] as const,
   similar: (text: string) => ['data', 'questions', 'similar', text] as const,
   saved: () => ['data', 'saved'] as const,
+  myPhone: () => ['data', 'session', 'phone'] as const,
   wallet: () => ['data', 'wallet'] as const,
   movements: () => ['data', 'wallet', 'movements'] as const,
   activity: () => ['data', 'activity'] as const,

@@ -1,6 +1,6 @@
 // Seed data for the mock adapter. Internal records, not the public types:
 // the adapter turns them into Sign, Question, etc. (authors, stars, isMine...).
-import type { City, ContentKind, Id, ReportReason, RewardReason, Tag } from '../types';
+import type { City, Id, ReportKind, ReportReason, RewardReason, Tag } from '../types';
 import { placeholderPhoto } from './svg';
 
 export type UserRec = {
@@ -15,6 +15,8 @@ export type UserRec = {
   zone: string | null;
   walletStatus: 'preparing' | 'ready' | 'error';
   address: string | null;
+  /** Shared with «Pedir contacto» when given (wiki #182). */
+  phone?: string | null;
 };
 
 export type SignRec = {
@@ -72,7 +74,19 @@ export type MovementRec = {
   sourceUserId: Id | null;
 };
 
-export type ContentRef = { userId: Id; kind: ContentKind; itemId: Id };
+export type CommentRec = { id: Id; answerId: Id; authorId: Id; text: string; createdAt: string };
+
+export type ContactRec = {
+  id: Id;
+  answerId: Id;
+  requesterId: Id;
+  ownerId: Id;
+  status: 'pending' | 'accepted' | 'declined';
+  requesterPhone: string | null;
+  ownerPhone: string | null;
+};
+
+export type ContentRef = { userId: Id; kind: ReportKind; itemId: Id };
 export type ReportRec = ContentRef & { reason: ReportReason };
 
 const HOUR = 3600 * 1000;
