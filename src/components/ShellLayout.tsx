@@ -2,7 +2,7 @@
 // survive a tab change. The tab comes from the URL; pages render in the <Outlet /> (SPEC 04).
 import { useEffect, useId, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { DEFAULT_CITY, fetchSign, useCreateAnswer, useCreateComment, useRefresh, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Question, type Sign } from '../data';
+import { DEFAULT_CITY, fetchSign, isDataError, useCreateAnswer, useCreateComment, useRefresh, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Question, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
 import { AskQuestionSheet } from './AskQuestionSheet';
 import { sendDraftAnswer } from './AnswerBox';
@@ -19,6 +19,7 @@ import { UploadSignSheet } from './UploadSignSheet';
 import { Yapita } from './Yapita';
 import type { ShellContext } from './useShell';
 import { askAfterPublish } from '../push/prompt';
+import { UnavailablePage } from '../pages/UnavailablePage';
 
 const PATH: Record<Tab, string> = { hoy: '/', preguntas: '/preguntas', yo: '/yo' };
 const ORDER: Tab[] = ['hoy', 'preguntas', 'yo'];
@@ -60,6 +61,37 @@ function Shell() {
   const openRecovery = useOpenPasswordRecovery();
   const signIn = useSignInWithGoogle();
   const refresh = useRefresh();
+
+  // /l/:id, a shared letrero (SPEC 19): Hoy in the letrero's city with its sheet open, as if tapped there.
+  // Deleted, hidden or in review → «Esto ya no está disponible»; any other failure just leaves Hoy.
+  const linkedSign = location.pathname.startsWith('/l/') ? location.pathname.slice(3) : null;
+  const [linkGone, setLinkGone] = useState(false);
+  useEffect(() => {
+    if (linkedSign === null) return;
+    const id = /^\d{1,15}$/.test(linkedSign) ? Number(linkedSign) : 0;
+    setLinkGone(false);
+    if (id <= 0) {
+      setLinkGone(true);
+      return;
+    }
+    let live = true;
+    fetchSign(id).then(
+      (sign) => {
+        if (!live) return;
+        setCity(sign.city);
+        setSelected(sign);
+        navigate('/', { replace: true });
+      },
+      (error: unknown) => {
+        if (!live) return;
+        if (isDataError(error) && error.code === 'not_found') setLinkGone(true);
+        else navigate('/', { replace: true });
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [linkedSign, navigate]);
 
   // «Pedir otro» from /nueva-contrasena: open «¿La olvidaste?» once and drop the flag from history
   useEffect(() => {
@@ -192,6 +224,8 @@ function Shell() {
     signInWithGoogle: () => signIn.mutate(),
     signingIn: signIn.isPending,
   };
+
+  if (linkedSign !== null && linkGone) return <UnavailablePage title="Letrero" />;
 
   return (
     <>

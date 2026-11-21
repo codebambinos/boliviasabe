@@ -1,4 +1,4 @@
-// Body of /l/:id and /p/:id until T18 and T20 load the item by id (wiki › Transversal: «Esto ya no
+// «Esto ya no está disponible» + Ir a Hoy for a /l/:id or /p/:id that is gone (wiki › Transversal: «Esto ya no
 // está disponible» + Ir a Hoy). A static placeholder: it never fetches anything.
 import { Link } from 'react-router';
 import { PageFrame } from '../components/PageFrame';
