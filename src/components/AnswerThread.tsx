@@ -14,6 +14,7 @@ const MAX = 500;
 const SHOWN = 2;
 
 const draftKey = (answerId: Id) => `comment:${answerId}`;
+const DRAFT_SENT = 'bs:comment-draft-sent';
 
 /** Back from Google with a comment in hand: send it once. Never throws; on failure the draft stays in the box. */
 export async function sendDraftComment(
@@ -27,6 +28,8 @@ export async function sendDraftComment(
   try {
     await send({ answerId, questionId, text });
     await clearDraft(draftKey(answerId));
+    // The thread may already show this draft in its box: tell it the comment went out
+    window.dispatchEvent(new CustomEvent(DRAFT_SENT, { detail: draftKey(answerId) }));
   } catch {
     /* the draft stays: the person sees it in the box and taps «Enviar» */
   }
@@ -63,6 +66,17 @@ export function AnswerThread({ questionId, answer, onMenu }: AnswerThreadProps) 
     return () => {
       cancelled = true;
     };
+  }, [key]);
+
+  // Sent from the saved draft after Google: empty the box, unless the person already typed something new
+  useEffect(() => {
+    const onSent = (event: Event) => {
+      if ((event as CustomEvent<string>).detail !== key || edited.current) return;
+      setText('');
+      setComposing(false);
+    };
+    window.addEventListener(DRAFT_SENT, onSent);
+    return () => window.removeEventListener(DRAFT_SENT, onSent);
   }, [key]);
 
   useDraftSaver(() => (trimmed ? { key, draft: { fields: { text }, blobs: {} } } : null));

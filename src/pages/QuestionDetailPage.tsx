@@ -21,7 +21,8 @@ export function QuestionDetailPage() {
 }
 
 function Page({ id }: { id: number }) {
-  const goBack = useGoBack();
+  // A question opened from a link or after signing in goes back to ¿Alguien sabe?
+  const goBack = useGoBack('/preguntas');
   const toggleSaved = useToggleSaved();
   const createAnswer = useCreateAnswer();
   const createComment = useCreateComment();

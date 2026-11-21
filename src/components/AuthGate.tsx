@@ -94,7 +94,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
     restored.current = true;
     clearPending();
     if (session.data.status !== 'signed-in') return;
-    if (restore.path !== location.pathname) navigate(restore.path, { replace: true });
+    // `entry`: this page is the first one of the visit; the history entry before it is Google, so «Volver» must
+    // not go there (useGoBack falls back to the app instead)
+    if (restore.path !== location.pathname) navigate(restore.path, { replace: true, state: { entry: true } });
     const action = restore.resume;
     const run = action ? (handlers.current[action.kind] as ((a: PendingAction) => void | Promise<void>) | undefined) : undefined;
     // Also with no saved action («Entrar» in the bar): a person without profile still goes through «Tu barrio»
