@@ -1,6 +1,6 @@
 # SPEC 13 — Server-side limits and anti-abuse
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 03 (tables, RLS, `rewards`), SPEC 09 (`planReward`, `planCharge`, `/api/stellar/premiar` and `/gastar`), SPEC 10 (Preguntar sheet, `limitMessage`, `askLimit`), SPEC 11 (Supabase adapter, `rpc.ts` `toDataError`), SPEC 12 (comments, migration `0006`). Board card: T23 (issue #16).
 > **Date:** 2026-11-21
 > **Objective:** Make the database and the Stellar routes enforce every limit of `reglas-finales › Límites` and the reward anti-abuse rules, so no call from a browser can skip them, and the screen says which limit was hit and until when.
@@ -169,17 +169,31 @@ Branch `feat/t23-limits`, one commit per step.
 
 ## Acceptance criteria
 
-- [ ] An 11th question on the same Bolivian day is refused by the database, even with a direct `insert` from the browser console. The sheet says «Llegaste al límite de hoy. Puedes volver a hacerlo mañana».
-- [ ] With 3 open questions that have answers, a 4th is refused by the database. The sheet says «Cierra una de tus preguntas para hacer otra».
-- [ ] A 31st comment within an hour is refused by the database. The box says «Llegaste al límite de comentarios. Puedes volver a comentar en N min» and keeps the text.
-- [ ] With an active urgent question, publishing another urgent one is refused before anything is published («Ya tienes una pregunta urgente»). A direct call to `/gastar` for a second question does not charge.
-- [ ] The 11th letrero of the day is published, `/premiar` does not pay it (`{ status: 'capped' }`, no `rewards` row), and the screen says «Publicado. Ya subiste 10 letreros hoy, este va sin premio».
-- [ ] The 4th «Me sirvió» on one question is saved and not paid, and the notice says so.
-- [ ] A 4th reward in one day from the same person to the same person (letrero vote or «Me sirvió») is saved and not paid, and the notice says «Ya le diste 3 premios hoy a <Nombre>: este queda marcado, sin yapitas.»
-- [ ] New `sirvio-l` and `ayuda` rows carry `source_id`. A retry of an existing pending reward is never capped.
-- [ ] Seeding with the service role is not limited.
-- [ ] Mock mode shows the same messages for the same cases.
-- [ ] `npm run typecheck`, `npm run build`, `rls.sql` and `npm run stellar:e2e` pass. The screens are checked at 360 px, light and dark, text at 130 %. The texts match the wiki.
+- [x] An 11th question on the same Bolivian day is refused by the database, even with a direct `insert` from the browser console. The sheet says «Llegaste al límite de hoy. Puedes volver a hacerlo mañana».
+- [x] With 3 open questions that have answers, a 4th is refused by the database. The sheet says «Cierra una de tus preguntas para hacer otra».
+- [x] A 31st comment within an hour is refused by the database. The box says «Llegaste al límite de comentarios. Puedes volver a comentar en N min» and keeps the text.
+- [x] With an active urgent question, publishing another urgent one is refused before anything is published («Ya tienes una pregunta urgente»). A direct call to `/gastar` for a second question does not charge.
+- [x] The 11th letrero of the day is published, `/premiar` does not pay it (`{ status: 'capped' }`, no `rewards` row), and the screen says «Publicado. Ya subiste 10 letreros hoy, este va sin premio».
+- [x] The 4th «Me sirvió» on one question is saved and not paid, and the notice says so.
+- [x] A 4th reward in one day from the same person to the same person (letrero vote or «Me sirvió») is saved and not paid, and the notice says «Ya le diste 3 premios hoy a <Nombre>: este queda marcado, sin yapitas.»
+- [x] New `sirvio-l` and `ayuda` rows carry `source_id`. A retry of an existing pending reward is never capped.
+- [x] Seeding with the service role is not limited.
+- [x] Mock mode shows the same messages for the same cases.
+- [x] `npm run typecheck`, `npm run build`, `rls.sql` and `npm run stellar:e2e` pass. The screens are checked at 360 px, light and dark, text at 130 %. The texts match the wiki.
+
+> Verified on 2026-11-21.
+> - **Automated:**
+>   - `rls.sql` (local) has 19 new checks: the 11th question of the day, the 4th open question with answers, the 31st comment with its `until`, no limit for the service role, the 11th letrero, the 4th «Me sirvió» of a question, the 4th reward of a pair, an existing memo never capped, and the `my_reward_cap` / `reward_cap` grants.
+>   - `npm run stellar:e2e` passes on testnet, with the capped cases and the second urgent question not charged.
+>   - `BSLIM` reaches supabase-js with `code`, `message` and `hint` (checked against the local stack).
+>   - typecheck and build pass; `git grep` shows no secret values.
+> - **Diego, on a phone, on the preview (`0007` applied to the remote project):**
+>   - The comment limit: «Puedes volver a comentar en 6 min» was exact, because the window held one older comment.
+>   - Three «Me sirvió» paid and the 4th said «Ya diste 3 «Me sirvió» con premio…».
+>   - The 10th question published and Preguntar then showed «Llegaste al límite de hoy».
+>   - With an urgent question active, a second one is blocked with «Ya tienes una pregunta urgente».
+>   - The notices fit at 360 px.
+> - **Not tested by hand:** the pair cap needs 4 rewards between the same two people in one day. It is covered by `rls.sql` and the e2e.
 
 ## Decisions
 
