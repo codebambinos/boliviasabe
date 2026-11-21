@@ -1,85 +1,7 @@
 /* /privacidad (PrivacyPage.tsx): a reading page outside the shell, inside the 64 rem frame.
-   Phone: one column. Desktop: «En esta página» hangs beside the 40 rem reading column.
-   The eye goes to the type (display title, big Bricolage numbers) and the three highlight
-   cards; color stays in its jobs (DESIGN.md › Color). */
-.legal {
-  min-height: 100dvh;
-  background: var(--color-bg);
-  color: var(--color-ink);
-}
-
-/* The aguayo draws itself in from the left once the page lands */
-.legal__stripe {
-  transform-origin: left center;
-  animation: legal-stripe 520ms var(--ease-enter) 120ms both;
-}
-
-/* Bar: stays reachable on a long read; opaque, one hairline, never blurred */
-.legal__bar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--color-bg);
-  border-bottom: var(--hairline);
-}
-
-.legal__bar-in {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--s-3);
-  max-width: calc(var(--frame) + 2 * var(--gutter));
-  margin: 0 auto;
-  padding: var(--s-2) var(--gutter);
-}
-
-.legal__back {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-2);
-  min-height: var(--touch);
-  padding: 0 var(--s-3) 0 0;
-  border: 0;
-  background: none;
-  color: var(--color-ink);
-  font: 500 var(--t-body) var(--font-body);
-  cursor: pointer;
-  transition: transform var(--m-press) var(--ease);
-}
-
-.legal__back:active {
-  transform: translateY(1px) scale(0.985);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .legal__back:hover svg {
-    transform: translateX(-2px);
-  }
-
-  .legal__back svg {
-    transition: transform var(--m-panel) var(--ease);
-  }
-}
-
-.legal__logo {
-  flex: none;
-}
-
-/* Same light tile as the top bar: the F5 logo is dark ink (DESIGN.md › Open items) */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .legal__logo {
-    padding: 0.1875rem;
-    border-radius: var(--r-sm);
-    background: #f5f2ef;
-  }
-}
-
-:root[data-theme='dark'] .legal__logo {
-  padding: 0.1875rem;
-  border-radius: var(--r-sm);
-  background: #f5f2ef;
-}
-
+   The stripe and bar live in components/page-frame.css. Phone: one column. Desktop: «En esta página»
+   hangs beside the 40 rem reading column. The eye goes to the type (display title, big Bricolage
+   numbers) and the three highlight cards; color stays in its jobs (DESIGN.md › Color). */
 .legal__main {
   max-width: calc(var(--frame) + 2 * var(--gutter));
   margin: 0 auto;
@@ -319,11 +241,5 @@
   from {
     opacity: 0;
     transform: translateY(10px);
-  }
-}
-
-@keyframes legal-stripe {
-  from {
-    transform: scaleX(0);
   }
 }

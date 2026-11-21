@@ -1,0 +1,97 @@
+/* Frame of the pages outside the shell (PageFrame.tsx): aguayo stripe + sticky bar with Volver and the logo. */
+.page {
+  min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+/* The aguayo draws itself in from the left once the page lands */
+.page__stripe {
+  transform-origin: left center;
+  animation: page-stripe 520ms var(--ease-enter) 120ms both;
+}
+
+/* Bar: stays reachable on a long read; opaque, one hairline, never blurred */
+.page__bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-bg);
+  border-bottom: var(--hairline);
+}
+
+.page__bar-in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  max-width: calc(var(--frame) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--s-2) var(--gutter);
+}
+
+.page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--touch);
+  padding: 0 var(--s-3) 0 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font: 500 var(--t-body) var(--font-body);
+  cursor: pointer;
+  transition: transform var(--m-press) var(--ease);
+}
+
+.page__back:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .page__back:hover svg {
+    transform: translateX(-2px);
+  }
+
+  .page__back svg {
+    transition: transform var(--m-panel) var(--ease);
+  }
+}
+
+.page__logo {
+  flex: none;
+}
+
+/* Same light tile as the top bar: the F5 logo is dark ink (DESIGN.md › Open items) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .page__logo {
+    padding: 0.1875rem;
+    border-radius: var(--r-sm);
+    background: #f5f2ef;
+  }
+}
+
+:root[data-theme='dark'] .page__logo {
+  padding: 0.1875rem;
+  border-radius: var(--r-sm);
+  background: #f5f2ef;
+}
+
+@keyframes page-stripe {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Body of the simple pages (details, new password): one column inside the frame */
+.page__main {
+  max-width: calc(var(--frame) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--s-6) var(--gutter) var(--s-8);
+}
+
+.page__title {
+  margin: 0 0 var(--s-3);
+  font: 500 var(--t-display) / 1.1 var(--font-title);
+  outline: none;
+}

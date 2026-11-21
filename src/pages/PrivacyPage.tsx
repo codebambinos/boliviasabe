@@ -1,9 +1,8 @@
 // /privacidad (SPEC 02, wiki › Cuenta y acceso): public, no account, outside the app shell.
 // Google opens this URL before the login leaves «Testing» mode (wiki #56).
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router';
-import { ArrowLeftIcon, EyeIcon, MailIcon, TrashIcon } from '../components/icons';
-import { goWithTransition } from '../components/transition';
+import { useEffect, useState, type CSSProperties, type MouseEvent } from 'react';
+import { EyeIcon, MailIcon, TrashIcon } from '../components/icons';
+import { PageFrame } from '../components/PageFrame';
 import { Yapita } from '../components/Yapita';
 import { CONTACT_EMAIL, PRIVACY, type Highlight } from '../content/legal';
 import './privacy-page.css';
@@ -21,20 +20,7 @@ const CONTACT = PRIVACY.sections.find((s) => s.id === 'contacto');
 const order = (i: number) => ({ '--i': i }) as CSSProperties;
 
 export function PrivacyPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const titleRef = useRef<HTMLHeadingElement>(null);
   const [active, setActive] = useState(READING[0]?.id);
-
-  useEffect(() => {
-    const previous = document.title;
-    document.title = 'Privacidad · BoliviaSabe';
-    window.scrollTo(0, 0);
-    titleRef.current?.focus({ preventScroll: true });
-    return () => {
-      document.title = previous;
-    };
-  }, []);
 
   // «En esta página» marks the section being read
   useEffect(() => {
@@ -52,12 +38,6 @@ export function PrivacyPage() {
     return () => observer.disconnect();
   }, []);
 
-  // Back to where the person was; from a direct link (no in-app entry) to Hoy
-  const goBack = () => {
-    if (location.key !== 'default') navigate(-1);
-    else goWithTransition((viewTransition) => navigate('/', { replace: true, viewTransition }), 'back');
-  };
-
   // Scroll without touching the URL: a #hash entry would make Volver stop on this page
   const jump = (id: string) => (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -68,21 +48,11 @@ export function PrivacyPage() {
   };
 
   return (
-    <div className="legal">
-      <div className="aguayo legal__stripe" />
-      <header className="legal__bar">
-        <div className="legal__bar-in">
-          <button type="button" className="legal__back" onClick={goBack}>
-            <ArrowLeftIcon size={20} /> Volver
-          </button>
-          <img className="legal__logo" src="/logo.svg" alt="BoliviaSabe" width={32} height={32} />
-        </div>
-      </header>
-
+    <PageFrame title="Privacidad">
       <main className="legal__main">
         <header className="legal__hero">
           <p className="legal__eyebrow legal__rise" style={order(0)}>{PRIVACY.eyebrow}</p>
-          <h1 ref={titleRef} tabIndex={-1} className="legal__title legal__rise" style={order(1)}>
+          <h1 tabIndex={-1} className="legal__title legal__rise" style={order(1)}>
             {PRIVACY.title}
           </h1>
           <p className="legal__intro legal__rise" style={order(2)}>{PRIVACY.intro}</p>
@@ -145,6 +115,6 @@ export function PrivacyPage() {
           </div>
         </div>
       </main>
-    </div>
+    </PageFrame>
   );
 }
