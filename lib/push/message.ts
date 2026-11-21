@@ -3,7 +3,15 @@
  * UI copy, so it is in Spanish. Pure: /api/push gives it the facts from `push_details`.
  */
 
-export type NotificationKind = 'answer' | 'comment' | 'helpful' | 'sign_helpful' | 'contact_request' | 'contact_accepted' | 'urgent';
+export type NotificationKind =
+  | 'answer'
+  | 'comment'
+  | 'helpful'
+  | 'sign_helpful'
+  | 'contact_request'
+  | 'contact_accepted'
+  | 'urgent'
+  | 'reminder';
 
 /** The 4 switches of Ajustes › Notificaciones; a missing key means on (#204). */
 export type PrefKey = 'answers' | 'helpful' | 'contacts' | 'urgent';
@@ -16,6 +24,8 @@ export const PREF_OF: Record<NotificationKind, PrefKey> = {
   contact_request: 'contacts',
   contact_accepted: 'contacts',
   urgent: 'urgent',
+  // The 24 h «¿Alguna respuesta te sirvió?» is about your answers (SPEC 18, wiki #208)
+  reminder: 'answers',
 };
 
 export type PushFacts = {
@@ -57,6 +67,8 @@ export function buildMessage(facts: PushFacts): PushMessage {
       return message(`${who} aceptó compartir su contacto`, 'Ábrelo para ver cómo escribirle');
     case 'urgent':
       return message(`Pregunta urgente en ${facts.zone?.trim() || 'tu zona'}`, quote);
+    case 'reminder':
+      return message('¿Alguna respuesta te sirvió?', quote);
   }
 }
 
