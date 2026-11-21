@@ -1,6 +1,6 @@
 # SPEC 19 — WhatsApp link previews for questions and letreros
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 10 and SPEC 11 (the `/p/:id` and `/l/:id` routes, the «Compartir por WhatsApp» buttons, and the `get_question` / `get_sign` functions that guests can call), SPEC 06 (the 480 px letrero thumbnail). Board card: T25 (issue #18).
 > **Date:** 2026-11-21
 > **Objective:** When a `/p/:id`, `/l/:id` or home link is pasted in WhatsApp, the preview shows the question or the letrero with its title, its neighborhood and a picture, while people who open the link keep getting the app exactly as today.
