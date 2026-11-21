@@ -1,6 +1,6 @@
 # SPEC 05 — Hoy screen
 
-> **Status:** approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01 (data layer and mock adapter), SPEC 04 (app routes and `ShellLayout`). Board card: T18 (issue #11).
 > **Date:** 2026-11-20
 > **Objective:** Make `src/pages/HoyPage.tsx` the real Hoy screen, closing the gaps with the wiki (pull-to-refresh and the #163 hint) without changing the shell from SPEC 04.
@@ -98,51 +98,51 @@ Gesture constants: resistance 0.5, threshold 64 px, maximum 96 px.
 
 ## Acceptance criteria
 
-- [ ] `src/pages/HoyPage.tsx` has no `HoySample` and no «TEMPORARY» comment, and this branch does
+- [x] `src/pages/HoyPage.tsx` has no `HoySample` and no «TEMPORARY» comment, and this branch does
       not change `ShellLayout.tsx`, `useShell.ts` or `router.tsx`.
-- [ ] Hoy works with the mock adapter, with no Supabase (`VITE_DATA_SOURCE` unset).
-- [ ] No file under `src/pages/` or `src/components/` imports `@supabase/supabase-js` or
+- [x] Hoy works with the mock adapter, with no Supabase (`VITE_DATA_SOURCE` unset).
+- [x] No file under `src/pages/` or `src/components/` imports `@supabase/supabase-js` or
       `src/data/mock` (`git grep`).
-- [ ] The top bar shows the city selector with the 10 cities. Bell and balance show only with an
+- [x] The top bar shows the city selector with the 10 cities. Bell and balance show only with an
       account. The balance opens Yo on Movimientos.
-- [ ] The search and the 18 tag chips filter the list. Two chips at once show letreros with either
+- [x] The search and the 18 tag chips filter the list. Two chips at once show letreros with either
       tag.
-- [ ] With a search that matches nothing: «No encontramos letreros con eso» + «Quitar filtros»,
+- [x] With a search that matches nothing: «No encontramos letreros con eso» + «Quitar filtros»,
       which clears both search and tags.
-- [ ] A city with no letreros (e.g. Cobija on the mock) shows «Tu ciudad recién empieza» and «Ver
+- [x] A city with no letreros (e.g. Cobija on the mock) shows «Tu ciudad recién empieza» and «Ver
       Cochabamba», which switches the city.
-- [ ] The list is a 2-column grid on a 360 px phone, grouped as Hoy · Esta semana · Antes. «Antes»
+- [x] The list is a 2-column grid on a 360 px phone, grouped as Hoy · Esta semana · Antes. «Antes»
       shows «Puede estar desactualizado».
-- [ ] 30 letreros load first. «Ver más letreros» loads the next 30. Skeleton tiles show while
+- [x] 30 letreros load first. «Ver más letreros» loads the next 30. Skeleton tiles show while
       loading.
-- [ ] A tile shows the photo with the price on it, Guardar on the photo, title, zone · hace… and
+- [x] A tile shows the photo with the price on it, Guardar on the photo, title, zone · hace… and
       «A N les sirvió» («A 1 vecino le sirvió» for one).
-- [ ] As a guest, Guardar, Me sirvió, No me sirvió and Reportar open the «Crea tu cuenta» sheet
+- [x] As a guest, Guardar, Me sirvió, No me sirvió and Reportar open the «Crea tu cuenta» sheet
       with its reason line. After signing in, the pending action completes.
-- [ ] Tapping a tile opens the detail: big photo (tap → full screen), the price as a letrero,
+- [x] Tapping a tile opens the detail: big photo (tap → full screen), the price as a letrero,
       title, zone, author, «A N les sirvió», Me sirvió, Guardar, ⋯, Cómo llegar and Volver.
-- [ ] «Me sirvió» shows «¡Gracias, pues! <nombre> recibe +1 yapita por ayudarte» and then «Te
+- [x] «Me sirvió» shows «¡Gracias, pues! <nombre> recibe +1 yapita por ayudarte» and then «Te
       sirvió». It does not appear on your own letrero, where the main button is Compartir.
-- [ ] ⋯ on someone else's letrero has No me sirvió (only before voting) and Reportar. ⋯ on yours
+- [x] ⋯ on someone else's letrero has No me sirvió (only before voting) and Reportar. ⋯ on yours
       has Borrar, which asks to confirm. After borrar, the letrero is gone from the list.
-- [ ] Reportar offers the 6 reasons and «Ya no quiero ver esto». After either one, the letrero is
+- [x] Reportar offers the 6 reasons and «Ya no quiero ver esto». After either one, the letrero is
       gone from the reporter's list (#166). After a report, the text says «Ya no lo verás…».
-- [ ] «Cómo llegar» opens the Maps link, or a Maps search «título zona ciudad», in a new tab.
-- [ ] The hint reads «Si un letrero te sirve, ábrelo y dale «Me sirvió»: quien lo subió gana una
+- [x] «Cómo llegar» opens the Maps link, or a Maps search «título zona ciudad», in a new tab.
+- [x] The hint reads «Si un letrero te sirve, ábrelo y dale «Me sirvió»: quien lo subió gana una
       yapita.» and does not come back after ✕.
-- [ ] The lupa appears in the top bar only after scrolling past the search. Tapping it scrolls up
+- [x] The lupa appears in the top bar only after scrolling past the search. Tapping it scrolls up
       and focuses the search.
-- [ ] On a touch phone at the top of Hoy, pulling down past 64 px and releasing shows the spinner
+- [x] On a touch phone at the top of Hoy, pulling down past 64 px and releasing shows the spinner
       and refetches the list. Pulling less and releasing does nothing.
-- [ ] Pull-to-refresh does nothing on desktop (mouse), while a sheet is open, or while the page is
+- [x] Pull-to-refresh does nothing on desktop (mouse), while a sheet is open, or while the page is
       scrolled down. Chrome's own page reload does not fire.
-- [ ] With reduced motion on, pull-to-refresh still works with no movement or spin.
-- [ ] Hoy passes at 360, 768 and 1280 px, in light and dark, with text at 130 %. There is no
+- [x] With reduced motion on, pull-to-refresh still works with no movement or spin.
+- [x] Hoy passes at 360, 768 and 1280 px, in light and dark, with text at 130 %. There is no
       horizontal scroll.
-- [ ] No on-screen text says «puntos» alone, «XLM», «cripto», «blockchain» or an amount in
+- [x] No on-screen text says «puntos» alone, «XLM», «cripto», «blockchain» or an amount in
       bolivianos.
-- [ ] `npm run typecheck` and `npm run build` pass. CI is green.
-- [ ] The PR body has `Closes #11`.
+- [x] `npm run typecheck` and `npm run build` pass. CI is green.
+- [x] The PR body has `Closes #11`.
 
 ## Decisions
 
