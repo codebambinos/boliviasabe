@@ -36,11 +36,16 @@ function checkPassword(password: string): void {
 type ProfileRow = { id: number; display_name: string; full_name: string; city: string; zone: string };
 type TrustRow = { stars: number | string | null; badge: Badge };
 
-/** «Lucía Mamani Rojas» → «Lucía M.»: first name plus the initial of the last word. One word stays as is. */
+/**
+ * The name the neighbors see (wiki #173): the first word plus the initial of the surname. With 2 or 3 words
+ * the surname is the last one («Lucía Mamani» → «Lucía M.»); with 4 or more there are two surnames, so it is
+ * the one before the last («Diego Marcelo Choque Ramirez» → «Diego C.»). One word stays as it is.
+ */
 export function displayNameOf(fullName: string): string {
   const words = fullName.split(' ');
-  const last = words.length > 1 ? words[words.length - 1] : '';
-  return last ? `${words[0]} ${last[0].toUpperCase()}.` : words[0];
+  if (words.length === 1) return words[0];
+  const surname = words.length >= 4 ? words[words.length - 2] : words[words.length - 1];
+  return `${words[0]} ${surname[0].toUpperCase()}.`;
 }
 
 async function readSession(): Promise<Session> {
