@@ -3,6 +3,7 @@ import { useState, type MouseEvent } from 'react';
 import { useRequireAccount } from '../components/AuthGate';
 import { ChevronRightIcon, ExternalIcon, EyeIcon, GoogleIcon, MailIcon, QuestionIcon } from '../components/icons';
 import { timeAgo } from '../components/time';
+import { withThemeFade } from '../components/themeFade';
 import { useShell } from '../components/useShell';
 import { Yapita } from '../components/Yapita';
 import { useMovements, useSession, useSignOut, useWallet, type Movement } from '../data';
@@ -43,8 +44,10 @@ function applyTheme(theme: Theme) {
     /* private mode: applies for this visit only */
   }
   const root = document.documentElement;
-  if (theme === 'system') delete root.dataset.theme;
-  else root.dataset.theme = theme;
+  withThemeFade(() => {
+    if (theme === 'system') delete root.dataset.theme;
+    else root.dataset.theme = theme;
+  });
   // The phone's status bar follows the ground
   const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#151110' : '#f5f2ef');

@@ -1072,6 +1072,21 @@ li {
   font-size: var(--t-small);
 }
 
+/* Theme change (themeFade.ts): colors cross-fade for a moment instead of jumping. The selector is
+   heavy on purpose and short-lived: the class is on <html> for about 300 ms and then removed. */
+html.theme-fade,
+html.theme-fade *,
+html.theme-fade *::before,
+html.theme-fade *::after {
+  transition:
+    background-color var(--m-theme) var(--ease),
+    border-color var(--m-theme) var(--ease),
+    color var(--m-theme) var(--ease),
+    fill var(--m-theme) var(--ease),
+    stroke var(--m-theme) var(--ease),
+    box-shadow var(--m-theme) var(--ease) !important;
+}
+
 /* The feed keeps its last result while a new search, chip or city loads: it only dims, no skeleton flash */
 #letreros {
   transition: opacity var(--m-panel) var(--ease);
