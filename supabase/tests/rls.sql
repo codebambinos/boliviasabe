@@ -600,6 +600,205 @@ select pg_temp.expect_select('Beto gets no notification for the not-helpful mark
    where n.kind = ''helpful'' and n.ref_id = (select id from public.answers where text = ''Respuesta no sirvió'')', 0);
 
 -- ---------------------------------------------------------------------------
+-- Data adapter (0005, SPEC 11): read functions, hidden and in-review rules, rating, closing, saved, bucket
+-- Fresh people (x, y, z, w) and content in Oruro/Sucre so the checks above do not interfere.
+-- ---------------------------------------------------------------------------
+create or replace function pg_temp.expect_error(p_label text, p_sql text, p_state text)
+returns void language plpgsql as $$
+begin
+  begin
+    execute p_sql;
+  exception when others then
+    if sqlstate = p_state then
+      raise notice 'ok: %', p_label;
+      return;
+    end if;
+    raise exception 'FAILED: % (expected %, got % %)', p_label, p_state, sqlstate, sqlerrm;
+  end;
+  raise exception 'FAILED: % (no error, expected %)', p_label, p_state;
+end;
+$$;
+
+select pg_temp.as_postgres();
+insert into auth.users (id, aud, role, email)
+values
+  ('d0000000-0000-0000-0000-0000000000a1', 'authenticated', 'authenticated', 'x@test.local'),
+  ('d0000000-0000-0000-0000-0000000000a2', 'authenticated', 'authenticated', 'y@test.local'),
+  ('d0000000-0000-0000-0000-0000000000a3', 'authenticated', 'authenticated', 'z@test.local'),
+  ('d0000000-0000-0000-0000-0000000000a4', 'authenticated', 'authenticated', 'w@test.local');
+insert into public.profiles (auth_id, display_name, full_name, city, zone)
+values
+  ('d0000000-0000-0000-0000-0000000000a1', 'Xavi P.', 'Xavi Perez', 'Oruro', 'Centro'),
+  ('d0000000-0000-0000-0000-0000000000a2', 'Yola Q.', 'Yola Quispe', 'Oruro', 'Norte'),
+  ('d0000000-0000-0000-0000-0000000000a3', 'Zoe R.', 'Zoe Rios', 'Oruro', 'Norte'),
+  ('d0000000-0000-0000-0000-0000000000a4', 'Walter S.', 'Walter Soto', 'Oruro', 'Norte');
+insert into test_ids (name, id, auth_id)
+select case u.email when 'x@test.local' then 'mx' when 'y@test.local' then 'my' when 'z@test.local' then 'mz' else 'mw' end,
+       p.id, p.auth_id
+from public.profiles p join auth.users u on u.id = p.auth_id
+where u.email in ('x@test.local', 'y@test.local', 'z@test.local', 'w@test.local');
+
+-- x: one sign (voted helpful by y) and 31 more in Sucre for paging
+insert into public.signs (author_id, title, photo_url, photo_thumb_url, city, zone, tags, created_at)
+values (pg_temp.id_of('mx'), 'Pan caliente', 'p', 't', 'Oruro', 'Centro', '{Comida}', now() - interval '1 hour');
+insert into test_rows (name, id) select 'adapter_sign', id from public.signs where title = 'Pan caliente';
+insert into public.sign_votes (sign_id, voter_id, helpful) values (pg_temp.r('adapter_sign'), pg_temp.id_of('my'), true);
+insert into public.signs (author_id, title, photo_url, photo_thumb_url, city, zone, created_at)
+select pg_temp.id_of('mx'), 'Sucre ' || g, 'p', 't', 'Sucre', 'Centro', now() - (g || ' minutes')::interval from generate_series(1, 31) g;
+
+-- questions: q_old (x, Centro) oldest, q_urgent (w, Norte, urgent), q_new (w, Norte) newest, q_closed (w, closed)
+insert into public.questions (author_id, text, city, zone, tags, urgent_until, status, created_at)
+values
+  (pg_temp.id_of('mx'), 'Dónde conseguir gas envasado hoy?', 'Oruro', 'Centro', '{Hogar}', null, 'open', now() - interval '5 hours'),
+  (pg_temp.id_of('mw'), 'Urgente: farmacia abierta', 'Oruro', 'Norte', '{Salud}', now() + interval '12 hours', 'open', now() - interval '6 hours'),
+  (pg_temp.id_of('mw'), 'Hay buses al aeropuerto?', 'Oruro', 'Norte', '{Transporte}', null, 'open', now() - interval '1 hour'),
+  (pg_temp.id_of('mw'), 'Pregunta cerrada vieja', 'Oruro', 'Norte', '{}', null, 'closed', now() - interval '30 minutes'),
+  (pg_temp.id_of('mx'), 'Pregunta sin respuestas de x', 'Oruro', 'Centro', '{}', null, 'open', now() - interval '2 hours'),
+  (pg_temp.id_of('mx'), 'Pregunta con una respuesta de x', 'Oruro', 'Centro', '{}', null, 'open', now() - interval '3 hours');
+insert into test_rows (name, id)
+select 'q_old', id from public.questions where text like 'Dónde conseguir gas%'
+union all select 'q_urgent', id from public.questions where text like 'Urgente:%'
+union all select 'q_new', id from public.questions where text like 'Hay buses%'
+union all select 'q_closed', id from public.questions where text like 'Pregunta cerrada%'
+union all select 'q_empty', id from public.questions where text like 'Pregunta sin respuestas%'
+union all select 'q_one', id from public.questions where text like 'Pregunta con una respuesta%';
+
+-- signs: guest read, per-caller fields, search, tags, paging
+select pg_temp.as_anon();
+select pg_temp.expect_text('list_signs: a guest sees the sign', $q$select jsonb_array_length(public.list_signs('Oruro')->'items')::text$q$, '1');
+select pg_temp.expect_text('list_signs: search ignores case and accents', $q$select jsonb_array_length(public.list_signs('Oruro', 'PÁN')->'items')::text$q$, '1');
+select pg_temp.expect_text('list_signs: search with no match', $q$select jsonb_array_length(public.list_signs('Oruro', 'zzz')->'items')::text$q$, '0');
+select pg_temp.expect_text('list_signs: tag filter keeps the match', $q$select jsonb_array_length(public.list_signs('Oruro', null, '{Comida,Salud}')->'items')::text$q$, '1');
+select pg_temp.expect_text('list_signs: tag filter drops the rest', $q$select jsonb_array_length(public.list_signs('Oruro', null, '{Salud}')->'items')::text$q$, '0');
+select pg_temp.expect_text('list_signs: a guest has no vote', $q$select (public.list_signs('Oruro')->'items'->0->>'myVote') is null$q$, 'true');
+select pg_temp.expect_text('list_signs: first page has 30', $q$select jsonb_array_length(public.list_signs('Sucre')->'items')::text$q$, '30');
+select pg_temp.expect_text('list_signs: first page points to the next', $q$select public.list_signs('Sucre')->>'nextCursor'$q$, '30');
+select pg_temp.expect_text('list_signs: second page has the last one', $q$select jsonb_array_length(public.list_signs('Sucre', null, null, 30)->'items')::text$q$, '1');
+select pg_temp.expect_text('list_signs: last page has no cursor', $q$select public.list_signs('Sucre', null, null, 30)->>'nextCursor' is null$q$, 'true');
+select pg_temp.expect_text('list_signs: pages do not repeat', $q$select count(distinct i->>'id')::text from (select jsonb_array_elements(public.list_signs('Sucre')->'items') i union all select jsonb_array_elements(public.list_signs('Sucre', null, null, 30)->'items')) t$q$, '31');
+select pg_temp.expect_error('a guest cannot call rate_answer', 'select public.rate_answer(1, true)', '42501');
+
+select pg_temp.as_user('my');
+select pg_temp.expect_text('get_sign: my vote', format('select public.get_sign(%s)->>''myVote''', pg_temp.r('adapter_sign')), 'helpful');
+select pg_temp.expect_text('get_sign: counts the helpful vote', format('select public.get_sign(%s)->>''helpfulCount''', pg_temp.r('adapter_sign')), '1');
+select pg_temp.expect_text('get_sign: not mine', format('select public.get_sign(%s)->>''isMine''', pg_temp.r('adapter_sign')), 'false');
+select pg_temp.as_user('mx');
+select pg_temp.expect_text('get_sign: mine', format('select public.get_sign(%s)->>''isMine''', pg_temp.r('adapter_sign')), 'true');
+select pg_temp.expect_error('get_sign: unknown id is not_found', 'select public.get_sign(999999999)', 'P0002');
+
+-- saved
+select pg_temp.expect_text('toggle_saved: saves', format('select public.toggle_saved(''sign'', %s)::text', pg_temp.r('adapter_sign')), 'true');
+select pg_temp.expect_text('get_sign: savedByMe', format('select public.get_sign(%s)->>''savedByMe''', pg_temp.r('adapter_sign')), 'true');
+select pg_temp.expect_text('saved_items: lists it', $q$select jsonb_array_length(public.saved_items()->'signs')::text$q$, '1');
+select pg_temp.expect_text('toggle_saved: unsaves', format('select public.toggle_saved(''sign'', %s)::text', pg_temp.r('adapter_sign')), 'false');
+select pg_temp.expect_error('toggle_saved: unknown item is not_found', $q$select public.toggle_saved('sign', 999999999)$q$, 'P0002');
+
+-- reports: three different people hide it for everyone but its author; the reporter loses it at once
+select pg_temp.expect_error('report_content: not your own', format('select public.report_content(''sign'', %s, ''spam'')', pg_temp.r('adapter_sign')), '42501');
+select pg_temp.as_user('mz');
+select public.report_content('sign', pg_temp.r('adapter_sign'), 'spam');
+select pg_temp.expect_text('the reporter stops seeing it', $q$select jsonb_array_length(public.list_signs('Oruro')->'items')::text$q$, '0');
+select pg_temp.as_user('my');
+select pg_temp.expect_text('others still see it after one report', $q$select jsonb_array_length(public.list_signs('Oruro')->'items')::text$q$, '1');
+select public.report_content('sign', pg_temp.r('adapter_sign'), 'false_info');
+select pg_temp.as_user('mw');
+select public.report_content('sign', pg_temp.r('adapter_sign'), 'offensive');
+select pg_temp.as_user('mx');
+select pg_temp.expect_text('the author sees it in review', $q$select public.list_signs('Oruro')->'items'->0->>'inReview'$q$, 'true');
+select pg_temp.as_anon();
+select pg_temp.expect_text('three reports hide it for everyone else', $q$select jsonb_array_length(public.list_signs('Oruro')->'items')::text$q$, '0');
+select pg_temp.expect_error('a hidden sign is not_found for a guest', format('select public.get_sign(%s)', pg_temp.r('adapter_sign')), 'P0002');
+
+-- hide_content hides only for the caller
+select pg_temp.as_user('my');
+select public.hide_content('question', pg_temp.r('q_new'));
+select pg_temp.expect_text('hide_content: gone for me', format('select (select count(*) from jsonb_array_elements(public.list_questions(''Oruro'')->''items'') i where (i->>''id'')::bigint = %s)::text', pg_temp.r('q_new')), '0');
+select pg_temp.as_user('mz');
+select pg_temp.expect_text('hide_content: still there for others', format('select (select count(*) from jsonb_array_elements(public.list_questions(''Oruro'')->''items'') i where (i->>''id'')::bigint = %s)::text', pg_temp.r('q_new')), '1');
+
+-- remove_sign: only the author, even with votes
+select pg_temp.expect_error('remove_sign: not mine', format('select public.remove_sign(%s)', pg_temp.r('adapter_sign')), '42501');
+select pg_temp.as_user('mx');
+select public.remove_sign(pg_temp.r('adapter_sign'));
+select pg_temp.as_postgres();
+select pg_temp.expect_select('remove_sign: the sign and its votes are gone',
+  format('select 1 from public.signs where id = %s union all select 1 from public.sign_votes where sign_id = %s', pg_temp.r('adapter_sign'), pg_temp.r('adapter_sign')), 0);
+
+-- question order: guest urgent → city → closed; a member of Centro sees Centro before Norte
+select pg_temp.as_anon();
+select pg_temp.expect_text('list_questions (guest): urgent first', $q$select public.list_questions('Oruro')->'items'->0->>'text'$q$, 'Urgente: farmacia abierta');
+select pg_temp.expect_text('list_questions (guest): the closed one is last', $q$select public.list_questions('Oruro')->'items'->5->>'text'$q$, 'Pregunta cerrada vieja');
+select pg_temp.expect_text('list_questions (guest): newest first in the city', $q$select public.list_questions('Oruro')->'items'->1->>'text'$q$, 'Hay buses al aeropuerto?');
+select pg_temp.as_user('mx');
+select pg_temp.expect_text('list_questions (x): urgent first', $q$select public.list_questions('Oruro')->'items'->0->>'text'$q$, 'Urgente: farmacia abierta');
+select pg_temp.expect_text('list_questions (x): my zone before the rest of the city', $q$select public.list_questions('Oruro')->'items'->1->>'text'$q$, 'Pregunta sin respuestas de x');
+select pg_temp.expect_text('list_questions: search ignores accents', $q$select jsonb_array_length(public.list_questions('Oruro', 'DONDE')->'items')::text$q$, '1');
+select pg_temp.expect_text('similar_questions: shared words of 4+ letters', $q$select jsonb_array_length(public.similar_questions('quiero gas envasado barato'))::text$q$, '1');
+select pg_temp.expect_text('similar_questions: under 3 words gives none', $q$select jsonb_array_length(public.similar_questions('gas envasado'))::text$q$, '0');
+
+-- answers
+select pg_temp.as_user('my');
+select pg_temp.expect_write('y answers q_old', format('insert into public.answers (question_id, author_id, text) values (%s, %s, ''En el Mercado'')', pg_temp.r('q_old'), pg_temp.id_of('my')), 1);
+select pg_temp.expect_write('y cannot answer q_old twice', format('insert into public.answers (question_id, author_id, text) values (%s, %s, ''Otra'')', pg_temp.r('q_old'), pg_temp.id_of('my')), 0);
+select pg_temp.expect_write('a closed question takes no answers', format('insert into public.answers (question_id, author_id, text) values (%s, %s, ''Tarde'')', pg_temp.r('q_closed'), pg_temp.id_of('my')), 0);
+select pg_temp.as_user('mz');
+select pg_temp.expect_write('z answers q_old', format('insert into public.answers (question_id, author_id, text) values (%s, %s, ''Cerca de la plaza'')', pg_temp.r('q_old'), pg_temp.id_of('mz')), 1);
+select pg_temp.as_user('my');
+select pg_temp.expect_write('y answers q_one', format('insert into public.answers (question_id, author_id, text) values (%s, %s, ''Respuesta para q_one'')', pg_temp.r('q_one'), pg_temp.id_of('my')), 1);
+select pg_temp.as_postgres();
+insert into test_rows (name, id)
+select 'ans_y', id from public.answers where text = 'En el Mercado'
+union all select 'ans_z', id from public.answers where text = 'Cerca de la plaza'
+union all select 'ans_one', id from public.answers where text = 'Respuesta para q_one';
+
+-- rate_answer
+select pg_temp.as_user('my');
+select pg_temp.expect_error('rate_answer: not the asker', format('select public.rate_answer(%s, true)', pg_temp.r('ans_z')), '42501');
+select pg_temp.as_user('mx');
+select pg_temp.expect_text('rate_answer: «No me sirvió» keeps the question open', format('select public.rate_answer(%s, false)->>''questionStatus''', pg_temp.r('ans_z')), 'open');
+select pg_temp.expect_text('rate_answer: «Me sirvió» solves it', format('select public.rate_answer(%s, true)->>''questionStatus''', pg_temp.r('ans_y')), 'solved');
+select pg_temp.expect_text('rate_answer: «No me sirvió» can become «Me sirvió»', format('select public.rate_answer(%s, true)->''answer''->>''helpful''', pg_temp.r('ans_z')), 'true');
+select pg_temp.expect_error('rate_answer: «Me sirvió» is final', format('select public.rate_answer(%s, false)', pg_temp.r('ans_y')), '42501');
+select pg_temp.expect_text('rate_answer: repeating «Me sirvió» changes nothing', format('select public.rate_answer(%s, true)->>''questionStatus''', pg_temp.r('ans_y')), 'solved');
+select pg_temp.expect_text('get_question: «Me sirvió» answers first, then the oldest', format('select public.get_question(%s)->''answers''->0->>''text''', pg_temp.r('q_old')), 'En el Mercado');
+select pg_temp.expect_text('get_question: answerCount', format('select public.get_question(%s)->''question''->>''answerCount''', pg_temp.r('q_old')), '2');
+select pg_temp.as_postgres();
+select pg_temp.expect_select('rate_answer: the helpful marks notified the helpers once each',
+  format('select 1 from public.notifications where kind = ''helpful'' and ref_id in (%s, %s)', pg_temp.r('ans_y'), pg_temp.r('ans_z')), 2);
+select pg_temp.as_user('mz');
+select pg_temp.expect_error('a solved question takes no new answers', format('insert into public.answers (question_id, author_id, text) values (%s, %s, ''Tarde'')', pg_temp.r('q_old'), pg_temp.id_of('mw')), '42501');
+
+-- close_question
+select pg_temp.as_user('mw');
+select pg_temp.expect_error('close_question: not the asker', format('select public.close_question(%s)', pg_temp.r('q_one')), '42501');
+select pg_temp.as_user('mx');
+select pg_temp.expect_error('close_question: a solved question cannot be closed', format('select public.close_question(%s)', pg_temp.r('q_old')), '42501');
+select pg_temp.expect_error('close_question: needs answers', format('select public.close_question(%s)', pg_temp.r('q_empty')), '42501');
+select pg_temp.expect_text('close_question: closes an open question with answers', format('select public.close_question(%s)->>''status''', pg_temp.r('q_one')), 'closed');
+select pg_temp.expect_text('rate_answer on a closed question keeps it closed', format('select public.rate_answer(%s, true)->>''questionStatus''', pg_temp.r('ans_one')), 'closed');
+
+-- clients still cannot write the status or the urgency
+select pg_temp.expect_write('x cannot set the status through the table', format('update public.questions set status = ''solved'' where id = %s', pg_temp.r('q_empty')), 0);
+select pg_temp.expect_write('x cannot set urgent_until through the table', format('update public.questions set urgent_until = now() + interval ''1 day'' where id = %s', pg_temp.r('q_empty')), 0);
+
+-- activity
+select pg_temp.expect_text('my_questions: the caller''s own', $q$select jsonb_array_length(public.my_questions())::text$q$, '3');
+select pg_temp.as_user('my');
+select pg_temp.expect_text('my_answers: the caller''s own', $q$select jsonb_array_length(public.my_answers())::text$q$, '2');
+select pg_temp.expect_text('my_signs: none for y', $q$select jsonb_array_length(public.my_signs())::text$q$, '0');
+
+-- Storage: a person writes only inside their own folder of the `photos` bucket
+select pg_temp.as_user('mx');
+select pg_temp.expect_write('x uploads to their own folder',
+  format('insert into storage.objects (bucket_id, name) values (''photos'', ''%s/a.jpg'')', pg_temp.id_of('mx')), 1);
+select pg_temp.expect_write('x cannot upload to y''s folder',
+  format('insert into storage.objects (bucket_id, name) values (''photos'', ''%s/a.jpg'')', pg_temp.id_of('my')), 0);
+-- Storage blocks a direct SQL delete unless its API flag is set; the API sets it for the caller's own request.
+select set_config('storage.allow_delete_query', 'true', true);
+select pg_temp.expect_write('x deletes their own file',
+  format('delete from storage.objects where bucket_id = ''photos'' and name = ''%s/a.jpg''', pg_temp.id_of('mx')), 1);
+
+-- ---------------------------------------------------------------------------
 -- auth_method (0004): the sign-in sheet asks which method an e-mail has
 -- ---------------------------------------------------------------------------
 select pg_temp.as_postgres();

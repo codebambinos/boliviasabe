@@ -8,6 +8,8 @@ The schema, row-level security and reputation view for BoliviaSabe (SPEC 03).
 | `migrations/0001_core_tables.sql` | Tables from the wiki «Datos» section, constraints, `zone_norm` trigger, rule triggers. |
 | `migrations/0002_rls.sql` | RLS on every table, helper functions, `profiles_public` view. |
 | `migrations/0003_ratings_view_and_notifications.sql` | `author_trust` view (stars and badge), notification triggers. |
+| `migrations/0004_auth_method.sql` | `auth_method(email)` for the sign-in sheet. |
+| `migrations/0005_data_adapter.sql` | `photos` bucket, read functions (JSON shaped like `src/data/types.ts`), `rate_answer`, `close_question`, `remove_sign`, saved/report/hide functions (SPEC 11). |
 | `tests/rls.sql` | Checks for every table and rule trigger. Runs in one transaction that is rolled back. |
 
 Migrations run in file-name order. Do not edit a migration that is already on the remote project: add a new one.
