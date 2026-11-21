@@ -118,6 +118,7 @@ Changes made while implementing, against the plan above:
 - **Trigger `answers_only_open_question`**: a solved or closed question takes no new answers (the wiki rule was only on screen).
 - **`/api/stellar/reintentar`** (new route): «Reintentar» is pressed by whoever receives the reward, but `/premiar` must be called by whoever made the action (the voter, the asker). The new route pays again the caller's own `pending`/`error` row with its stored recipient, amount and memo, so it still pays once. The welcome is retried by `/crear-cuenta` and a charge is never retried.
 - **Deleting an answer** follows the RLS of SPEC 03: any rating blocks it (the wiki says only «Me sirvió»). Left as is.
+- **Refresh without Realtime** (added after the phone test, wiki #181): reads refetch when the app or tab comes back (older than 10 s), and an open question on screen refetches every 15 s.
 - The **mock bridges** (`followRealSession`, `followRealBalance`) were removed: nothing in supabase mode runs on the mock any more.
 
 ## Decisions

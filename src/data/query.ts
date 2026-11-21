@@ -1,4 +1,6 @@
 // Shared QueryClient. Reads retry once on "offline" and "server"; rule errors are never retried.
+// What others publish shows up when the person comes back to the app or the tab (wiki #181): a read older than
+// 10 s is fetched again then. There is no Realtime yet.
 // Mutations are never retried automatically: repeating a publish could duplicate it.
 import { QueryClient, type QueryKey } from '@tanstack/react-query';
 import { isDataError } from './errors';
@@ -11,7 +13,7 @@ export function shouldRetry(failureCount: number, error: unknown): boolean {
 
 export const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: shouldRetry, staleTime: 30_000, refetchOnWindowFocus: false },
+    queries: { retry: shouldRetry, staleTime: 10_000, refetchOnWindowFocus: true },
     mutations: { retry: false },
   },
 });
