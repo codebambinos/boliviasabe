@@ -1,7 +1,7 @@
 // The app frame for the tab routes (/, /preguntas, /yo): mounted once, so the city and the sheets
 // survive a tab change. The tab comes from the URL; pages render in the <Outlet /> (SPEC 04).
 import { useEffect, useId, useRef, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
+import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { DEFAULT_CITY, fetchSign, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
 import { AppShell, type Tab } from './AppShell';
@@ -32,6 +32,7 @@ function Shell() {
   const location = useLocation();
   const navigate = useNavigate();
   const tab = tabOf(location.pathname);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [about, setAbout] = useState(false);
   const [city, setCity] = useState<City>(DEFAULT_CITY);
   const [selected, setSelected] = useState<Sign | null>(null);
@@ -124,6 +125,15 @@ function Shell() {
     window.setTimeout(() => searchRef.current?.focus({ preventScroll: true }), smooth ? 350 : 0);
   };
 
+  // A conversation on desktop lives in the URL (`?p=<id>`) so a reload and Back keep it; on a phone it is a page
+  const selectedQuestion = tab === 'preguntas' && Number(searchParams.get('p')) > 0 ? Number(searchParams.get('p')) : null;
+  const openQuestion = (id: Id) => {
+    if (window.matchMedia('(min-width: 64rem)').matches) setSearchParams({ p: String(id) });
+    else goWithTransition((viewTransition) => navigate(`/p/${id}`, { viewTransition }), 'forward');
+  };
+  // «Preguntar» arrives with step 3 of SPEC 10
+  const openAsk = (_text?: string) => undefined;
+
   const context: ShellContext = {
     city,
     setCity,
@@ -131,6 +141,9 @@ function Shell() {
     openSign: setSelected,
     onToggleSave,
     freshSignId,
+    openQuestion,
+    selectedQuestion,
+    openAsk,
     openAbout: () => setAbout(true),
     openPrivacy,
     signInWithGoogle: () => signIn.mutate(),

@@ -750,6 +750,13 @@ textarea {
   padding: var(--s-6) 0;
 }
 
+.empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+
 .empty__title {
   margin: 0;
   font-size: var(--t-h2);

@@ -1,0 +1,103 @@
+/* ¿Alguien sabe? list: one column of open cards on the ground (no box shadow), like the Hoy tiles. */
+.qlist {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qcard {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-4) 0;
+  border-bottom: var(--hairline);
+}
+
+.qcard[data-selected] {
+  margin-inline: calc(var(--s-3) * -1);
+  padding-inline: var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--color-brand-soft);
+}
+
+.qcard__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.qcard__text {
+  margin: 0;
+  font: 500 var(--t-body) / 1.4 var(--font-body);
+  letter-spacing: 0;
+}
+
+.qcard__open {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.qcard__open::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--s-1) * -1) calc(var(--s-3) * -1);
+  z-index: 1;
+  border-radius: var(--r-md);
+}
+
+.qcard__open:focus-visible {
+  outline: none;
+}
+
+.qcard__open:focus-visible::after {
+  outline: 2px solid var(--color-focus);
+}
+
+.qcard__meta {
+  margin: var(--s-1) 0 0;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: var(--t-small);
+  line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.qcard__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  margin: var(--s-2) 0 0;
+}
+
+.qcard__count {
+  color: var(--color-muted);
+  font-size: var(--t-small);
+}
+
+.qcard__media {
+  flex: none;
+  width: 4.5rem;
+  height: 4.5rem;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--color-sunken);
+}
+
+.qcard__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
