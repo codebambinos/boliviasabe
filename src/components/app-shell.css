@@ -114,7 +114,9 @@
   cursor: pointer;
 }
 
-.shell__city:focus-within {
+/* Keyboard focus only: after picking a city with the mouse the select keeps focus (and Chrome calls a select
+   :focus-visible even then), so the ring is hidden while the last input was a pointer */
+.shell__city:focus-within:not([data-pointer]) {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
@@ -810,7 +812,7 @@
   }
 }
 
-/* «Entrar»: a word with room, an icon when the bar is tight (large text) */
+/* «Iniciar sesión»: words with room, an icon when the bar is tight (large text) */
 .shell__signin-icon {
   display: none;
 }

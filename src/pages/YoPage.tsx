@@ -134,7 +134,7 @@ function YoSample({
           <img className="profile__tilcho" src="/tilcho/tilcho-saludo.svg" alt="" width={96} height={111} />
           <h2 className="profile__name">¡Hola, vecino!</h2>
           <p className="empty__text">
-            Cuando un letrero o una respuesta tuya le sirve a alguien, ganas <strong>yapitas</strong>. Entra para guardarlas junto
+            Cuando un letrero o una respuesta tuya le sirve a alguien, ganas <strong>yapitas</strong>. Inicia sesión para guardarlas junto
             con tu actividad.
           </p>
           <div className="profile__actions">
@@ -144,7 +144,7 @@ function YoSample({
             <button
               type="button"
               className="btn btn--secondary btn--full"
-              onClick={() => openEmailSignIn('Entra con tu correo y contraseña.', 'Entra a BoliviaSabe')}
+              onClick={() => openEmailSignIn('Inicia sesión con tu correo y contraseña.', 'Inicia sesión en BoliviaSabe')}
             >
               <MailIcon size={20} /> Usar mi correo
             </button>
