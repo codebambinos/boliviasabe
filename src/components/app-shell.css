@@ -448,6 +448,33 @@
   animation-timing-function: var(--ease);
 }
 
+/* Between the shell and a standalone page (/p/:id, /privacidad) the bars exist on one side only. They follow the
+   same fade-through as the page: leave with the old screen, arrive with the new one (without this they showed
+   over the content that was still fading, and popped in before it). */
+::view-transition-old(topbar):only-child,
+::view-transition-old(tabbar):only-child,
+::view-transition-old(sidebar):only-child,
+::view-transition-old(detail):only-child {
+  animation: vt-out 110ms var(--ease) both;
+}
+
+::view-transition-new(detail):only-child {
+  animation: vt-fade-in 220ms var(--ease-enter) 90ms both;
+}
+
+/* The bars settle faster than the content: while they were half clear the list showed through the tab bar */
+::view-transition-new(topbar):only-child,
+::view-transition-new(tabbar):only-child,
+::view-transition-new(sidebar):only-child {
+  animation: vt-fade-in 110ms var(--ease) 90ms both;
+}
+
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
 /* The FAB changes its label (Subir / Preguntar): two pills of different width must never overlap.
    The old one leaves at once; the new one appears in place, anchored to the right edge. */
 ::view-transition-group(fab) {

@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import './sheet.css';
 
-type Entry = { el: HTMLElement; requestClose: (fromHistory: boolean) => void };
+type Entry = { el: HTMLElement; requestClose: (fromHistory: boolean) => void; covers?: boolean };
 const stack: Entry[] = [];
 let skipPops = 0;
 const afterPop: (() => void)[] = [];
@@ -44,6 +44,12 @@ function setBackgroundInert() {
     entry.el.inert = i < stack.length - 1;
   });
   document.documentElement.style.overflow = stack.length > 0 ? 'hidden' : '';
+  // A full-screen sheet on a phone hides the page under it once it has arrived: with the keyboard open, iOS can
+  // scroll the screen past the sheet, and the page behind (the list of questions) showed through
+  if (root) {
+    if (stack.some((entry) => entry.covers)) root.dataset.covered = '';
+    else delete root.dataset.covered;
+  }
 }
 
 type SheetProps = {
@@ -63,6 +69,7 @@ export function Sheet({ labelledBy, variant = 'page', onClose, canClose, classNa
   const host = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const pushed = useRef(false);
+  const entryRef = useRef<Entry | null>(null);
   const closingRef = useRef(false);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -101,8 +108,17 @@ export function Sheet({ labelledBy, variant = 'page', onClose, canClose, classNa
       pushed.current = true;
     }
     const entry: Entry = { el, requestClose: (fromHistory) => requestRef.current(fromHistory) };
+    entryRef.current = entry;
     stack.push(entry);
     setBackgroundInert();
+    // Once the sheet has finished rising (260 ms), the page under a full-screen phone sheet is hidden
+    const cover =
+      variant === 'page' && window.matchMedia('(max-width: 63.99rem)').matches
+        ? window.setTimeout(() => {
+            entry.covers = true;
+            setBackgroundInert();
+          }, 300)
+        : undefined;
     panel.current?.focus();
 
     const onKey = (event: KeyboardEvent) => {
@@ -110,6 +126,7 @@ export function Sheet({ labelledBy, variant = 'page', onClose, canClose, classNa
     };
     document.addEventListener('keydown', onKey);
     return () => {
+      window.clearTimeout(cover);
       document.removeEventListener('keydown', onKey);
       const index = stack.indexOf(entry);
       if (index >= 0) stack.splice(index, 1);
@@ -117,6 +134,13 @@ export function Sheet({ labelledBy, variant = 'page', onClose, canClose, classNa
       opener?.focus({ preventScroll: true });
     };
   }, []);
+
+  // On the way out the page is back at once, so the sheet leaves over the screen it came from
+  useEffect(() => {
+    if (!closing || !entryRef.current?.covers) return;
+    entryRef.current.covers = false;
+    setBackgroundInert();
+  }, [closing]);
 
   const close = () => requestClose(false);
   const forceClose = () => requestClose(false, true);
