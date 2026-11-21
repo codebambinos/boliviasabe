@@ -27,6 +27,8 @@ import './sign-sheet.css';
 
 type SignSheetProps = {
   sign: Sign;
+  /** The person was voting when «Crea tu cuenta» sent them to Google: send that vote on open (SPEC 07). */
+  resumeVote?: 'helpful' | 'not_helpful';
   onClose: () => void;
   onToggleSave?: (sign: Sign) => void;
 };
@@ -45,7 +47,7 @@ function whatsappHref(sign: Sign): string {
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
 
-export function SignSheet({ sign: initial, onClose, onToggleSave }: SignSheetProps) {
+export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: SignSheetProps) {
   const titleId = useId();
   const viewHeading = useRef<HTMLHeadingElement>(null);
   const fresh = useSign(initial.id);
@@ -88,42 +90,69 @@ export function SignSheet({ sign: initial, onClose, onToggleSave }: SignSheetPro
     if (thanked) thanksRef.current?.focus();
   }, [thanked]);
 
-  const markHelpful = () =>
-    requireAccount(`Así tu «Me sirvió» le da una yapita a ${author}.`, () =>
-      withLatest((latest) =>
-        vote.mutate(
-          { id: latest.id, value: 'helpful' },
-          {
-            onSuccess: (updated) => {
-              setSign(updated);
-              setThanked(true);
-            },
-            onSettled: () => setSending(false),
+  // What each vote does once there is an account. The wall (below) and a vote resumed after Google
+  // both run these.
+  const sendHelpful = () =>
+    withLatest((latest) =>
+      vote.mutate(
+        { id: latest.id, value: 'helpful' },
+        {
+          onSuccess: (updated) => {
+            setSign(updated);
+            setThanked(true);
           },
-        ),
+          onSettled: () => setSending(false),
+        },
       ),
     );
+
+  const sendNotHelpful = () =>
+    withLatest((latest) =>
+      vote.mutate(
+        { id: latest.id, value: 'not_helpful' },
+        {
+          onSuccess: (updated) => {
+            setSign(updated);
+            setView('detail');
+          },
+        },
+      ),
+    );
+
+  const markHelpful = () =>
+    requireAccount(`Así tu «Me sirvió» le da una yapita a ${author}.`, sendHelpful, undefined, {
+      kind: 'vote-sign',
+      id: sign.id,
+      value: 'helpful',
+    });
 
   const markNotHelpful = () =>
-    requireAccount('Así nos cuentas qué letreros no sirven.', () =>
-      withLatest((latest) =>
-        vote.mutate(
-          { id: latest.id, value: 'not_helpful' },
-          {
-            onSuccess: (updated) => {
-              setSign(updated);
-              setView('detail');
-            },
-          },
-        ),
-      ),
-    );
+    requireAccount('Así nos cuentas qué letreros no sirven.', sendNotHelpful, undefined, {
+      kind: 'vote-sign',
+      id: sign.id,
+      value: 'not_helpful',
+    });
+
+  // Back from Google with a vote in hand: send it once, as if the person had just tapped it
+  const resumed = useRef(false);
+  useEffect(() => {
+    if (!resumeVote || resumed.current) return;
+    resumed.current = true;
+    if (resumeVote === 'helpful') void sendHelpful();
+    else void sendNotHelpful();
+    // Runs once on open
+  }, []);
 
   const toggleSave = () =>
-    requireAccount('Así guardas este letrero para verlo después.', () => {
-      setSign((s) => ({ ...s, savedByMe: !s.savedByMe }));
-      onToggleSave?.(sign);
-    });
+    requireAccount(
+      'Así guardas este letrero para verlo después.',
+      () => {
+        setSign((s) => ({ ...s, savedByMe: !s.savedByMe }));
+        onToggleSave?.(sign);
+      },
+      undefined,
+      { kind: 'save-sign', id: sign.id },
+    );
 
   return (
     <Sheet labelledBy={titleId} onClose={onClose}>

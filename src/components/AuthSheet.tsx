@@ -13,6 +13,8 @@ type AuthSheetProps = {
   title?: string;
   /** Opens straight on «¿La olvidaste?» (from the invalid-link page). */
   start?: 'forgot';
+  /** Runs (and is awaited) before leaving for Google, to save the pending action and any draft. */
+  beforeGoogle?: () => Promise<void>;
   onSignedIn: () => void;
   onClose: () => void;
 };
@@ -22,12 +24,15 @@ const EMAIL_HINT = 'Escribe un correo con @';
 const PASSWORD_HINT = 'La contraseña tiene al menos 6 caracteres';
 const SENT_MESSAGE = 'Te enviamos un correo. Si no llega, revisa Spam';
 
-export function AuthSheet({ reason, title = 'Crea tu cuenta para seguir', start, onSignedIn, onClose }: AuthSheetProps) {
+export function AuthSheet({ reason, title = 'Crea tu cuenta para seguir', start, beforeGoogle, onSignedIn, onClose }: AuthSheetProps) {
   const titleId = useId();
   const [mode, setMode] = useState<Mode>(start ?? 'choose');
   // The e-mail is kept here so it survives going to «¿La olvidaste?» and back
   const [emailValue, setEmailValue] = useState('');
   const google = useSignInWithGoogle();
+  // Saving the pending action can take a moment: the button already says «Entrando…» meanwhile
+  const [saving, setSaving] = useState(false);
+  const googleBusy = google.isPending || saving;
   const email = useSignInWithEmail();
   const reset = useRequestPasswordReset();
 
@@ -38,7 +43,15 @@ export function AuthSheet({ reason, title = 'Crea tu cuenta para seguir', start,
           onSignedIn();
           close();
         };
-        const withGoogle = () => google.mutate(undefined, { onSuccess: done });
+        const withGoogle = () => {
+          setSaving(true);
+          Promise.resolve(beforeGoogle?.())
+            .catch(() => undefined)
+            .then(() => {
+              google.mutate(undefined, { onSuccess: done });
+              setSaving(false);
+            });
+        };
         const forgot = mode === 'forgot';
         return (
           <>
@@ -55,8 +68,8 @@ export function AuthSheet({ reason, title = 'Crea tu cuenta para seguir', start,
                 </p>
                 {mode === 'choose' && (
                   <div className="auth__choices">
-                    <button type="button" className="btn btn--secondary btn--full auth__google" disabled={google.isPending} onClick={withGoogle}>
-                      <GoogleIcon /> {google.isPending ? 'Entrando…' : 'Continuar con Google'}
+                    <button type="button" className="btn btn--secondary btn--full auth__google" disabled={googleBusy} onClick={withGoogle}>
+                      <GoogleIcon /> {googleBusy ? 'Entrando…' : 'Continuar con Google'}
                     </button>
                     <button type="button" className="btn btn--secondary btn--full" onClick={() => setMode('email')}>
                       <MailIcon size={20} /> Usar mi correo
@@ -70,7 +83,7 @@ export function AuthSheet({ reason, title = 'Crea tu cuenta para seguir', start,
                     onEmailChange={setEmailValue}
                     pending={email.isPending}
                     error={email.error}
-                    googlePending={google.isPending}
+                    googlePending={googleBusy}
                     onEdit={() => email.error && email.reset()}
                     onSubmit={(values) => email.mutate(values, { onSuccess: done })}
                     onGoogle={withGoogle}

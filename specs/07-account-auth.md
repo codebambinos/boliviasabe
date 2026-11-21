@@ -117,7 +117,7 @@ Environment: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (public values; th
 - [ ] The recovery e-mail arrives at a Gmail address (inbox or Spam), its link opens `/nueva-contrasena`, and a new password of 6 or more characters signs the person in and lands on Hoy.
 - [ ] Opening `/nueva-contrasena` with no valid link shows «Este enlace ya no sirve» and «Pedir otro». A used link shows the same.
 - [ ] «Continuar con Google» signs in with a Google account and returns to the same page; the Google screen shows no logo.
-- [ ] As a guest, Guardar on a letrero → Google → back: the letrero is saved and its sheet is open. The same for «Me sirvió».
+- [ ] As a guest, Guardar on a tile → Google → back: the letrero is saved. «Me sirvió» in a letrero's detail → Google → back: the detail is open and the vote is sent («Te sirvió»), unless it is the person's own letrero.
 - [ ] As a guest on Hoy, «+ Subir» → Google → back: the upload form opens on its own, empty.
 - [ ] A pending action older than 10 minutes is dropped without running; a pending action never runs twice; a `kind` with no registered handler is dropped without an error.
 - [ ] A draft with text and one photo saved with `saveDraft` survives a reload and is returned by `loadDraft`; after 30 minutes it returns `null`; with IndexedDB blocked it still works in memory and does not throw.
@@ -157,7 +157,7 @@ Environment: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (public values; th
 | The recovery link opens in another browser than the one that asked for it, and PKCE rejects it | Use the e-mail link in the same browser in the checks; if it fails, show «Este enlace ya no sirve» + «Pedir otro» rather than a blank page. |
 | Gmail SMTP sends to Spam or hits the 30 e-mails per hour limit | The copy says «Si no llega, revisa Spam»; the limit is enough for the demo and can be raised in Supabase. |
 | `auth_method` lets anyone check if an e-mail is registered | Accepted for the demo (see Decisions); rate limiting by Supabase still applies. |
-| A pending action runs twice or against a different account | Clear the record before running it, drop it after 10 minutes, and ignore it if the signed-in user is not the one that asked (only possible after sign-in in this device). |
+| A pending action runs twice or against a different account | The record is read once when the page loads and removed as soon as the session is known (run if signed in, dropped if guest), and an old one (over 10 minutes) is dropped when read. |
 | The anon key is mistaken for a secret, or the `service_role` key lands in the browser | The anon key is public by design; the `git grep` and bundle checks in the criteria cover the other one. |
 | `profiles` row missing after the first sign-in leaves the person half signed in | `profile: null` is a valid session (SPEC 01); the next action opens «Tu barrio» (T16). |
 
