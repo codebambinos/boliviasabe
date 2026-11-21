@@ -1163,3 +1163,27 @@ html.theme-vt::view-transition-group(root) {
     transition: none;
   }
 }
+
+/* A row with no action (Ajustes › «Ya la tienes instalada») */
+.row__link--static {
+  cursor: default;
+}
+
+.row__link--static > svg {
+  flex: none;
+  color: var(--color-muted);
+}
+
+/* Rows at the top of a card: no rule above them; in Ajustes a hairline closes them before Tema */
+.rows--flush {
+  margin-top: 0;
+  border-top: 0;
+}
+
+.rows--flush:has(+ .setting) > li:last-child {
+  border-bottom: var(--hairline);
+}
+
+.rows--flush + .setting {
+  margin-top: var(--s-3);
+}

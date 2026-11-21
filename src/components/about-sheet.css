@@ -181,3 +181,9 @@
     transform: translateY(8px);
   }
 }
+
+/* Which build is running: quiet, at the very end */
+.about__version {
+  margin: var(--s-5) 0 0;
+  text-align: center;
+}

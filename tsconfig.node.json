@@ -15,5 +15,5 @@
     "noUnusedParameters": true,
     "skipLibCheck": true
   },
-  "include": ["vite.config.ts", "lib", "scripts", "api"]
+  "include": ["vite.config.ts", "pwa-assets.config.ts", "lib", "scripts", "api"]
 }

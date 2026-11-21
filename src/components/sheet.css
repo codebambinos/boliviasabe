@@ -132,8 +132,9 @@
   overscroll-behavior: contain;
 }
 
+/* The last line clears the iPhone home indicator in the installed app (it draws to the screen's edge) */
 .sheet__content {
-  padding: var(--s-4) var(--gutter) var(--s-5);
+  padding: var(--s-4) var(--gutter) calc(var(--s-5) + env(safe-area-inset-bottom, 0px));
 }
 
 /* Actions at the thumb's reach: two equal columns; a message takes its own row above them */
