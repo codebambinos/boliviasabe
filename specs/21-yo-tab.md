@@ -1,6 +1,6 @@
 # SPEC 21 — Yo tab: profile, test account, activity and movements
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01 (`src/data/` hooks), SPEC 07 (session), SPEC 08 («Tu barrio» and the Stellar account), SPEC 09 (Movimientos and «Reintentar»), SPEC 11 (Supabase adapter: `my_*`, `saved_items`, `rewards`), SPEC 16 (precache list in `vite.config.ts`). Board card: T21 (issue #14).
 > **Date:** 2026-11-21
 > **Objective:** Replace the temporary Yo screen with the final one from the wiki: profile card with stars and «Editar», Mi cuenta de prueba, Mi actividad in four tabs and the full Movimientos list, without Tilcho, with smooth transitions.
@@ -95,25 +95,25 @@ The amount reads «+5 yapitas» / «−5 yapitas» (never «puntos»; the wiki's
 
 ## Acceptance criteria
 
-- [ ] No Tilcho anywhere: `git grep -i tilcho` only finds the wiki/specs history, and `public/tilcho/` is gone.
-- [ ] Guest Yo shows «¡Hola, vecino!», the yapitas sentence, both sign-in buttons and Acerca de · Privacidad, and makes no `my_*`, `saved_items` or `rewards` request.
-- [ ] Signed in, the profile card shows name, «Ciudad · Zona», stars with a comma («4,3») when there are ratings, the badge and the balance; while the balance loads it shows the pulsing bar, never another account's number.
-- [ ] «Editar» opens the sheet prefilled; «Guardar» with a new zone updates the card without a reload and shows «Guardado»; changing the city makes Hoy list the new city; the wallet is not prepared again (no Friendbot call).
-- [ ] «Editar» keeps «Guardar» off with «Falta tu nombre» / «Falta tu zona» like «Tu barrio».
-- [ ] Mi cuenta de prueba: «Copiar» copies the full address and shows «Copiado»; «Ver en el explorador» opens stellar.expert testnet; «Preparando tu cuenta» and the error + Reintentar states still work.
-- [ ] Movimientos shows 5 rows on every screen; with more than 5 there is «Ver más», which adds 10 in place; with no more there is no «Ver más».
-- [ ] After «Ver más», «Ver menos» returns to the first rows and brings the Movimientos heading into view.
-- [ ] Each movement shows its wiki label, «+N yapitas» / «−N yapitas», «hace…», its state and «Registro abcd…wxyz» when it has a hash.
-- [ ] A Pendiente or Error movement shows «Reintentar»; tapping it disables the button and the row updates when the server answers.
-- [ ] Mi actividad has the four tabs; each lists the right items, opens the right detail, shows skeletons while loading and its empty text + button when empty.
-- [ ] My hidden-by-reports content shows «En revisión» in Mi actividad.
-- [ ] On a phone the order is perfil → Movimientos → Mi cuenta de prueba → Mi actividad → Ajustes; tapping the balance in the header lands on Movimientos.
-- [ ] Tab change, «Ver más», «Reintentar» and «Editar» animate; with «reducir movimiento» nothing moves.
-- [ ] No «puntos», «XLM», «tokens», «cripto» or bolivianos on screen.
-- [ ] Works at 360 px in light and dark with text at 130 %; touch targets ≥ 44 px.
-- [ ] The wiki has the new huecos row, the «±yapitas» fix and the log entry.
-- [ ] Tapping Sistema, Claro or Oscuro switches the theme on in a circle that grows from that option; with «reducir movimiento» it changes at once.
-- [ ] `npm run typecheck` and `npm run build` pass; `git grep -i "SECRET\|SERVICE_ROLE"` shows no values.
+- [x] No Tilcho anywhere: `git grep -i tilcho` only finds the wiki/specs history, and `public/tilcho/` is gone.
+- [x] Guest Yo shows «¡Hola, vecino!», the yapitas sentence, both sign-in buttons and Acerca de · Privacidad, and makes no `my_*`, `saved_items` or `rewards` request.
+- [x] Signed in, the profile card shows name, «Ciudad · Zona», stars with a comma («4,3») when there are ratings, the badge and the balance; while the balance loads it shows the pulsing bar, never another account's number.
+- [x] «Editar» opens the sheet prefilled; «Guardar» with a new zone updates the card without a reload and shows «Guardado»; changing the city makes Hoy list the new city; the wallet is not prepared again (no Friendbot call).
+- [x] «Editar» keeps «Guardar» off with «Falta tu nombre» / «Falta tu zona» like «Tu barrio».
+- [x] Mi cuenta de prueba: «Copiar» copies the full address and shows «Copiado»; «Ver en el explorador» opens stellar.expert testnet; «Preparando tu cuenta» and the error + Reintentar states still work.
+- [x] Movimientos shows 5 rows on every screen; with more than 5 there is «Ver más», which adds 10 in place; with no more there is no «Ver más».
+- [x] After «Ver más», «Ver menos» returns to the first rows and brings the Movimientos heading into view.
+- [x] Each movement shows its wiki label, «+N yapitas» / «−N yapitas», «hace…», its state and «Registro abcd…wxyz» when it has a hash.
+- [x] A Pendiente or Error movement shows «Reintentar»; tapping it disables the button and the row updates when the server answers.
+- [x] Mi actividad has the four tabs; each lists the right items, opens the right detail, shows skeletons while loading and its empty text + button when empty.
+- [x] My hidden-by-reports content shows «En revisión» in Mi actividad.
+- [x] On a phone the order is perfil → Movimientos → Mi cuenta de prueba → Mi actividad → Ajustes; tapping the balance in the header lands on Movimientos.
+- [x] Tab change, «Ver más», «Reintentar» and «Editar» animate; with «reducir movimiento» nothing moves.
+- [x] No «puntos», «XLM», «tokens», «cripto» or bolivianos on screen.
+- [x] Works at 360 px in light and dark with text at 130 %; touch targets ≥ 44 px.
+- [x] The wiki has the new huecos row, the «±yapitas» fix and the log entry.
+- [x] Tapping Sistema, Claro or Oscuro switches the theme on in a circle that grows from that option; with «reducir movimiento» it changes at once.
+- [x] `npm run typecheck` and `npm run build` pass; `git grep -i "SECRET\|SERVICE_ROLE"` shows no values.
 
 ## Changes during implementation
 
