@@ -1,6 +1,6 @@
 # SPEC 01 — Data layer contract and mock adapter
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** none (first spec). Board card: T10 (issue #4).
 > **Date:** 2026-11-20
 > **Objective:** Give every screen one typed data layer in `src/data/` (TanStack Query hooks over a `DataApi` contract), backed for now by an in-memory mock adapter that follows the wiki rules, so UI work can start before Supabase exists.
@@ -163,28 +163,28 @@ Conventions:
 
 ## Acceptance criteria
 
-- [ ] `npm run typecheck` and `npm run build` pass, and the CI check is green on the PR.
-- [ ] No file outside `src/data/` imports from `src/data/mock/`, `src/data/api.ts` or `@supabase/supabase-js`.
-- [ ] Without a `.env` file, the app starts with the mock and shows no error.
-- [ ] A fresh load reports the session as `guest`.
-- [ ] Calling a mutation hook as a guest rejects with `DataError` code `unauthenticated`.
-- [ ] «Continuar con Google» in the smoke view signs in as «Lucía M.» with a profile; signing out returns to `guest`.
-- [ ] `signInWithEmail` with a new email gives a session with `profile: null`; `saveProfile` fills it.
-- [ ] Listing Cochabamba signs returns 30 items, newest first, with a non-null `nextCursor`; the next page returns the remaining 5 with `nextCursor: null`.
-- [ ] Listing Cobija returns an empty page.
-- [ ] Without `?mock=`, a call resolves in 300 to 600 ms; with `?mock=slow` it takes about 2.5 s.
-- [ ] With `?mock=offline` every call rejects with code `offline`; with `?mock=error`, with code `server`.
-- [ ] Voting twice on the same sign, or on your own sign, rejects with `forbidden`.
-- [ ] The 11th question of the day rejects with `limit` / `questions_per_day` and an `until` equal to the next midnight in Bolivia.
-- [ ] A 4th open question with answers rejects with `limit` / `open_questions`.
-- [ ] An urgent question with balance below 5 rejects with `limit` / `insufficient_balance`.
-- [ ] The 11th sign of the day is published with `rewarded: false`.
-- [ ] Publishing a sign while signed in adds a +1 movement that is `pending` and becomes `confirmed` about 2 s later.
-- [ ] With `?mock=stellar-error` the new movement ends as `error`; `wallet.retry` takes it to `pending` and then `confirmed`.
-- [ ] A new email user's wallet is `preparing`, then `ready` with balance 5.
-- [ ] The asker's first «Me sirvió» sets the question to `solved`; anyone else marking «Me sirvió» gets `forbidden`.
-- [ ] After `hideForMe`, the item no longer appears in the list.
-- [ ] `src/data/README.md` documents the hooks, the `?mock=` modes and the fixture users.
+- [x] `npm run typecheck` and `npm run build` pass, and the CI check is green on the PR.
+- [x] No file outside `src/data/` imports from `src/data/mock/`, `src/data/api.ts` or `@supabase/supabase-js`.
+- [x] Without a `.env` file, the app starts with the mock and shows no error.
+- [x] A fresh load reports the session as `guest`.
+- [x] Calling a mutation hook as a guest rejects with `DataError` code `unauthenticated`.
+- [x] «Continuar con Google» in the smoke view signs in as «Lucía M.» with a profile; signing out returns to `guest`.
+- [x] `signInWithEmail` with a new email gives a session with `profile: null`; `saveProfile` fills it.
+- [x] Listing Cochabamba signs returns 30 items, newest first, with a non-null `nextCursor`; the next page returns the remaining 5 with `nextCursor: null`.
+- [x] Listing Cobija returns an empty page.
+- [x] Without `?mock=`, a call resolves in 300 to 600 ms; with `?mock=slow` it takes about 2.5 s.
+- [x] With `?mock=offline` every call rejects with code `offline`; with `?mock=error`, with code `server`.
+- [x] Voting twice on the same sign, or on your own sign, rejects with `forbidden`.
+- [x] The 11th question of the day rejects with `limit` / `questions_per_day` and an `until` equal to the next midnight in Bolivia.
+- [x] A 4th open question with answers rejects with `limit` / `open_questions`.
+- [x] An urgent question with balance below 5 rejects with `limit` / `insufficient_balance`.
+- [x] The 11th sign of the day is published with `rewarded: false`.
+- [x] Publishing a sign while signed in adds a +1 movement that is `pending` and becomes `confirmed` about 2 s later.
+- [x] With `?mock=stellar-error` the new movement ends as `error`; `wallet.retry` takes it to `pending` and then `confirmed`.
+- [x] A new email user's wallet is `preparing`, then `ready` with balance 5.
+- [x] The asker's first «Me sirvió» sets the question to `solved`; anyone else marking «Me sirvió» gets `forbidden`.
+- [x] After `hideForMe`, the item no longer appears in the list.
+- [x] `src/data/README.md` documents the hooks, the `?mock=` modes and the fixture users.
 
 ## Decisions
 
