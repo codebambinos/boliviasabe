@@ -25,16 +25,31 @@ const FAB_LABEL: Partial<Record<Tab, string>> = { hoy: 'Subir letrero', pregunta
 /** The same action under the desktop rail's «+», where only one short word fits. */
 const RAIL_LABEL: Partial<Record<Tab, string>> = { hoy: 'Subir', preguntas: 'Preguntar' };
 
+/** Scrolling down this far (px, in one go) folds the FAB; scrolling up this far unfolds it. A shorter move,
+ * a tremor of the finger or a bounce at the end of the list changes nothing, so the pill never flickers. */
+const FOLD_AFTER = 48;
+const UNFOLD_AFTER = 24;
+const FOLD_MIN_Y = 120;
+
 /** While the list scrolls down the FAB folds to its «+» so it covers less; it unfolds on the way up. */
 function useFoldOnScroll(): boolean {
   const [folded, setFolded] = useState(false);
   useEffect(() => {
     let last = window.scrollY;
+    let anchor = last; // where the current direction started
+    let direction = 0;
     const onScroll = () => {
       const y = window.scrollY;
-      if (Math.abs(y - last) < 8) return;
-      setFolded(y > last && y > 120);
+      if (y === last) return;
+      const now = y > last ? 1 : -1;
+      if (now !== direction) {
+        direction = now;
+        anchor = last;
+      }
       last = y;
+      if (y <= FOLD_MIN_Y) setFolded(false); // at the top the full button is always there
+      else if (direction > 0 && y - anchor >= FOLD_AFTER) setFolded(true);
+      else if (direction < 0 && anchor - y >= UNFOLD_AFTER) setFolded(false);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);

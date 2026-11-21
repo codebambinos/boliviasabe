@@ -653,16 +653,20 @@
 }
 
 /* FAB folds to its «+» while the list scrolls down. The label's grid track shrinks 1fr → 0fr, so the
-   pill narrows smoothly instead of jumping (the label is also clipped and faded). */
+   pill narrows smoothly instead of jumping. The width moves over 320 ms on a symmetric curve (the app's
+   usual curve is too sharp for something this wide: the pill was done in 100 ms and read as a jump), and
+   the label never fights the width: it fades out first on the way in and fades in last on the way out. */
 .shell__fab {
+  --fab-time: 320ms;
+  --fab-ease: cubic-bezier(0.45, 0, 0.2, 1);
   grid-template-columns: auto 1fr;
   column-gap: var(--s-2);
   align-items: center;
   transition:
-    grid-template-columns var(--m-panel) var(--ease),
-    column-gap var(--m-panel) var(--ease),
-    padding var(--m-panel) var(--ease),
-    min-height var(--m-panel) var(--ease),
+    grid-template-columns var(--fab-time) var(--fab-ease),
+    column-gap var(--fab-time) var(--fab-ease),
+    padding var(--fab-time) var(--fab-ease),
+    min-height var(--fab-time) var(--fab-ease),
     transform var(--m-out) var(--ease),
     background-color var(--m-out) var(--ease);
 }
@@ -677,7 +681,9 @@
 .shell__fab-label {
   min-width: 0;
   overflow: hidden;
-  transition: opacity var(--m-panel) var(--ease);
+  white-space: nowrap;
+  /* unfolding: wait until the pill is about half open, then show the name */
+  transition: opacity 160ms var(--ease) 140ms;
 }
 
 .shell__fab[data-folded] {
@@ -689,6 +695,9 @@
 
 .shell__fab[data-folded] .shell__fab-label {
   opacity: 0;
+  /* folding: the name is gone before the pill is half closed */
+  transition-delay: 0ms;
+  transition-duration: 110ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
