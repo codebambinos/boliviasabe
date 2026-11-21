@@ -616,24 +616,44 @@
   margin-left: var(--s-1);
 }
 
-/* FAB folds to its «+» while the list scrolls down (no width animation: the label fades) */
+/* FAB folds to its «+» while the list scrolls down. The label's grid track shrinks 1fr → 0fr, so the
+   pill narrows smoothly instead of jumping (the label is also clipped and faded). */
+.shell__fab {
+  display: inline-grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--s-2);
+  align-items: center;
+  transition:
+    grid-template-columns var(--m-panel) var(--ease),
+    column-gap var(--m-panel) var(--ease),
+    padding var(--m-panel) var(--ease),
+    min-height var(--m-panel) var(--ease),
+    transform var(--m-out) var(--ease),
+    background-color var(--m-out) var(--ease);
+}
+
 .shell__fab-label {
-  transition: opacity var(--m-out) var(--ease);
+  min-width: 0;
+  overflow: hidden;
+  transition: opacity var(--m-panel) var(--ease);
 }
 
 .shell__fab[data-folded] {
-  width: 3.5rem;
+  grid-template-columns: auto 0fr;
+  column-gap: 0;
   min-height: 3.5rem;
-  padding: 0;
+  padding-inline: calc((3.5rem - 20px) / 2);
 }
 
 .shell__fab[data-folded] .shell__fab-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
   opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell__fab,
+  .shell__fab-label {
+    transition: none;
+  }
 }
 
 /* The rail's main action keeps its name under the «+» (a verb, like the tabs) */
