@@ -7,6 +7,26 @@ export type NavDirection = 'forward' | 'back' | 'up';
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/**
+ * A route change (React Router) with the same fade-through. `go` receives whether to pass
+ * `viewTransition: true` to `navigate`; React Router runs the transition and plays it again in
+ * reverse on Back. Only the direction is set here.
+ */
+export function goWithTransition(go: (viewTransition: boolean) => void, direction: NavDirection = 'forward'): void {
+  const animate = typeof document.startViewTransition === 'function' && !reducedMotion();
+  if (animate) setDirection(direction);
+  go(animate);
+}
+
+/** Direction of the next transition; it clears itself once the transition is over. */
+export function setDirection(direction: NavDirection): void {
+  const root = document.documentElement;
+  root.dataset.nav = direction;
+  window.setTimeout(() => {
+    if (root.dataset.nav === direction) delete root.dataset.nav;
+  }, 700);
+}
+
 /** Runs `update` (a React state change) as an animated screen change. */
 export function navigateWithTransition(update: () => void, direction: NavDirection = 'forward'): void {
   const run = () => flushSync(update);

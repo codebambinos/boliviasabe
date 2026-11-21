@@ -1,0 +1,329 @@
+/* /privacidad (PrivacyPage.tsx): a reading page outside the shell, inside the 64 rem frame.
+   Phone: one column. Desktop: «En esta página» hangs beside the 40 rem reading column.
+   The eye goes to the type (display title, big Bricolage numbers) and the three highlight
+   cards; color stays in its jobs (DESIGN.md › Color). */
+.legal {
+  min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+/* The aguayo draws itself in from the left once the page lands */
+.legal__stripe {
+  transform-origin: left center;
+  animation: legal-stripe 520ms var(--ease-enter) 120ms both;
+}
+
+/* Bar: stays reachable on a long read; opaque, one hairline, never blurred */
+.legal__bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-bg);
+  border-bottom: var(--hairline);
+}
+
+.legal__bar-in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  max-width: calc(var(--frame) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--s-2) var(--gutter);
+}
+
+.legal__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--touch);
+  padding: 0 var(--s-3) 0 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font: 500 var(--t-body) var(--font-body);
+  cursor: pointer;
+  transition: transform var(--m-press) var(--ease);
+}
+
+.legal__back:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .legal__back:hover svg {
+    transform: translateX(-2px);
+  }
+
+  .legal__back svg {
+    transition: transform var(--m-panel) var(--ease);
+  }
+}
+
+.legal__logo {
+  flex: none;
+}
+
+/* Same light tile as the top bar: the F5 logo is dark ink (DESIGN.md › Open items) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .legal__logo {
+    padding: 0.1875rem;
+    border-radius: var(--r-sm);
+    background: #f5f2ef;
+  }
+}
+
+:root[data-theme='dark'] .legal__logo {
+  padding: 0.1875rem;
+  border-radius: var(--r-sm);
+  background: #f5f2ef;
+}
+
+.legal__main {
+  max-width: calc(var(--frame) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--s-6) var(--gutter) var(--s-8);
+}
+
+/* Hero: the one big moment of the page, carried by size and tracking, not color */
+.legal__hero {
+  max-width: 40rem;
+}
+
+.legal__eyebrow {
+  margin: 0 0 var(--s-2);
+  color: var(--color-muted);
+  font: 500 var(--t-small) / 1.3 var(--font-body);
+}
+
+.legal__title {
+  margin: 0;
+  font-size: clamp(var(--t-display), 9vw, 3.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  outline: none;
+}
+
+.legal__intro {
+  margin: var(--s-4) 0 var(--s-2);
+  font-size: 1.125rem;
+  line-height: 1.55;
+}
+
+/* Lo principal: three cards, the answer to «what do they do with my data» at a glance */
+.legal__cards {
+  display: grid;
+  gap: var(--s-3);
+  margin: var(--s-6) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 40rem) {
+  .legal__cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.legal__card {
+  display: grid;
+  align-content: start;
+  gap: var(--s-2);
+  padding: var(--s-5) var(--s-4) var(--s-4);
+  border: var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--color-card);
+}
+
+.legal__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: var(--s-2);
+  border-radius: 50%;
+  background: var(--color-sunken);
+  color: var(--color-ink);
+}
+
+/* The yapita card carries the yapita itself: the orange disc is its own glyph */
+.legal__glyph--yapita {
+  background: none;
+}
+
+.legal__card-title {
+  margin: 0;
+  font: var(--w-title) var(--t-card) / 1.25 var(--font-title);
+  letter-spacing: -0.015em;
+}
+
+.legal__card-text {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--t-small);
+}
+
+/* Reading area */
+.legal__layout {
+  margin-top: var(--s-7);
+}
+
+.legal__toc {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .legal__layout {
+    display: grid;
+    grid-template-columns: 14rem minmax(0, 40rem);
+    gap: var(--s-7);
+  }
+
+  .legal__toc {
+    display: block;
+    position: sticky;
+    top: calc(var(--touch) + var(--s-6));
+    align-self: start;
+  }
+}
+
+.legal__toc-title {
+  margin: 0 0 var(--s-2);
+  color: var(--color-muted);
+  font: 500 var(--t-label) / 1.3 var(--font-body);
+}
+
+.legal__toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-left: var(--hairline);
+}
+
+.legal__toc a {
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+  min-height: 2.5rem;
+  margin-left: -1px;
+  padding: 0 var(--s-3);
+  border-left: 2px solid transparent;
+  color: var(--color-muted);
+  font-size: var(--t-small);
+  text-decoration: none;
+  transition: color var(--m-panel) var(--ease), border-color var(--m-panel) var(--ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .legal__toc a:hover {
+    color: var(--color-ink);
+  }
+}
+
+/* The section being read: ink and a fuchsia rule (a marked state, DESIGN.md) */
+.legal__toc a[aria-current] {
+  border-left-color: var(--color-brand);
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+/* Sections: a big number in the margin, the text beside it */
+/* Phone: the number sits beside the heading and the text takes the full width.
+   From 40 rem the number hangs in its own margin column. */
+.legal__section {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--s-3);
+  padding: var(--s-6) 0;
+  border-top: var(--hairline);
+  scroll-margin-top: calc(var(--touch) + var(--s-5));
+}
+
+.legal__section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.legal__num {
+  color: var(--color-muted);
+  font: var(--w-title) 2rem / 1 var(--font-title);
+  letter-spacing: -0.03em;
+}
+
+.legal__section-body {
+  display: contents;
+}
+
+.legal__section h2 {
+  margin: 0 0 var(--s-3);
+  outline: none;
+}
+
+.legal__section-body > :not(h2) {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 40rem) {
+  .legal__section {
+    grid-template-columns: 3.5rem minmax(0, 1fr);
+  }
+
+  .legal__section-body > :not(h2) {
+    grid-column: 2;
+  }
+}
+
+.legal__section p {
+  margin: 0 0 var(--s-3);
+}
+
+.legal__section p:last-child {
+  margin-bottom: 0;
+}
+
+/* Contact: the page's one main action */
+.legal__contact {
+  margin-top: var(--s-4);
+  padding: var(--s-6) var(--s-5);
+  border: var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--color-card);
+  scroll-margin-top: calc(var(--touch) + var(--s-5));
+}
+
+.legal__contact h2 {
+  margin: 0 0 var(--s-2);
+  outline: none;
+}
+
+.legal__contact p {
+  margin: 0 0 var(--s-4);
+}
+
+.legal__contact .legal__mail {
+  margin: var(--s-3) 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* Entrance: after the route's fade-through, the hero and the cards settle in, one after the
+   other. Once, on arrival; nothing animates on scroll. */
+.legal__rise {
+  animation: legal-rise 360ms var(--ease-enter) both;
+  animation-delay: calc(200ms + var(--i, 0) * 55ms);
+}
+
+@keyframes legal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes legal-stripe {
+  from {
+    transform: scaleX(0);
+  }
+}

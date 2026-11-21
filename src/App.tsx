@@ -1,17 +1,28 @@
 // TEMPORARY smoke view (SPEC 01 + T11): the real shell and components on mock data.
 // T12 replaces it with real routes; T18–T21 build the real screens from these parts.
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import { AboutSheet } from './components/AboutSheet';
 import { AppShell, type Tab } from './components/AppShell';
 import { AuthGate, useRequireAccount } from './components/AuthGate';
 import { ChipRow } from './components/ChipRow';
-import { CloseIcon, ExternalIcon, GoogleIcon, MailIcon, SearchIcon } from './components/icons';
+import {
+  ChevronRightIcon,
+  CloseIcon,
+  ExternalIcon,
+  EyeIcon,
+  GoogleIcon,
+  MailIcon,
+  QuestionIcon,
+  SearchIcon,
+} from './components/icons';
 import { Hint } from './components/Hint';
 import { errorMessage } from './components/messages';
 import { Sheet } from './components/Sheet';
 import { SignSheet } from './components/SignSheet';
 import { SignTile, SignTileSkeleton } from './components/SignTile';
 import { feedSection, timeAgo, type FeedSection } from './components/time';
-import { navigateWithTransition } from './components/transition';
+import { goWithTransition, navigateWithTransition } from './components/transition';
 import { Yapita } from './components/Yapita';
 import {
   DEFAULT_CITY,
@@ -37,8 +48,14 @@ export function App() {
   );
 }
 
+/** State kept on the '/' history entry. Interim until T12 gives each tab its own route. */
+type HomeState = { tab?: Tab };
+
 function Screens() {
-  const [tab, setTab] = useState<Tab>('hoy');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<Tab>(() => (location.state as HomeState | null)?.tab ?? 'hoy');
+  const [about, setAbout] = useState(false);
   const [city, setCity] = useState<City>(DEFAULT_CITY);
   const [selected, setSelected] = useState<Sign | null>(null);
   const [avisos, setAvisos] = useState(false);
@@ -67,6 +84,14 @@ function Screens() {
     observer.observe(input);
     return () => observer.disconnect();
   }, [tab]);
+
+  // Remember the tab on this entry (React Router keeps user state under `usr`), so Back from
+  // /privacidad remounts the app on the same tab. T12 replaces this with a real /yo route.
+  const openPrivacy = () => {
+    const current = (window.history.state ?? {}) as { usr?: HomeState };
+    window.history.replaceState({ ...current, usr: { ...current.usr, tab } }, '');
+    goWithTransition((viewTransition) => navigate('/privacidad', { viewTransition }), 'forward');
+  };
 
   const goToSearch = () => {
     const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -111,9 +136,17 @@ function Screens() {
       >
         {tab === 'hoy' && <HoySample city={city} searchRef={searchRef} onCity={setCity} onOpen={setSelected} onToggleSave={onToggleSave} />}
         {tab === 'preguntas' && <PreguntasSample city={city} />}
-        {tab === 'yo' && <YoSample onSignIn={() => signIn.mutate()} signingIn={signIn.isPending} />}
+        {tab === 'yo' && (
+          <YoSample
+            onSignIn={() => signIn.mutate()}
+            signingIn={signIn.isPending}
+            onAbout={() => setAbout(true)}
+            onPrivacy={openPrivacy}
+          />
+        )}
       </AppShell>
       {selected && <SignSheet key={selected.id} sign={selected} onClose={() => setSelected(null)} onToggleSave={onToggleSave} />}
+      {about && <AboutSheet onClose={() => setAbout(false)} onOpenPrivacy={openPrivacy} />}
       {avisos && <AvisosSheet onClose={() => setAvisos(false)} />}
     </>
   );
@@ -325,7 +358,59 @@ function applyTheme(theme: Theme) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#151110' : '#f5f2ef');
 }
 
-function YoSample({ onSignIn, signingIn }: { onSignIn: () => void; signingIn: boolean }) {
+/** A real link to /privacidad (copyable, opens in a new tab) that navigates in the app on a plain click. */
+function privacyClick(onPrivacy: () => void) {
+  return (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    onPrivacy();
+  };
+}
+
+/** Acerca de · Privacidad under the guest card (wiki › Yo › Invitado). */
+function LegalLinks({ onAbout, onPrivacy }: { onAbout: () => void; onPrivacy: () => void }) {
+  return (
+    <p className="legal-links">
+      <button type="button" className="link-btn" onClick={onAbout}>Acerca de</button>
+      <span aria-hidden="true">·</span>
+      <a className="link-btn" href="/privacidad" onClick={privacyClick(onPrivacy)}>Privacidad</a>
+    </p>
+  );
+}
+
+/** Acerca de and Privacidad as rows in Ajustes. T29 keeps them when it builds the final card. */
+function LegalRows({ onAbout, onPrivacy }: { onAbout: () => void; onPrivacy: () => void }) {
+  return (
+    <ul className="rows rows--links">
+      <li>
+        <button type="button" className="row__link" onClick={onAbout}>
+          <QuestionIcon size={20} />
+          <span className="row__main">Acerca de</span>
+          <ChevronRightIcon size={20} />
+        </button>
+      </li>
+      <li>
+        <a className="row__link" href="/privacidad" onClick={privacyClick(onPrivacy)}>
+          <EyeIcon size={20} />
+          <span className="row__main">Privacidad</span>
+          <ChevronRightIcon size={20} />
+        </a>
+      </li>
+    </ul>
+  );
+}
+
+function YoSample({
+  onSignIn,
+  signingIn,
+  onAbout,
+  onPrivacy,
+}: {
+  onSignIn: () => void;
+  signingIn: boolean;
+  onAbout: () => void;
+  onPrivacy: () => void;
+}) {
   const session = useSession();
   const signOut = useSignOut();
   const requireAccount = useRequireAccount();
@@ -368,6 +453,7 @@ function YoSample({ onSignIn, signingIn }: { onSignIn: () => void; signingIn: bo
             </button>
           </div>
         </div>
+        <LegalLinks onAbout={onAbout} onPrivacy={onPrivacy} />
       </>
     );
   }
@@ -496,6 +582,7 @@ function YoSample({ onSignIn, signingIn }: { onSignIn: () => void; signingIn: bo
               ))}
             </div>
           </fieldset>
+          <LegalRows onAbout={onAbout} onPrivacy={onPrivacy} />
           <button type="button" className="link-btn link-btn--ink setting__signout" disabled={signOut.isPending} onClick={() => signOut.mutate()}>
             {signOut.isPending ? 'Cerrando sesión…' : 'Cerrar sesión'}
           </button>

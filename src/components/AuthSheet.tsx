@@ -58,6 +58,11 @@ export function AuthSheet({ reason, title = 'Crea tu cuenta para seguir', onSign
                     onBack={() => setMode('choose')}
                   />
                 )}
+                {/* New tab: the sheet and anything typed stay put (wiki › Entrada y cuenta) */}
+                <p className="auth__legal">
+                  Al entrar aceptas{' '}
+                  <a href="/privacidad" target="_blank" rel="noopener">cómo cuidamos tus datos</a>
+                </p>
               </div>
             </div>
           </>
