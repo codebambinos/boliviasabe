@@ -20,9 +20,10 @@ type Registry = {
 
 const RequireContext = createContext<Require>((_reason, action) => action());
 const RecoveryContext = createContext<() => void>(() => undefined);
+const EmailSignInContext = createContext<(reason: string, title?: string) => void>(() => undefined);
 const RegistryContext = createContext<Registry>({ setHandlers: () => undefined, addDraftSaver: () => () => undefined });
 
-type Pending = { reason: string; action: () => void; title?: string; start?: 'forgot'; resume?: PendingAction };
+type Pending = { reason: string; action: () => void; title?: string; start?: 'email' | 'forgot'; resume?: PendingAction };
 
 /** A save that never blocks the redirect for long: after this the person goes to Google anyway. */
 const SAVE_BUDGET_MS = 1500;
@@ -75,6 +76,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setPending({ reason: '', action: () => undefined, start: 'forgot' });
   }, []);
 
+  // «Usar mi correo» in Yo: the person already chose the e-mail, so the sheet opens on its form
+  const openEmailSignIn = useCallback((reason: string, title?: string) => {
+    signedIn.current = false;
+    setPending({ reason, title, action: () => undefined, start: 'email' });
+  }, []);
+
   const registry = useRef<Registry>({
     setHandlers: (next) => {
       handlers.current = next;
@@ -125,41 +132,43 @@ export function AuthGate({ children }: { children: ReactNode }) {
   return (
     <RequireContext.Provider value={require}>
       <RecoveryContext.Provider value={openRecovery}>
-        <RegistryContext.Provider value={registry.current}>
-          {children}
-          {pending && (
-            <AuthSheet
-              reason={pending.reason}
-              title={pending.title}
-              start={pending.start}
-              beforeGoogle={beforeGoogle}
-              onSignedIn={() => {
-                signedIn.current = true;
-                // Signed in without leaving the page (e-mail): the action runs below, not from storage
-                clearPending();
-              }}
-              onClose={() => {
-                const { action } = pending;
-                setPending(null);
-                if (signedIn.current) afterProfile(action);
-              }}
-            />
-          )}
-          {barrio && (
-            <TuBarrioSheet
-              suggestedName={suggestedName}
-              onSaved={() => {
-                barrioSaved.current = true;
-              }}
-              onClose={() => {
-                // Same order as the sign-in sheet: the action runs after the sheet has fully left
-                const { action } = barrio;
-                setBarrio(null);
-                if (barrioSaved.current) action();
-              }}
-            />
-          )}
-        </RegistryContext.Provider>
+        <EmailSignInContext.Provider value={openEmailSignIn}>
+          <RegistryContext.Provider value={registry.current}>
+            {children}
+            {pending && (
+              <AuthSheet
+                reason={pending.reason}
+                title={pending.title}
+                start={pending.start}
+                beforeGoogle={beforeGoogle}
+                onSignedIn={() => {
+                  signedIn.current = true;
+                  // Signed in without leaving the page (e-mail): the action runs below, not from storage
+                  clearPending();
+                }}
+                onClose={() => {
+                  const { action } = pending;
+                  setPending(null);
+                  if (signedIn.current) afterProfile(action);
+                }}
+              />
+            )}
+            {barrio && (
+              <TuBarrioSheet
+                suggestedName={suggestedName}
+                onSaved={() => {
+                  barrioSaved.current = true;
+                }}
+                onClose={() => {
+                  // Same order as the sign-in sheet: the action runs after the sheet has fully left
+                  const { action } = barrio;
+                  setBarrio(null);
+                  if (barrioSaved.current) action();
+                }}
+              />
+            )}
+          </RegistryContext.Provider>
+        </EmailSignInContext.Provider>
       </RecoveryContext.Provider>
     </RequireContext.Provider>
   );
@@ -171,6 +180,9 @@ export const useRequireAccount = () => useContext(RequireContext);
 
 /** Opens «Crea tu cuenta» straight on «¿La olvidaste?». */
 export const useOpenPasswordRecovery = () => useContext(RecoveryContext);
+
+/** Opens «Entra a BoliviaSabe» straight on the e-mail form (signed out only). */
+export const useOpenEmailSignIn = () => useContext(EmailSignInContext);
 
 /** ShellLayout registers what each pending `kind` does once the person is back from Google. */
 export function useRegisterPendingHandlers(handlers: PendingHandlers): void {

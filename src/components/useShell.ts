@@ -17,6 +17,8 @@ export type ShellContext = {
   openQuestion: (id: Id, options?: { share?: boolean; chargeFailed?: boolean }) => void;
   /** The question open in the desktop panel (from `?p=<id>` on /preguntas), or null. */
   selectedQuestion: Id | null;
+  /** Questions left from the panel after deleting, reporting or hiding them: the list leaves them out at once. */
+  goneQuestions: ReadonlySet<Id>;
   /** Opens «Preguntar», with the text already written when it comes from a search. */
   openAsk: (text?: string) => void;
   openAbout: () => void;

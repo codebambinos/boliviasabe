@@ -1,10 +1,11 @@
 // App frame: aguayo stripe + top bar, main column, bottom nav (phone) or sidebar (desktop),
 // floating action button and the ¿Alguien sabe? conversation panel (desktop only).
 // It holds no data of its own: ShellLayout (SPEC 04) passes everything in and renders the route.
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CITIES, useRefresh, type City } from '../data';
 import { BellIcon, ChevronDownIcon, HomeIcon, PlusIcon, QuestionIcon, SearchIcon, UserIcon } from './icons';
 import { OfflineBanner } from './OfflineBanner';
+import { useTabSwipe } from './useTabSwipe';
 import { Yapita } from './Yapita';
 import './app-shell.css';
 
@@ -19,6 +20,9 @@ const TABS: { id: Tab; label: string; Icon: typeof HomeIcon }[] = [
   { id: 'preguntas', label: '¿Alguien sabe?', Icon: QuestionIcon },
   { id: 'yo', label: 'Yo', Icon: UserIcon },
 ];
+
+/** Left to right, as in the tab bar: swiping left goes to the next one (useTabSwipe). */
+const TAB_ORDER: Tab[] = TABS.map((t) => t.id);
 
 /** The tab's main action, a verb and its object (none on Yo). */
 const FAB_LABEL: Partial<Record<Tab, string>> = { hoy: 'Subir letrero', preguntas: 'Preguntar' };
@@ -59,7 +63,8 @@ function useFoldOnScroll(): boolean {
 
 type AppShellProps = {
   tab: Tab;
-  onTabChange: (tab: Tab) => void;
+  /** `transition: false` when the caller animates the change itself (the swipe). */
+  onTabChange: (tab: Tab, options?: { transition?: boolean }) => void;
   city: City;
   onCityChange: (city: City) => void;
   /** Signed-in only: unread notifications (bell) and confirmed balance (null while «★ …»). */
@@ -71,15 +76,27 @@ type AppShellProps = {
   onSearch?: () => void;
   /** Desktop conversation panel of ¿Alguien sabe?. Hidden on phones, where details are full screen. */
   detail?: ReactNode;
+  /** What the panel shows (the open question). A new one starts at the panel's top (SPEC 17). */
+  detailKey?: string | number;
   /** What the empty panel says (it must match what the list offers). */
   detailEmpty?: string;
   children: ReactNode;
 };
 
-export function AppShell({ tab, onTabChange, city, onCityChange, account, onSignIn, onFab, onSearch, detail, detailEmpty, children }: AppShellProps) {
+export function AppShell({ tab, onTabChange, city, onCityChange, account, onSignIn, onFab, onSearch, detail, detailKey, detailEmpty, children }: AppShellProps) {
   const fabLabel = FAB_LABEL[tab];
   const folded = useFoldOnScroll();
   const refresh = useRefresh();
+
+  // The panel is one element for every question, so it would keep the last one's scroll: a new one starts at its top
+  const detailRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (detailRef.current) detailRef.current.scrollTop = 0;
+  }, [detailKey]);
+
+  // Phones: drag sideways to change tab. The swipe plays its own slide, so the tab changes without the screen one.
+  const columnRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   // Another tab: the layout navigates (animated, landing at the top). The current tab again: back to the top and
   // fetch it again, so what others published shows up, also on a computer (wiki #181)
@@ -92,6 +109,7 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
     }
     onTabChange(next);
   };
+  useTabSwipe(columnRef, mainRef, TAB_ORDER, tab, (next) => onTabChange(next, { transition: false }));
 
   return (
     <div className="shell" data-layout={LAYOUT[tab]}>
@@ -110,7 +128,7 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
         )}
       </aside>
 
-      <div className="shell__column">
+      <div ref={columnRef} className="shell__column">
         <header className="shell__top">
           <div className="aguayo" />
           <div className="shell__bar">
@@ -162,7 +180,7 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
           <OfflineBanner />
         </header>
 
-        <main id="contenido" className="shell__main" tabIndex={-1}>
+        <main ref={mainRef} id="contenido" className="shell__main" tabIndex={-1}>
           {children}
         </main>
 
@@ -179,7 +197,7 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
 
       {/* Desktop only, ¿Alguien sabe? only (hidden on phones, where details open full screen) */}
       {LAYOUT[tab] === 'split' && (
-        <section className="shell__detail" aria-label="Conversación">
+        <section ref={detailRef} className="shell__detail" aria-label="Conversación">
           {detail ?? <p className="shell__detail-empty">{detailEmpty ?? 'Toca una pregunta para ver su conversación aquí.'}</p>}
         </section>
       )}

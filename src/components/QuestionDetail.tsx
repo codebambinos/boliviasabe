@@ -243,7 +243,26 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
               const hasMenu = !answer.isMine || canDelete;
               return (
                 <li key={answer.id} className="answer" data-helpful={answer.helpful || undefined}>
-                  <AuthorLine author={answer.author} mine={answer.isMine} when={timeAgo(answer.createdAt)} prefix="Lo respondiste " />
+                  {/* Guardar and ⋯ sit by the author, so the row under the text keeps only the actions on it */}
+                  <div className="answer__head">
+                    <AuthorLine author={answer.author} mine={answer.isMine} when={timeAgo(answer.createdAt)} prefix="Lo respondiste " />
+                    <div className="answer__tools">
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        aria-label={answer.savedByMe ? 'Quitar la respuesta de guardados' : 'Guardar la respuesta'}
+                        aria-pressed={answer.savedByMe}
+                        onClick={() => saveAnswer(answer)}
+                      >
+                        <BookmarkIcon size={20} fill={answer.savedByMe ? 'currentColor' : 'none'} />
+                      </button>
+                      {hasMenu && (
+                        <button type="button" className="icon-btn" aria-label="Más opciones de la respuesta" aria-haspopup="dialog" onClick={() => openMenu({ type: 'answer', answer })}>
+                          <MoreIcon />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <p className="answer__text">{answer.text}</p>
                   {answer.helpful && (
                     <p className="answer__marked">
@@ -255,43 +274,31 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
                       <ThumbDownIcon size={16} /> No te sirvió
                     </p>
                   )}
-                  <div className="answer__actions">
-                    {question.isMine && !answer.helpful && (
-                      <button
-                        type="button"
-                        className="btn btn--small answer__helpful"
-                        // Only the one being sent changes; the others keep their look and just ignore the tap
-                        disabled={markHelpful.isPending && markHelpful.variables === answer.id}
-                        aria-disabled={markHelpful.isPending || undefined}
-                        onClick={() => !markHelpful.isPending && sendHelpful(answer)}
-                      >
-                        {markHelpful.isPending && markHelpful.variables === answer.id ? (
-                          <>
-                            <span className="upload__spinner" aria-hidden="true" /> Enviando…
-                          </>
-                        ) : (
-                          <>
-                            <ThumbIcon size={18} /> Me sirvió
-                          </>
-                        )}
-                      </button>
-                    )}
-                    {canRequestContact(question, answer) && <RequestContactButton question={question} answer={answer} />}
-                    <button
-                      type="button"
-                      className="icon-btn"
-                      aria-label={answer.savedByMe ? 'Quitar la respuesta de guardados' : 'Guardar la respuesta'}
-                      aria-pressed={answer.savedByMe}
-                      onClick={() => saveAnswer(answer)}
-                    >
-                      <BookmarkIcon size={20} fill={answer.savedByMe ? 'currentColor' : 'none'} />
-                    </button>
-                    {hasMenu && (
-                      <button type="button" className="icon-btn" aria-label="Más opciones de la respuesta" aria-haspopup="dialog" onClick={() => openMenu({ type: 'answer', answer })}>
-                        <MoreIcon />
-                      </button>
-                    )}
-                  </div>
+                  {((question.isMine && !answer.helpful) || canRequestContact(question, answer)) && (
+                    <div className="answer__actions">
+                      {question.isMine && !answer.helpful && (
+                        <button
+                          type="button"
+                          className="btn btn--small answer__helpful"
+                          // Only the one being sent changes; the others keep their look and just ignore the tap
+                          disabled={markHelpful.isPending && markHelpful.variables === answer.id}
+                          aria-disabled={markHelpful.isPending || undefined}
+                          onClick={() => !markHelpful.isPending && sendHelpful(answer)}
+                        >
+                          {markHelpful.isPending && markHelpful.variables === answer.id ? (
+                            <>
+                              <span className="upload__spinner" aria-hidden="true" /> Enviando…
+                            </>
+                          ) : (
+                            <>
+                              <ThumbIcon size={18} /> Me sirvió
+                            </>
+                          )}
+                        </button>
+                      )}
+                      {canRequestContact(question, answer) && <RequestContactButton question={question} answer={answer} />}
+                    </div>
+                  )}
                   <ContactPanel question={question} answer={answer} />
                   <AnswerThread questionId={question.id} answer={answer} onMenu={(comment) => openMenu({ type: 'comment', comment })} />
                 </li>
@@ -360,7 +367,14 @@ function ActionSheet({
   const titleId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const requireAccount = useRequireAccount();
-  const [step, setStep] = useState<Exclude<Dialog, { kind: 'photo' }>['kind']>(first.kind);
+  type Step = Exclude<Dialog, { kind: 'photo' }>['kind'];
+  const [step, setCurrentStep] = useState<Step>(first.kind);
+  // The first step arrives with the sheet; every later one slides in over the same sheet
+  const [moved, setMoved] = useState(false);
+  const setStep = (next: Step) => {
+    setMoved(true);
+    setCurrentStep(next);
+  };
   const { target } = first;
   const isQuestion = target.type === 'question';
   const isComment = target.type === 'comment';
@@ -420,125 +434,132 @@ function ActionSheet({
             </button>
           </header>
 
-          {step === 'menu' && (
-            <ul className="menu">
-              {target.type === 'answer' && question.isMine && !target.answer.helpful && !target.answer.notHelpful && (
-                <li>
-                  <button
-                    type="button"
-                    className="menu__item"
-                    disabled={markNotHelpful.isPending}
-                    onClick={() => markNotHelpful.mutate(target.answer.id, { onSuccess: close })}
-                  >
-                    <ThumbDownIcon size={20} /> No me sirvió
-                  </button>
-                </li>
-              )}
-              {!mine && (
-                <li>
-                  <button
-                    type="button"
-                    className="menu__item"
-                    onClick={() => requireAccount('Así nos avisas de algo que no debería estar.', () => setStep('report'))}
-                  >
-                    <FlagIcon size={20} /> Reportar
-                  </button>
-                </li>
-              )}
-              {canDelete && (
-                <li>
-                  <button type="button" className="menu__item menu__item--danger" onClick={() => setStep('delete')}>
-                    <TrashIcon size={20} /> Borrar {noun}
-                  </button>
-                </li>
-              )}
-            </ul>
-          )}
+          <div key={step} className={moved ? 'qd__step qd__step--in' : 'qd__step'}>
+            {step === 'menu' && (
+              <ul className="menu">
+                {target.type === 'answer' && question.isMine && !target.answer.helpful && !target.answer.notHelpful && (
+                  <li>
+                    <button
+                      type="button"
+                      className="menu__item"
+                      disabled={markNotHelpful.isPending}
+                      onClick={() => markNotHelpful.mutate(target.answer.id, { onSuccess: close })}
+                    >
+                      <ThumbDownIcon size={20} /> No me sirvió
+                    </button>
+                  </li>
+                )}
+                {!mine && (
+                  <li>
+                    <button
+                      type="button"
+                      className="menu__item"
+                      onClick={() => requireAccount('Así nos avisas de algo que no debería estar.', () => setStep('report'))}
+                    >
+                      <FlagIcon size={20} /> Reportar
+                    </button>
+                  </li>
+                )}
+                {canDelete && (
+                  <li>
+                    <button type="button" className="menu__item menu__item--danger" onClick={() => setStep('delete')}>
+                      <TrashIcon size={20} /> Borrar {noun}
+                    </button>
+                  </li>
+                )}
+              </ul>
+            )}
 
-          {step === 'report' && (
-            <form
-              className="sheet__content report"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (reason === 'hide') hide.mutate({ kind, id: itemId }, { onSuccess: () => setStep('hidden') });
-                else if (reason) report.mutate({ kind, id: itemId, reason }, { onSuccess: () => setStep('reported') });
-              }}
-            >
-              <fieldset className="report__set">
-                <legend className="report__legend">¿Qué pasa con {this_} {noun}?</legend>
-                {REPORT_REASONS.map((r) => (
-                  <label key={r.value} className="radio-row">
-                    <input type="radio" name="reason" value={r.value} checked={reason === r.value} onChange={() => setReason(r.value)} />
-                    <span>{r.label}</span>
+            {step === 'report' && (
+              <form
+                className="sheet__content report"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (reason === 'hide') hide.mutate({ kind, id: itemId }, { onSuccess: () => setStep('hidden') });
+                  else if (reason) report.mutate({ kind, id: itemId, reason }, { onSuccess: () => setStep('reported') });
+                }}
+              >
+                <fieldset className="report__set">
+                  <legend className="report__legend">¿Qué pasa con {this_} {noun}?</legend>
+                  {REPORT_REASONS.map((r) => (
+                    <label key={r.value} className="radio-row">
+                      <input type="radio" name="reason" value={r.value} checked={reason === r.value} onChange={() => setReason(r.value)} />
+                      <span>{r.label}</span>
+                    </label>
+                  ))}
+                  <label className="radio-row">
+                    <input type="radio" name="reason" value="hide" checked={reason === 'hide'} onChange={() => setReason('hide')} />
+                    <span>
+                      Ya no quiero ver esto <span className="meta">(solo te lo oculta a ti)</span>
+                    </span>
                   </label>
-                ))}
-                <label className="radio-row">
-                  <input type="radio" name="reason" value="hide" checked={reason === 'hide'} onChange={() => setReason('hide')} />
-                  <span>
-                    Ya no quiero ver esto <span className="meta">(solo te lo oculta a ti)</span>
+                </fieldset>
+                {(report.error ?? hide.error) && <p className="field__error" role="alert">{errorMessage(report.error ?? hide.error)}</p>}
+                <button type="submit" className={reason ? 'btn btn--full' : 'btn btn--secondary btn--full'} disabled={!reason || report.isPending || hide.isPending}>
+                  {report.isPending || hide.isPending ? 'Enviando…' : reason === 'hide' ? 'Ocultar' : reason ? 'Enviar reporte' : 'Elige una opción'}
+                </button>
+              </form>
+            )}
+
+            {step === 'delete' && (
+              <div className="sheet__content qd__confirm">
+                <p className="empty__text">
+                  {isQuestion
+                    ? 'Desaparece para todos. Si era urgente, las 5 yapitas no se devuelven.'
+                    : isComment
+                      ? 'Desaparece para todos.'
+                      : 'Desaparece junto con su conversación.'}
+                </p>
+                {removeError && <p className="field__error" role="alert">{errorMessage(removeError)}</p>}
+                <div className="confirm__actions">
+                  <button type="button" className="btn btn--secondary" onClick={() => setStep('menu')}>{isComment ? 'Cancelar' : 'No, dejarla'}</button>
+                  <button type="button" className="btn btn--danger" disabled={removing} onClick={doDelete}>
+                    {removing ? 'Borrando…' : isComment ? 'Borrar' : 'Sí, borrar'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 'close' && (
+              <div className="sheet__content qd__confirm">
+                <p className="empty__text">Si ninguna respuesta te sirvió, tu pregunta queda Cerrada y ganas 1 yapita.</p>
+                {closeQuestion.error && <p className="field__error" role="alert">{errorMessage(closeQuestion.error)}</p>}
+                <div className="confirm__actions">
+                  <button type="button" className="btn btn--secondary" onClick={close}>Seguir esperando</button>
+                  <button type="button" className="btn" disabled={closeQuestion.isPending} onClick={() => closeQuestion.mutate(question.id, { onSuccess: () => setStep('closed') })}>
+                    {closeQuestion.isPending ? 'Cerrando…' : 'Sí, cerrar'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 'closed' && (
+              <div className="sheet__content qd__confirm" role="status">
+                <p className="empty__text">Tu pregunta quedó Cerrada y ganaste +1 yapita. Si luego una respuesta te sirve, aún puedes marcarla.</p>
+                <button type="button" className="btn btn--secondary" onClick={close}>Listo</button>
+              </div>
+            )}
+
+            {(step === 'reported' || step === 'hidden' || step === 'deleted') && (
+              <div className="sheet__content qd__confirm" role="status">
+                {step === 'deleted' && (
+                  <span className="qd__done" aria-hidden="true">
+                    <CheckIcon size={28} />
                   </span>
-                </label>
-              </fieldset>
-              {(report.error ?? hide.error) && <p className="field__error" role="alert">{errorMessage(report.error ?? hide.error)}</p>}
-              <button type="submit" className={reason ? 'btn btn--full' : 'btn btn--secondary btn--full'} disabled={!reason || report.isPending || hide.isPending}>
-                {report.isPending || hide.isPending ? 'Enviando…' : reason === 'hide' ? 'Ocultar' : reason ? 'Enviar reporte' : 'Elige una opción'}
-              </button>
-            </form>
-          )}
-
-          {step === 'delete' && (
-            <div className="sheet__content qd__confirm">
-              <p className="empty__text">
-                {isQuestion
-                  ? 'Desaparece para todos. Si era urgente, las 5 yapitas no se devuelven.'
-                  : isComment
-                    ? 'Desaparece para todos.'
-                    : 'Desaparece junto con su conversación.'}
-              </p>
-              {removeError && <p className="field__error" role="alert">{errorMessage(removeError)}</p>}
-              <div className="confirm__actions">
-                <button type="button" className="btn btn--secondary" onClick={() => setStep('menu')}>{isComment ? 'Cancelar' : 'No, dejarla'}</button>
-                <button type="button" className="btn btn--danger" disabled={removing} onClick={doDelete}>
-                  {removing ? 'Borrando…' : isComment ? 'Borrar' : 'Sí, borrar'}
+                )}
+                <p className="empty__text">
+                  {step === 'reported'
+                    ? `Ya no ${it} verás. ${isComment ? 'Lo' : 'La'} revisamos y, si más vecinos ${it} reportan, se oculta para todos.`
+                    : step === 'hidden'
+                      ? 'Desaparece de tus listas. Nadie más se entera.'
+                      : 'Ya no aparece en ¿Alguien sabe?.'}
+                </p>
+                <button type="button" className="btn btn--secondary" onClick={close}>
+                  {isQuestion ? 'Volver' : 'Listo'}
                 </button>
               </div>
-            </div>
-          )}
-
-          {step === 'close' && (
-            <div className="sheet__content qd__confirm">
-              <p className="empty__text">Si ninguna respuesta te sirvió, tu pregunta queda Cerrada y ganas 1 yapita.</p>
-              {closeQuestion.error && <p className="field__error" role="alert">{errorMessage(closeQuestion.error)}</p>}
-              <div className="confirm__actions">
-                <button type="button" className="btn btn--secondary" onClick={close}>Seguir esperando</button>
-                <button type="button" className="btn" disabled={closeQuestion.isPending} onClick={() => closeQuestion.mutate(question.id, { onSuccess: () => setStep('closed') })}>
-                  {closeQuestion.isPending ? 'Cerrando…' : 'Sí, cerrar'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 'closed' && (
-            <div className="sheet__content qd__confirm" role="status">
-              <p className="empty__text">Tu pregunta quedó Cerrada y ganaste +1 yapita. Si luego una respuesta te sirve, aún puedes marcarla.</p>
-              <button type="button" className="btn btn--secondary" onClick={close}>Listo</button>
-            </div>
-          )}
-
-          {(step === 'reported' || step === 'hidden' || step === 'deleted') && (
-            <div className="sheet__content qd__confirm" role="status">
-              <p className="empty__text">
-                {step === 'reported'
-                  ? `Ya no ${it} verás. ${isComment ? 'Lo' : 'La'} revisamos y, si más vecinos ${it} reportan, se oculta para todos.`
-                  : step === 'hidden'
-                    ? 'Desaparece de tus listas. Nadie más se entera.'
-                    : 'Ya no aparece en ¿Alguien sabe?.'}
-              </p>
-              <button type="button" className="btn btn--secondary" onClick={close}>
-                {isQuestion ? 'Volver' : 'Listo'}
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </>
       )}
     </Sheet>

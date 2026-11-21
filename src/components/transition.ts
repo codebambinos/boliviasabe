@@ -3,7 +3,8 @@
 // reduced motion, get the same update at once.
 import { flushSync } from 'react-dom';
 
-export type NavDirection = 'forward' | 'back' | 'up';
+/** `remove`: not a screen change. Something leaves the screen in place (a deleted question). */
+export type NavDirection = 'forward' | 'back' | 'up' | 'remove';
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -27,17 +28,19 @@ export function setDirection(direction: NavDirection): void {
   }, 700);
 }
 
-/** Runs `update` (a React state change) as an animated screen change. */
-export function navigateWithTransition(update: () => void, direction: NavDirection = 'forward'): void {
+/** Runs `update` (a React state change) as an animated screen change. Resolves once the animation is over. */
+export function navigateWithTransition(update: () => void, direction: NavDirection = 'forward'): Promise<void> {
   const run = () => flushSync(update);
   if (typeof document.startViewTransition !== 'function' || reducedMotion()) {
     run();
-    return;
+    return Promise.resolve();
   }
   const root = document.documentElement;
   root.dataset.nav = direction;
   const transition = document.startViewTransition(run);
-  transition.finished.finally(() => {
-    if (root.dataset.nav === direction) delete root.dataset.nav;
-  });
+  return transition.finished
+    .catch(() => undefined)
+    .finally(() => {
+      if (root.dataset.nav === direction) delete root.dataset.nav;
+    });
 }

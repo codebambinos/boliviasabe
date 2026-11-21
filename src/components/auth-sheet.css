@@ -55,3 +55,59 @@
   text-underline-offset: 3px;
   cursor: pointer;
 }
+
+/* Steps (opciones → correo → ¿La olvidaste?) change like tabs: the new one slides in from the side it lives on
+   (forward from the right, back from the left). Inside, the fields and buttons rise one after another. */
+.auth__pane[data-direction] {
+  animation: auth-pane-in 260ms var(--ease-enter) both;
+}
+
+.auth__pane[data-direction='forward'] {
+  --auth-dx: 24px;
+}
+
+.auth__pane[data-direction='back'] {
+  --auth-dx: -24px;
+}
+
+@keyframes auth-pane-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--auth-dx));
+  }
+}
+
+.auth__choices > *,
+.auth__form > * {
+  animation: auth-rise 280ms var(--ease-enter) both;
+}
+
+.auth__choices > :nth-child(2),
+.auth__form > :nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.auth__choices > :nth-child(3),
+.auth__form > :nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.auth__choices > :nth-child(n + 4),
+.auth__form > :nth-child(n + 4) {
+  animation-delay: 150ms;
+}
+
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth__pane[data-direction],
+  .auth__choices > *,
+  .auth__form > * {
+    animation: none;
+  }
+}
