@@ -2,18 +2,26 @@
 // With `supabase` only `auth` is real (SPEC 07, T15); the rest still runs on the mock until its
 // own task lands. The Supabase code loads on first use, so the mock build never ships it.
 import type { DataApi } from './api';
-import { mockAdapter } from './mock/adapter';
+import type { Session } from './types';
+import { followRealSession, mockAdapter } from './mock/adapter';
+
+/** The mock keeps its own session, so it follows the real one (see followRealSession). */
+async function bridged(session: Promise<Session>): Promise<Session> {
+  const result = await session;
+  followRealSession(result);
+  return result;
+}
 
 function lazyAuth(): DataApi['auth'] {
   const load = () => import('./supabase/auth').then((module) => module.supabaseAuth);
   return {
-    getSession: () => load().then((auth) => auth.getSession()),
-    signInWithGoogle: () => load().then((auth) => auth.signInWithGoogle()),
-    signInWithEmail: (email, password) => load().then((auth) => auth.signInWithEmail(email, password)),
+    getSession: () => bridged(load().then((auth) => auth.getSession())),
+    signInWithGoogle: () => bridged(load().then((auth) => auth.signInWithGoogle())),
+    signInWithEmail: (email, password) => bridged(load().then((auth) => auth.signInWithEmail(email, password))),
     requestPasswordReset: (email) => load().then((auth) => auth.requestPasswordReset(email)),
     recoveryReady: () => load().then((auth) => auth.recoveryReady()),
-    updatePassword: (password) => load().then((auth) => auth.updatePassword(password)),
-    signOut: () => load().then((auth) => auth.signOut()),
+    updatePassword: (password) => bridged(load().then((auth) => auth.updatePassword(password))),
+    signOut: () => bridged(load().then((auth) => auth.signOut())),
     saveProfile: (input) => load().then((auth) => auth.saveProfile(input)),
   };
 }

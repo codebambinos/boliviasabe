@@ -131,6 +131,37 @@ function prepareWallet(userId: Id): void {
   }, SETTLE_MS);
 }
 
+/**
+ * Development bridge (VITE_DATA_SOURCE=supabase, SPEC 07). Sign-in is real, but letreros, saved items and
+ * votes still run on this mock, which keeps its own idea of who is signed in. This makes the mock follow
+ * the real session: a mock neighbor with the same e-mail, and a made-up profile while the real one is
+ * pending («Tu barrio» is T16). It goes away as each part of the data layer moves to Supabase.
+ */
+export function followRealSession(session: Session): void {
+  if (session.status === 'guest') {
+    store.session.userId = null;
+    return;
+  }
+  const email = session.email.toLowerCase();
+  let user = store.users.find((u) => u.email === email);
+  if (!user) {
+    const id = nextId('user');
+    user = {
+      id,
+      email,
+      provider: 'password',
+      password: null,
+      fullName: session.profile?.fullName ?? email.split('@')[0].split('+')[0],
+      city: session.profile?.city ?? DEFAULT_CITY,
+      zone: session.profile?.zone ?? 'Centro',
+      walletStatus: 'ready',
+      address: fakeAddress(id),
+    };
+    store.users.push(user);
+  }
+  store.session.userId = user.id;
+}
+
 export const mockAuth: DataApi['auth'] = {
   getSession: () => simulate(() => sessionOf()),
 
