@@ -2,7 +2,7 @@
 // It precaches the app shell and serves index.html for every app route, so the installed app opens without signal.
 // Photos and fonts get runtime caches below. Data is not cached here: the last lists come from the persisted TanStack Query cache (src/data/persist.ts).
 // A new version installs in the background and takes over on the next open: no skipWaiting, no reload (#200).
-// T27 adds the push and notificationclick handlers to this file.
+// Push and notificationclick (T27) are at the end.
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
@@ -43,3 +43,45 @@ registerRoute(
     ],
   }),
 );
+
+// ---------------------------------------------------------------------------
+// Push (SPEC 15, wiki #203). /api/push sends { title, body, url, tag }; a tag replaces an earlier notice about the
+// same thing. A tap opens the question or letrero: an open app moves there without reloading, else a new window.
+// ---------------------------------------------------------------------------
+type PushPayload = { title: string; body: string; url: string; tag: string };
+
+self.addEventListener('push', (event) => {
+  let payload: PushPayload;
+  try {
+    payload = event.data?.json() as PushPayload;
+  } catch {
+    return;
+  }
+  if (!payload?.title) return;
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: '/pwa-192x192.png',
+      badge: '/pwa-64x64.png',
+      tag: payload.tag,
+      data: { url: payload.url },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = typeof event.notification.data?.url === 'string' ? event.notification.data.url : '/';
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const app = windows.find((client) => new URL(client.url).origin === self.location.origin);
+      if (app) {
+        app.postMessage({ type: 'bs-open', url });
+        await app.focus();
+        return;
+      }
+      await self.clients.openWindow(url);
+    })(),
+  );
+});

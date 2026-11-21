@@ -16,6 +16,13 @@ import { router } from './router';
 // The service worker only in production builds (SPEC 16): in development it would hide changes from HMR.
 if (import.meta.env.PROD) registerSW({ immediate: true });
 
+// A tapped notification while the app is open: go to its question or letrero without reloading (src/sw.ts)
+navigator.serviceWorker?.addEventListener('message', (event: MessageEvent<{ type?: string; url?: string }>) => {
+  if (event.data?.type === 'bs-open' && typeof event.data.url === 'string' && event.data.url.startsWith('/')) {
+    void router.navigate(event.data.url);
+  }
+});
+
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root element in index.html');
 
