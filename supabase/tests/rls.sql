@@ -437,9 +437,36 @@ select pg_temp.expect_select('anon reads no rewards', 'select id from public.rew
 select pg_temp.expect_select('anon reads no wallet keys', 'select profile_id from public.wallet_keys', 0);
 
 -- ---------------------------------------------------------------------------
--- zone_norm: lower case, no accents, from the zone (trigger)
+-- rewards.memo_key: Stellar memos hold at most 28 bytes (bytes, not characters)
 -- ---------------------------------------------------------------------------
 select pg_temp.as_postgres();
+do $$
+begin
+  insert into public.rewards (profile_id, memo_key, amount, reason)
+  values ((select id from test_ids where name = 'a'), repeat('x', 28), 5, 'letrero');
+  raise notice 'ok: a 28-byte memo_key is accepted';
+
+  begin
+    insert into public.rewards (profile_id, memo_key, amount, reason)
+    values ((select id from test_ids where name = 'a'), repeat('y', 29), 5, 'letrero');
+    raise exception 'FAILED: a 29-byte memo_key was accepted';
+  exception when check_violation then
+    raise notice 'ok: a 29-byte memo_key is rejected';
+  end;
+
+  begin
+    -- 15 characters, 30 bytes
+    insert into public.rewards (profile_id, memo_key, amount, reason)
+    values ((select id from test_ids where name = 'a'), repeat('ñ', 15), 5, 'letrero');
+    raise exception 'FAILED: a 30-byte memo_key (15 characters) was accepted';
+  exception when check_violation then
+    raise notice 'ok: a memo_key over 28 bytes is rejected even with fewer than 28 characters';
+  end;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- zone_norm: lower case, no accents, from the zone (trigger)
+-- ---------------------------------------------------------------------------
 update public.profiles set zone = 'Sopocachí' where id = pg_temp.id_of('a');
 select pg_temp.expect_select('zone_norm drops accents and case',
   format('select id from public.profiles where id = %s and zone_norm = ''sopocachi''', pg_temp.id_of('a')), 1);
