@@ -1,6 +1,6 @@
 # SPEC 20 — `stellar:reset` after a testnet wipe
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 08 (custodied accounts: `wallet_keys`, `profiles.stellar_pk` / `stellar_status`, `provisionWallet`), SPEC 09 (`rewards` with one memo per movement, `payPoints`), SPEC 14 (the seed, used to build the local test). Board card: T37 (issue #26).
 > **Date:** 2026-11-21
 > **Objective:** One command, `npm run stellar:reset`, brings YAPITA back after Stellar wipes testnet: the same issuer, distributor and neighbor addresses, and the whole history of confirmed yapitas paid again, so balances and every «Ver registro» match the database.
