@@ -7,6 +7,8 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 // The DOM provider wires flushSync, which view transitions need to snapshot the new screen
 import { RouterProvider } from 'react-router/dom';
 import { registerSW } from 'virtual:pwa-register';
+// Catches the install prompt before any screen mounts (SPEC 16)
+import './pwa/install';
 import { persistOptions } from './data/persist';
 import { queryClient } from './data/query';
 import { router } from './router';

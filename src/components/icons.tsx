@@ -245,3 +245,27 @@ export const ContactIcon = (p: IconProps) => (
     <path d="M5 20a7 7 0 0 1 14 0" />
   </Icon>
 );
+
+/** Install: a phone with an arrow coming down into it. */
+export const InstallIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+    <path d="M12 7v7M9 11l3 3 3-3M10.5 18.5h3" />
+  </Icon>
+);
+
+/** iOS Share: the box with an arrow going up (what the iPhone shows in Safari). */
+export const IosShareIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 3v12M8 7l4-4 4 4" />
+    <path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16" />
+  </Icon>
+);
+
+/** iOS «Agregar a inicio»: a plus in a rounded square. */
+export const AddSquareIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="4" />
+    <path d="M12 8v8M8 12h8" />
+  </Icon>
+);
