@@ -1,5 +1,5 @@
 // Mock implementation of DataApi: in-memory, with fake latency and the wiki rules.
-import type { DataApi } from '../api';
+import { DEFAULT_NOTIF_PREFS, type DataApi } from '../api';
 import { CITIES, DEFAULT_CITY, PAGE_SIZE } from '../catalog';
 import { DataError } from '../errors';
 import type { Answer, City, Comment, ContactState, ContentKind, Id, Movement, Page, Question, ReportKind, Session, Sign } from '../types';
@@ -787,6 +787,27 @@ export const mockActivity: DataApi['activity'] = {
     }),
 };
 
+/** The mock has no push service: preferences live on the user, subscriptions in memory, nothing is ever sent. */
+const mockSubscriptions = new Map<string, Id>();
+
+export const mockPush: DataApi['push'] = {
+  getPrefs: () => simulate(() => ({ ...DEFAULT_NOTIF_PREFS, ...requireUser().notifPrefs })),
+  setPrefs: (prefs) =>
+    simulate(() => {
+      const user = requireUser();
+      user.notifPrefs = { ...prefs };
+      return { ...prefs };
+    }),
+  saveSubscription: (subscription) =>
+    simulate(() => {
+      mockSubscriptions.set(subscription.endpoint, requireUser().id);
+    }),
+  deleteSubscription: (endpoint) =>
+    simulate(() => {
+      if (mockSubscriptions.get(endpoint) === requireUser().id) mockSubscriptions.delete(endpoint);
+    }),
+};
+
 export const mockAdapter: DataApi = {
   auth: mockAuth,
   signs: mockSigns,
@@ -799,4 +820,5 @@ export const mockAdapter: DataApi = {
   reports: mockReports,
   wallet: mockWallet,
   activity: mockActivity,
+  push: mockPush,
 };

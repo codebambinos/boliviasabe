@@ -107,6 +107,12 @@ function supabaseAdapter(): DataApi {
       myAnswers: () => read(loadData().then((data) => data.activity.myAnswers())),
       mySigns: () => read(loadData().then((data) => data.activity.mySigns())),
     },
+    push: {
+      getPrefs: () => read(loadData().then((data) => data.push.getPrefs())),
+      setPrefs: (prefs) => loadData().then((data) => data.push.setPrefs(prefs)),
+      saveSubscription: (subscription) => loadData().then((data) => data.push.saveSubscription(subscription)),
+      deleteSubscription: (endpoint) => loadData().then((data) => data.push.deleteSubscription(endpoint)),
+    },
   };
 }
 

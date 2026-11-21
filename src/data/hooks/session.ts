@@ -4,6 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ProfileInput } from '../api';
 import { keys } from '../keys';
+import { disablePushOnThisDevice } from '../../push/device';
 import { persister } from '../persist';
 import { isPersonalKey, PERSONAL_KEYS } from '../query';
 import { api } from '../source';
@@ -44,8 +45,16 @@ export function useRecoveryReady() {
 /** The new password of the recovery session; also signs the person in. */
 export const useUpdatePassword = () => useSessionMutation<string>((password) => api.auth.updatePassword(password));
 
-// Signing out also drops the copy kept on the device for offline use (#197).
-export const useSignOut = () => useSessionMutation<void>(() => api.auth.signOut(), () => void persister.removeClient());
+// Signing out first forgets this device's push subscription (#207), then drops the copy kept on the device for
+// offline use (#197).
+export const useSignOut = () =>
+  useSessionMutation<void>(
+    async () => {
+      await disablePushOnThisDevice();
+      return api.auth.signOut();
+    },
+    () => void persister.removeClient(),
+  );
 
 /** «Tu barrio»: saves name, city and zone. The first time it also prepares the wallet. */
 export const useSaveProfile = () => useSessionMutation<ProfileInput>((input) => api.auth.saveProfile(input));

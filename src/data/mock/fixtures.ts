@@ -17,6 +17,8 @@ export type UserRec = {
   address: string | null;
   /** Shared with «Pedir contacto» when given (wiki #182). */
   phone?: string | null;
+  /** Ajustes › Notificaciones (SPEC 15); missing means all on. */
+  notifPrefs?: import('../api').NotifPrefs;
 };
 
 export type SignRec = {

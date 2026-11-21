@@ -12,7 +12,7 @@ let justInstalled = false;
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((fn) => fn());
 
-function isStandalone(): boolean {
+export function isStandalone(): boolean {
   const nav = navigator as Navigator & { standalone?: boolean };
   return window.matchMedia('(display-mode: standalone)').matches || nav.standalone === true;
 }

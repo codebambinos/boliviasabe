@@ -10,9 +10,11 @@ export * from './hooks/reports';
 export * from './hooks/wallet';
 export * from './hooks/activity';
 export * from './hooks/refresh';
+export * from './hooks/push';
 
 export type * from './types';
-export type { ListQuery, NewQuestion, NewSign, ProfileInput, SavedItems } from './api';
+export type { ListQuery, NewQuestion, NewSign, NotifPrefs, ProfileInput, PushSubscriptionInput, SavedItems } from './api';
+export { DEFAULT_NOTIF_PREFS } from './api';
 export { DataError, isDataError, type DataErrorCode, type LimitReason } from './errors';
 export {
   BOLIVIA_TIME_ZONE,

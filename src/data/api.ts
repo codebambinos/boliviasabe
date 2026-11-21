@@ -54,6 +54,14 @@ export type NewQuestion = {
 
 export type SavedItems = { signs: Sign[]; questions: Question[]; answers: Answer[] };
 
+/** The 4 switches of Ajustes › Notificaciones (wiki #204). They filter the push, not the bell; on by default. */
+export type NotifPrefs = { answers: boolean; helpful: boolean; contacts: boolean; urgent: boolean };
+
+export const DEFAULT_NOTIF_PREFS: NotifPrefs = { answers: true, helpful: true, contacts: true, urgent: true };
+
+/** A browser push subscription, as `PushSubscription.toJSON()` gives it. */
+export type PushSubscriptionInput = { endpoint: string; p256dh: string; auth: string };
+
 export interface DataApi {
   auth: {
     getSession(): Promise<Session>;
@@ -140,5 +148,14 @@ export interface DataApi {
     myQuestions(): Promise<Question[]>;
     myAnswers(): Promise<Answer[]>;
     mySigns(): Promise<Sign[]>;
+  };
+  /** Push notifications (SPEC 15). The preferences belong to the account; a subscription to this device. */
+  push: {
+    getPrefs(): Promise<NotifPrefs>;
+    setPrefs(prefs: NotifPrefs): Promise<NotifPrefs>;
+    /** Saves this device for the signed-in person; an endpoint used by another account moves to this one (#207). */
+    saveSubscription(subscription: PushSubscriptionInput): Promise<void>;
+    /** Forgets this device for the signed-in person (Cerrar sesión). */
+    deleteSubscription(endpoint: string): Promise<void>;
   };
 }
