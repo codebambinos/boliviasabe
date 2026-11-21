@@ -115,6 +115,19 @@ begin
 end;
 $$;
 
+-- expect_text: the scalar query must return p_expected.
+create or replace function pg_temp.expect_text(p_label text, p_sql text, p_expected text)
+returns void language plpgsql as $$
+declare v text;
+begin
+  execute p_sql into v;
+  if v is distinct from p_expected then
+    raise exception 'FAILED: % (expected %, got %)', p_label, p_expected, v;
+  end if;
+  raise notice 'ok: %', p_label;
+end;
+$$;
+
 -- expect_write: the DML must affect p_expected rows. An RLS, privilege, trigger (42501)
 -- or duplicate-key error counts as 0 rows.
 create or replace function pg_temp.expect_write(p_label text, p_sql text, p_expected bigint)
@@ -370,27 +383,27 @@ select pg_temp.expect_select('Beto sees no saved items of Ana', 'select id from 
 select pg_temp.expect_select('Beto sees no hidden items of Ana', 'select id from public.hidden_items', 0);
 
 -- ---------------------------------------------------------------------------
--- contact_requests: requester and owner read; requester creates; only owner answers
+-- contact_requests (0006): only request_contact / respond_contact write; both parties read
 -- ---------------------------------------------------------------------------
-select pg_temp.expect_write('Beto asks Ana for contact',
-  format('insert into public.contact_requests (requester_id, owner_id, question_id) values (%s, %s, %s)',
-    pg_temp.id_of('b'), pg_temp.id_of('a'), pg_temp.r('q_a')), 1);
-select pg_temp.expect_write('Beto cannot accept his own request',
-  'update public.contact_requests set status = ''accepted'', answered_at = now()', 0);
-select pg_temp.expect_write('Beto cannot request as Ana',
-  format('insert into public.contact_requests (requester_id, owner_id) values (%s, %s)',
-    pg_temp.id_of('a'), pg_temp.id_of('b')), 0);
+select pg_temp.expect_write('Beto cannot insert a request directly',
+  format('insert into public.contact_requests (requester_id, owner_id, question_id, answer_id) values (%s, %s, %s, %s)',
+    pg_temp.id_of('b'), pg_temp.id_of('a'), pg_temp.r('q_a'), pg_temp.r('ans_b')), 0);
 
 select pg_temp.as_user('a');
-select pg_temp.expect_write('Ana cannot change who requested',
-  format('update public.contact_requests set requester_id = %s', pg_temp.id_of('a')), 0);
-select pg_temp.expect_write('Ana accepts the request',
-  'update public.contact_requests set status = ''accepted'', answered_at = now()', 1);
-select pg_temp.expect_select('Ana reads the request as owner', 'select id from public.contact_requests', 1);
+select pg_temp.expect_text('Ana asks Beto for his contact', format('select public.request_contact(%s, ''70000001'')->>''status''', pg_temp.r('ans_b')), 'pending');
+select pg_temp.expect_write('Ana cannot accept through the table',
+  'update public.contact_requests set status = ''accepted'', answered_at = now()', 0);
+select pg_temp.expect_select('Ana reads the request as requester', 'select id from public.contact_requests', 1);
+select pg_temp.expect_select('nobody reads the phones table', 'select request_id from public.contact_phones', 0);
 
 select pg_temp.as_user('b');
-select pg_temp.expect_select('Beto reads the request as requester', 'select id from public.contact_requests', 1);
+select pg_temp.expect_select('Beto reads the request as owner', 'select id from public.contact_requests', 1);
+select pg_temp.expect_text('Beto accepts and sees Ana''s phone',
+  'select public.respond_contact((select id from public.contact_requests limit 1), true, ''70000002'')->''other''->>''phone''', '70000001');
 select pg_temp.expect_write('Beto cannot delete the request', 'delete from public.contact_requests', 0);
+
+select pg_temp.as_user('a');
+select pg_temp.expect_text('Ana sees Beto''s e-mail', format('select public.contact_json(%s)->''other''->>''email''', pg_temp.r('ans_b')), 'beto@test.local');
 
 -- ---------------------------------------------------------------------------
 -- notifications: the owner reads, marks read and deletes; no client inserts
@@ -474,17 +487,6 @@ select pg_temp.expect_select('zone_norm drops accents and case',
 -- ---------------------------------------------------------------------------
 -- author_trust and profiles_public (0003)
 -- ---------------------------------------------------------------------------
-create or replace function pg_temp.expect_text(p_label text, p_sql text, p_expected text)
-returns void language plpgsql as $$
-declare v text;
-begin
-  execute p_sql into v;
-  if v is distinct from p_expected then
-    raise exception 'FAILED: % (expected %, got %)', p_label, p_expected, v;
-  end if;
-  raise notice 'ok: %', p_label;
-end;
-$$;
 
 -- A question by Ana, answered by p_author, and rated by Ana (she is the asker).
 create or replace function pg_temp.rate_answer(p_author text, p_helpful boolean) returns void
@@ -775,7 +777,7 @@ select pg_temp.as_user('mx');
 select pg_temp.expect_error('close_question: a solved question cannot be closed', format('select public.close_question(%s)', pg_temp.r('q_old')), '42501');
 select pg_temp.expect_error('close_question: needs answers', format('select public.close_question(%s)', pg_temp.r('q_empty')), '42501');
 select pg_temp.expect_text('close_question: closes an open question with answers', format('select public.close_question(%s)->>''status''', pg_temp.r('q_one')), 'closed');
-select pg_temp.expect_text('rate_answer on a closed question keeps it closed', format('select public.rate_answer(%s, true)->>''questionStatus''', pg_temp.r('ans_one')), 'closed');
+select pg_temp.expect_text('rate_answer on a closed question solves it (0006)', format('select public.rate_answer(%s, true)->>''questionStatus''', pg_temp.r('ans_one')), 'solved');
 
 -- clients still cannot write the status or the urgency
 select pg_temp.expect_write('x cannot set the status through the table', format('update public.questions set status = ''solved'' where id = %s', pg_temp.r('q_empty')), 0);
@@ -797,6 +799,77 @@ select pg_temp.expect_write('x cannot upload to y''s folder',
 select set_config('storage.allow_delete_query', 'true', true);
 select pg_temp.expect_write('x deletes their own file',
   format('delete from storage.objects where bucket_id = ''photos'' and name = ''%s/a.jpg''', pg_temp.id_of('mx')), 1);
+
+-- ---------------------------------------------------------------------------
+-- Threads and contact (0006, SPEC 12), with the people of the 0005 block
+-- ---------------------------------------------------------------------------
+-- Contact: only the asker asks, on others' answers; the phone is validated
+select pg_temp.as_user('mz');
+select pg_temp.expect_error('the answerer cannot ask for a contact', format('select public.request_contact(%s)', pg_temp.r('ans_z')), '42501');
+select pg_temp.as_user('mx');
+select pg_temp.expect_error('a bad phone is a validation error', format('select public.request_contact(%s, ''abc'')', pg_temp.r('ans_y')), '23514');
+select pg_temp.expect_text('mx asks my for a contact', format('select public.request_contact(%s, ''+591 70000010'')->>''requestedByMe''', pg_temp.r('ans_y')), 'true');
+select pg_temp.expect_text('asking again returns the same pending request', format('select public.request_contact(%s)->>''status''', pg_temp.r('ans_y')), 'pending');
+select pg_temp.expect_error('only the person asked can answer', format('select public.respond_contact((public.contact_json(%s)->>''requestId'')::bigint, true)', pg_temp.r('ans_y')), '42501');
+select pg_temp.expect_text('nothing is shown while pending', format('select public.contact_json(%s)->>''other'' is null', pg_temp.r('ans_y')), 'true');
+select public.request_contact(pg_temp.r('ans_z'));
+
+select pg_temp.as_user('mz');
+select pg_temp.expect_text('mz says «Ahora no»', format('select public.respond_contact((public.contact_json(%s)->>''requestId'')::bigint, false)->>''status''', pg_temp.r('ans_z')), 'declined');
+select pg_temp.as_user('mx');
+select pg_temp.expect_error('after «Ahora no» the asker cannot ask again', format('select public.request_contact(%s)', pg_temp.r('ans_z')), '42501');
+
+select pg_temp.as_user('my');
+select pg_temp.expect_text('my sees the request in their answer', format('select public.get_question(%s)->''answers''->0->''contact''->>''requestedByMe''', pg_temp.r('q_old')), 'false');
+select pg_temp.expect_text('my accepts and sees mx''s phone', format('select public.respond_contact((public.contact_json(%s)->>''requestId'')::bigint, true, ''70000020'')->''other''->>''phone''', pg_temp.r('ans_y')), '+591 70000010');
+select pg_temp.expect_text('my sees mx''s e-mail', format('select public.contact_json(%s)->''other''->>''email''', pg_temp.r('ans_y')), 'x@test.local');
+select pg_temp.as_user('mx');
+select pg_temp.expect_text('mx sees my''s phone', format('select public.contact_json(%s)->''other''->>''phone''', pg_temp.r('ans_y')), '70000020');
+select pg_temp.as_user('mw');
+select pg_temp.expect_text('a third person sees no contact', format('select (select count(*) from jsonb_array_elements(public.get_question(%s)->''answers'') x where x->''contact'' <> ''null''::jsonb)::text', pg_temp.r('q_old')), '0');
+select pg_temp.expect_error('a third person cannot read it directly either', format('select public.respond_contact((select id from public.contact_requests limit 1), true)'), 'P0002');
+select pg_temp.as_anon();
+select pg_temp.expect_text('a guest reads the question with no contact', format('select public.get_question(%s)->''answers''->0->>''contact''', pg_temp.r('q_old')), null);
+select pg_temp.as_postgres();
+select pg_temp.expect_text('the phone typed is saved in the profile', format('select phone from public.profiles where id = %s', pg_temp.id_of('mx')), '+591 70000010');
+
+-- Threads: anyone with an account comments, even on a solved question; three reports hide a comment
+select pg_temp.as_user('mw');
+select pg_temp.expect_write('mw comments on a solved question',
+  format('insert into public.answer_comments (answer_id, author_id, text) values (%s, %s, ''Yo también fui, buen dato'')', pg_temp.r('ans_y'), pg_temp.id_of('mw')), 1);
+select pg_temp.expect_write('mw cannot comment as someone else',
+  format('insert into public.answer_comments (answer_id, author_id, text) values (%s, %s, ''Falso'')', pg_temp.r('ans_y'), pg_temp.id_of('mx')), 0);
+select pg_temp.as_postgres();
+insert into test_rows (name, id) select 'comment_w', id from public.answer_comments where text = 'Yo también fui, buen dato';
+select pg_temp.as_anon();
+select pg_temp.expect_text('a guest reads the thread', format('select jsonb_array_length(public.get_question(%s)->''answers''->0->''comments'')::text', pg_temp.r('q_old')), '1');
+select pg_temp.as_user('mx');
+select public.report_content('comment', pg_temp.r('comment_w'), 'spam');
+select pg_temp.expect_text('the reporter stops seeing the comment', format('select jsonb_array_length(public.get_question(%s)->''answers''->0->''comments'')::text', pg_temp.r('q_old')), '0');
+select pg_temp.as_user('my');
+select public.report_content('comment', pg_temp.r('comment_w'), 'offensive');
+select pg_temp.as_user('mz');
+select public.report_content('comment', pg_temp.r('comment_w'), 'other');
+select pg_temp.as_anon();
+select pg_temp.expect_text('three reports hide the comment for guests', format('select jsonb_array_length(public.get_question(%s)->''answers''->0->''comments'')::text', pg_temp.r('q_old')), '0');
+select pg_temp.as_user('mw');
+select pg_temp.expect_text('its author sees it in review', format('select public.get_question(%s)->''answers''->0->''comments''->0->>''inReview''', pg_temp.r('q_old')), 'true');
+select pg_temp.expect_write('mw deletes their own comment', format('delete from public.answer_comments where id = %s', pg_temp.r('comment_w')), 1);
+
+-- An answer goes away with its thread and its contact request
+select pg_temp.as_user('mz');
+select pg_temp.expect_write('mz answers q_empty', format('insert into public.answers (question_id, author_id, text) values (%s, %s, ''Respuesta que se borra'')', pg_temp.r('q_empty'), pg_temp.id_of('mz')), 1);
+select pg_temp.as_postgres();
+insert into test_rows (name, id) select 'ans_gone', id from public.answers where text = 'Respuesta que se borra';
+select pg_temp.as_user('mw');
+select pg_temp.expect_write('mw comments on it', format('insert into public.answer_comments (answer_id, author_id, text) values (%s, %s, ''Comentario que se va'')', pg_temp.r('ans_gone'), pg_temp.id_of('mw')), 1);
+select pg_temp.as_user('mx');
+select public.request_contact(pg_temp.r('ans_gone'));
+select pg_temp.as_user('mz');
+select pg_temp.expect_write('mz deletes the answer', format('delete from public.answers where id = %s', pg_temp.r('ans_gone')), 1);
+select pg_temp.as_postgres();
+select pg_temp.expect_select('its thread and contact request are gone',
+  format('select 1 from public.answer_comments where answer_id = %s union all select 1 from public.contact_requests where answer_id = %s', pg_temp.r('ans_gone'), pg_temp.r('ans_gone')), 0);
 
 -- ---------------------------------------------------------------------------
 -- auth_method (0004): the sign-in sheet asks which method an e-mail has

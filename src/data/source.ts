@@ -41,6 +41,29 @@ function supabaseAdapter(): DataApi {
       markNotHelpful: (id) => loadData().then((data) => data.answers.markNotHelpful(id)),
       remove: (id) => loadData().then((data) => data.answers.remove(id)),
     },
+    comments: {
+      create: (answerId, text) => loadData().then((data) => data.comments.create(answerId, text)),
+      remove: (id) => loadData().then((data) => data.comments.remove(id)),
+    },
+    contact: {
+      request: (answerId, phone) => loadData().then((data) => data.contact.request(answerId, phone)),
+      respond: (requestId, accept, phone) => loadData().then((data) => data.contact.respond(requestId, accept, phone)),
+      myPhone: () => loadData().then((data) => data.contact.myPhone()),
+    },
+    live: {
+      // Subscribing is synchronous for the caller: the channel opens once the adapter chunk has loaded
+      question: (questionId, onChange, onStatus) => {
+        let stop: (() => void) | null = null;
+        let cancelled = false;
+        void loadData().then((data) => {
+          if (!cancelled) stop = data.live.question(questionId, onChange, onStatus);
+        });
+        return () => {
+          cancelled = true;
+          stop?.();
+        };
+      },
+    },
     saved: {
       toggle: (kind, id) => loadData().then((data) => data.saved.toggle(kind, id)),
       list: () => loadData().then((data) => data.saved.list()),

@@ -1,0 +1,95 @@
+/* The public thread under an answer (SPEC 12). It sits inside the answer card, set apart by a rule. */
+.thread {
+  display: grid;
+  gap: var(--s-2);
+  justify-items: start;
+  padding-top: var(--s-3);
+  border-top: var(--hairline);
+}
+
+.thread__list {
+  display: grid;
+  gap: var(--s-2);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comment {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-1);
+  padding: var(--s-2) var(--s-1) var(--s-2) var(--s-3);
+  border-radius: var(--r-md);
+  background: var(--color-sunken);
+}
+
+.comment__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--s-1);
+  margin: 0;
+  color: var(--color-muted);
+  font: var(--t-small) / 1.3 var(--font-body);
+}
+
+.comment__name {
+  color: var(--color-ink);
+  font-weight: var(--w-strong);
+}
+
+.comment__review {
+  margin-left: var(--s-1);
+}
+
+.comment__text {
+  margin: var(--s-1) 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.comment__more {
+  flex: none;
+  margin: calc(var(--s-2) * -1) 0;
+}
+
+.thread__toggle,
+.thread__comment {
+  margin-left: calc(var(--s-2) * -1);
+}
+
+.thread__comment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  text-decoration: none;
+}
+
+.thread__form {
+  display: grid;
+  gap: var(--s-2);
+  width: 100%;
+}
+
+.thread__form .upload__label-row {
+  justify-content: flex-end;
+}
+
+.thread__text {
+  min-height: 4rem;
+  padding-block: var(--s-2);
+  resize: vertical;
+}
+
+.thread__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}

@@ -219,3 +219,29 @@ export const CheckIcon = (p: IconProps) => (
     <path d="m5 12.5 4.5 4.5L19 7.5" />
   </Icon>
 );
+
+export const CommentIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 5h16v11H9l-5 4z" />
+  </Icon>
+);
+
+export const PhoneIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z" />
+  </Icon>
+);
+
+export const CopyIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="8" y="8" width="12" height="12" rx="2" />
+    <path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" />
+  </Icon>
+);
+
+export const ContactIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="9" r="3.5" />
+    <path d="M5 20a7 7 0 0 1 14 0" />
+  </Icon>
+);

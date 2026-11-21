@@ -16,16 +16,20 @@ export function useQuestions(filters: Omit<ListQuery, 'cursor'>) {
   });
 }
 
-/** Every 15 s while an open question is on screen, so a new answer shows up by itself (wiki #181). */
-const OPEN_QUESTION_REFRESH_MS = 15_000;
+/** Every 15 s while the question is on screen and not live, so a new answer shows up by itself (wiki #181, #185). */
+const QUESTION_REFRESH_MS = 15_000;
 
-/** A question with its answers (helpful first, then oldest first). */
-export function useQuestion(id: Id) {
+/**
+ * A question with its answers (helpful first, then oldest first). `live` is true while its Realtime channel is
+ * connected (`useLiveQuestion`); otherwise the detail falls back to the 15 s refresh. Threads keep going on
+ * Solucionada and Cerrada questions, so the fallback runs for every status.
+ */
+export function useQuestion(id: Id, { live = false }: { live?: boolean } = {}) {
   return useQuery({
     queryKey: keys.question(id),
     queryFn: () => api.questions.get(id),
-    // Only while it is open and the page is visible (TanStack pauses the interval in a background tab)
-    refetchInterval: (query) => (query.state.data?.question.status === 'open' ? OPEN_QUESTION_REFRESH_MS : false),
+    // The interval pauses by itself while the tab is in the background
+    refetchInterval: live ? false : QUESTION_REFRESH_MS,
   });
 }
 

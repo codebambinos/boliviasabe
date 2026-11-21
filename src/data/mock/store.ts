@@ -3,6 +3,8 @@ import type { Id } from '../types';
 import * as seed from './fixtures';
 import type {
   AnswerRec,
+  CommentRec,
+  ContactRec,
   ContentRef,
   MovementRec,
   QuestionRec,
@@ -12,7 +14,7 @@ import type {
   UserRec,
 } from './fixtures';
 
-type Counter = 'user' | 'sign' | 'question' | 'answer' | 'movement';
+type Counter = 'user' | 'sign' | 'question' | 'answer' | 'comment' | 'contact' | 'movement';
 
 export type MockStore = {
   /** null = guest. */
@@ -26,6 +28,8 @@ export type MockStore = {
   signVotes: SignVoteRec[];
   questions: QuestionRec[];
   answers: AnswerRec[];
+  comments: CommentRec[];
+  contacts: ContactRec[];
   movements: MovementRec[];
   saved: ContentRef[];
   reports: ReportRec[];
@@ -44,6 +48,8 @@ function createStore(): MockStore {
     signVotes: copy(seed.signVotes),
     questions: copy(seed.questions),
     answers: copy(seed.answers),
+    comments: [],
+    contacts: [],
     movements: copy(seed.movements),
     saved: copy(seed.saved),
     reports: copy(seed.reports),
@@ -53,6 +59,8 @@ function createStore(): MockStore {
       sign: maxId(seed.signs),
       question: maxId(seed.questions),
       answer: maxId(seed.answers),
+      comment: 0,
+      contact: 0,
       movement: maxId(seed.movements),
     },
   };

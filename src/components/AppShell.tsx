@@ -2,7 +2,7 @@
 // floating action button and the ¿Alguien sabe? conversation panel (desktop only).
 // It holds no data of its own: ShellLayout (SPEC 04) passes everything in and renders the route.
 import { useEffect, useState, type ReactNode } from 'react';
-import { CITIES, type City } from '../data';
+import { CITIES, useRefresh, type City } from '../data';
 import { BellIcon, ChevronDownIcon, HomeIcon, PlusIcon, QuestionIcon, SearchIcon, UserIcon } from './icons';
 import { OfflineBanner } from './OfflineBanner';
 import { Yapita } from './Yapita';
@@ -79,12 +79,15 @@ type AppShellProps = {
 export function AppShell({ tab, onTabChange, city, onCityChange, account, onSignIn, onFab, onSearch, detail, detailEmpty, children }: AppShellProps) {
   const fabLabel = FAB_LABEL[tab];
   const folded = useFoldOnScroll();
+  const refresh = useRefresh();
 
-  // Another tab: the layout navigates (animated, landing at the top). The current tab again: back to the top.
+  // Another tab: the layout navigates (animated, landing at the top). The current tab again: back to the top and
+  // fetch it again, so what others published shows up, also on a computer (wiki #181)
   const goTo = (next: Tab) => {
     if (next === tab) {
       const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+      refresh(tab === 'hoy' ? 'signs' : tab === 'preguntas' ? 'questions' : 'me');
       return;
     }
     onTabChange(next);

@@ -2,7 +2,7 @@
 // Source: wiki/reglas-finales.md («Yapitas», «Límites», «Preguntas», «Confianza»).
 import { MAX_TAGS } from '../catalog';
 import { DataError } from '../errors';
-import type { Author, Badge, ContentKind, Id, Tag } from '../types';
+import type { Author, Badge, Id, ReportKind, Tag } from '../types';
 import type { UserRec } from './fixtures';
 import { store } from './store';
 
@@ -144,13 +144,13 @@ export function pairCanBeRewarded(sourceUserId: Id, targetUserId: Id): boolean {
 }
 
 /** Content reported by 3 different people is hidden for everyone except its author. */
-export function isInReview(kind: ContentKind, itemId: Id): boolean {
+export function isInReview(kind: ReportKind, itemId: Id): boolean {
   const reporters = new Set(store.reports.filter((r) => r.kind === kind && r.itemId === itemId).map((r) => r.userId));
   return reporters.size >= REPORTS_TO_HIDE;
 }
 
 /** Hidden for the current viewer: in review (unless it is theirs) or «Ya no quiero ver esto». */
-export function isHiddenFor(viewerId: Id | null, kind: ContentKind, itemId: Id, authorId: Id): boolean {
+export function isHiddenFor(viewerId: Id | null, kind: ReportKind, itemId: Id, authorId: Id): boolean {
   if (viewerId !== null && store.hidden.some((h) => h.userId === viewerId && h.kind === kind && h.itemId === itemId)) return true;
   return isInReview(kind, itemId) && viewerId !== authorId;
 }
