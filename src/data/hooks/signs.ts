@@ -29,6 +29,9 @@ export function useCreateSign() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (input: NewSign) => api.signs.create(input),
+    // Fail right away without signal so the form shows «Sin conexión» + Reintentar (wiki #65, #167),
+    // instead of pausing until the network is back
+    networkMode: 'always',
     onSuccess: () => invalidate(client, keys.signs(), keys.wallet(), keys.activity()),
   });
 }

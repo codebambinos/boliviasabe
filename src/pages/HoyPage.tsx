@@ -16,7 +16,7 @@ import { DEFAULT_CITY, TAGS, useSigns, type Sign, type Tag } from '../data';
 const SECTION_TITLE: Record<FeedSection, string> = { hoy: 'Hoy', semana: 'Esta semana', antes: 'Antes' };
 
 export function HoyPage() {
-  const { city, setCity: onCity, searchRef, openSign: onOpen, onToggleSave } = useShell();
+  const { city, setCity: onCity, searchRef, openSign: onOpen, onToggleSave, freshSignId } = useShell();
   const [search, setSearch] = useState('');
   const [tags, setTags] = useState<Tag[]>([]);
   const signs = useSigns({ city, search, tags });
@@ -127,7 +127,7 @@ export function HoyPage() {
             </div>
             <ul className="tile-grid">
               {section.items.map((sign) => (
-                <li key={sign.id}>
+                <li key={sign.id} className={sign.id === freshSignId ? 'tile-fresh' : undefined}>
                   <SignTile sign={sign} onOpen={onOpen} onToggleSave={onToggleSave} />
                 </li>
               ))}

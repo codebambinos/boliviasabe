@@ -29,11 +29,15 @@ export type ProfileInput = { fullName: string; city: City; zone: string };
 
 export type NewSign = {
   title: string;
-  /** Already compressed by the screen (T19). */
+  /** 1280 px on the longest side, JPEG 0.8. Compressed by the screen (wiki #34). */
   photo: Blob;
+  /** 480 px thumbnail for the Hoy grid (wiki #142). */
+  thumb: Blob;
   price?: string;
-  /** Defaults to the user's zone. */
+  /** Defaults to the user's zone. Required while the profile is pending. */
   zone?: string;
+  /** Only while the profile is pending (no «Tu barrio» yet). The profile's city wins (wiki #167). */
+  city?: City;
   tags?: Tag[];
   mapsUrl?: string;
 };

@@ -88,7 +88,7 @@ export function toSign(rec: SignRec): Sign {
     id: rec.id,
     title: rec.title,
     photoUrl: rec.photoUrl,
-    thumbUrl: rec.photoUrl,
+    thumbUrl: rec.thumbUrl ?? rec.photoUrl,
     price: rec.price,
     city: rec.city,
     zone: rec.zone,
@@ -225,7 +225,12 @@ export const mockSigns: DataApi['signs'] = {
 
   create: (input) =>
     simulate(() => {
-      const user = requireProfile();
+      // A signed-in user without «Tu barrio» (T16) publishes in the city on screen; zone is required then (wiki #167)
+      const user = requireUser();
+      const city = user.city ?? input.city;
+      if (!city) throw new DataError('validation', 'A city is required', { field: 'city' });
+      const zone = input.zone?.trim() || user.zone;
+      if (!zone) throw new DataError('validation', 'A zone is required', { field: 'zone' });
       const title = validateLength('title', input.title, 3, 80);
       if (!(input.photo instanceof Blob)) throw new DataError('validation', 'A photo is required', { field: 'photo' });
       const tags = validateTags(input.tags);
@@ -236,9 +241,10 @@ export const mockSigns: DataApi['signs'] = {
         authorId: user.id,
         title,
         photoUrl: URL.createObjectURL(input.photo),
+        thumbUrl: input.thumb instanceof Blob ? URL.createObjectURL(input.thumb) : undefined,
         price: input.price?.trim() || null,
-        city: user.city,
-        zone: input.zone?.trim() || user.zone,
+        city,
+        zone,
         tags,
         mapsUrl,
         createdAt: new Date().toISOString(),
