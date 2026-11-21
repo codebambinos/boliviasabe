@@ -130,20 +130,22 @@ reports: { report(kind: ReportKind, …); hideForMe(kind: ReportKind, …) };
 
 ## Acceptance criteria
 
-- [ ] Under each answer the 2 most recent comments show, «Ver los N comentarios» unfolds the rest, and «Comentar» publishes up to 500 characters (the counter stops at 500).
-- [ ] A guest can read threads; «Comentar» asks for the account at Enviar and, after Google, the comment written is still there and is sent.
-- [ ] A comment can be written on Abierta, Solucionada and Cerrada questions, and deleted only by its author; nobody can edit it.
+- [x] Under each answer the 2 most recent comments show, «Ver los N comentarios» unfolds the rest, and «Comentar» publishes up to 500 characters (the counter stops at 500).
+- [x] A guest can read threads; «Comentar» asks for the account at Enviar and, after Google, the comment written is still there and is sent.
+- [x] A comment can be written on Abierta, Solucionada and Cerrada questions, and deleted only by its author; nobody can edit it.
 - [ ] A comment written on one phone shows up on another phone that has that question open in under 3 seconds, without touching anything.
 - [ ] A new answer and a «Me sirvió» also show up live on the other phone; with Realtime down the detail still refreshes every 15 s.
-- [ ] «Pedir contacto» appears only to the asker, only on others' answers to their question; after asking, the answer says «Esperando que acepte» and the button does not show again.
-- [ ] The answerer sees the request inside their answer with Aceptar / Ahora no; after «Ahora no» the asker sees «Prefirió no compartir su contacto» and cannot ask again for that answer.
-- [ ] After «Aceptar», both see the other's e-mail and, if given, phone, with Copiar, Llamar and Escribir correo; a third account never sees them (checked in `rls.sql` and on screen).
-- [ ] The phone typed in the sheet is saved in the profile and prefills the field next time.
-- [ ] A comment can be reported with the 6 reasons, disappears for the reporter at once, and the third report from different people hides it for everyone but its author («En revisión»).
-- [ ] Deleting an answer without «Me sirvió» deletes its thread and its contact request.
-- [ ] «Me sirvió» on a Cerrada question turns it Solucionada without a second +1.
+- [x] «Pedir contacto» appears only to the asker, only on others' answers to their question; after asking, the answer says «Esperando que acepte» and the button does not show again.
+- [x] The answerer sees the request inside their answer with Aceptar / Ahora no; after «Ahora no» the asker sees «Prefirió no compartir su contacto» and cannot ask again for that answer.
+- [x] After «Aceptar», both see the other's e-mail and, if given, phone, with Copiar, Llamar and Escribir correo; a third account never sees them (checked in `rls.sql` and on screen).
+- [x] The phone typed in the sheet is saved in the profile and prefills the field next time.
+- [x] A comment can be reported with the 6 reasons, disappears for the reporter at once, and the third report from different people hides it for everyone but its author («En revisión»).
+- [x] Deleting an answer without «Me sirvió» deletes its thread and its contact request.
+- [x] «Me sirvió» on a Cerrada question turns it Solucionada without a second +1.
 - [ ] Mock mode works for everything above except the live channel (it falls back to the 15 s refresh).
 - [ ] `npm run typecheck`, `npm run build` and `rls.sql` pass; screens checked at 360 px, light and dark, text at 130 %; texts match the wiki.
+
+> Verified 2026-11-21. `rls.sql` (local) covers the contact rules (only the asker asks, only the answerer answers, «Ahora no» is final, a third person and a guest never see the details, the phone is validated and saved in the profile), the thread (comments on a solved question, 3 reports hide a comment, «En revisión» for its author), the cascade when an answer is deleted and «Me sirvió» on a Cerrada question → Solucionada. In a 360 px browser against the real project (`0006` applied): three comments fold into «Ver 1 comentario más» / «Ocultar comentarios», delete with «¿Borrar tu comentario?», report with «Reportar el comentario» and it disappears for the reporter; «Pedir contacto» → bad phone refused → «Esperando que acepte» → the answerer accepts in their answer → both boxes show the right e-mail and phone with Copiar / Llamar / Escribir correo; with the channel connected the detail stops polling and a comment from another account shows up about 1.4 s after it is saved. Light and dark, text at 130 %, no horizontal overflow. Pending: the two-phone checks on the preview.
 
 ## Decisions
 
