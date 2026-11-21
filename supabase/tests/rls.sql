@@ -599,6 +599,30 @@ select pg_temp.expect_select('Beto gets no notification for the not-helpful mark
   'select n.id from public.notifications n
    where n.kind = ''helpful'' and n.ref_id = (select id from public.answers where text = ''Respuesta no sirvió'')', 0);
 
+-- ---------------------------------------------------------------------------
+-- auth_method (0004): the sign-in sheet asks which method an e-mail has
+-- ---------------------------------------------------------------------------
+select pg_temp.as_postgres();
+insert into auth.users (id, aud, role, email)
+values ('c0000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'Lucia@Test.local');
+insert into auth.identities (id, user_id, identity_data, provider, provider_id)
+values
+  (gen_random_uuid(), 'a0000000-0000-0000-0000-000000000001', '{}', 'email', 'ana@test.local'),
+  (gen_random_uuid(), 'b0000000-0000-0000-0000-000000000002', '{}', 'google', 'beto-google'),
+  (gen_random_uuid(), 'c0000000-0000-0000-0000-000000000003', '{}', 'google', 'lucia-google'),
+  (gen_random_uuid(), 'c0000000-0000-0000-0000-000000000003', '{}', 'email', 'lucia@test.local');
+
+select pg_temp.as_anon();
+select pg_temp.expect_text('auth_method: e-mail + password account', 'select public.auth_method(''ana@test.local'')', 'password');
+select pg_temp.expect_text('auth_method: Google-only account', 'select public.auth_method(''beto@test.local'')', 'google');
+select pg_temp.expect_text('auth_method: unknown e-mail', 'select public.auth_method(''nadie@test.local'')', null);
+select pg_temp.expect_text('auth_method: ignores case and spaces', 'select public.auth_method('' ANA@Test.Local '')', 'password');
+select pg_temp.expect_text('auth_method: Google plus password counts as password', 'select public.auth_method(''lucia@test.local'')', 'password');
+select pg_temp.expect_select('anon cannot read auth.users directly', 'select id from auth.users', 0);
+
+select pg_temp.as_user('a');
+select pg_temp.expect_text('auth_method: signed-in users can call it too', 'select public.auth_method(''beto@test.local'')', 'google');
+
 select pg_temp.as_postgres();
 do $$ begin raise notice 'rls ok'; end $$;
 
