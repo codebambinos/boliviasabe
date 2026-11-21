@@ -6,10 +6,13 @@ import { AuthSheet } from './AuthSheet';
 
 type Require = (reason: string, action: () => void, title?: string) => void;
 const RequireContext = createContext<Require>((_reason, action) => action());
+const RecoveryContext = createContext<() => void>(() => undefined);
+
+type Pending = { reason: string; action: () => void; title?: string; start?: 'forgot' };
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const session = useSession();
-  const [pending, setPending] = useState<{ reason: string; action: () => void; title?: string } | null>(null);
+  const [pending, setPending] = useState<Pending | null>(null);
   const signedIn = useRef(false);
   const ready = session.data?.status === 'signed-in';
 
@@ -24,26 +27,38 @@ export function AuthGate({ children }: { children: ReactNode }) {
     [ready],
   );
 
+  // «Pedir otro» on /nueva-contrasena lands on Hoy with the sheet open on «¿La olvidaste?»
+  const openRecovery = useCallback(() => {
+    signedIn.current = false;
+    setPending({ reason: '', action: () => undefined, start: 'forgot' });
+  }, []);
+
   return (
     <RequireContext.Provider value={require}>
-      {children}
-      {pending && (
-        <AuthSheet
-          reason={pending.reason}
-          title={pending.title}
-          onSignedIn={() => {
-            signedIn.current = true;
-          }}
-          onClose={() => {
-            const { action } = pending;
-            setPending(null);
-            if (signedIn.current) action();
-          }}
-        />
-      )}
+      <RecoveryContext.Provider value={openRecovery}>
+        {children}
+        {pending && (
+          <AuthSheet
+            reason={pending.reason}
+            title={pending.title}
+            start={pending.start}
+            onSignedIn={() => {
+              signedIn.current = true;
+            }}
+            onClose={() => {
+              const { action } = pending;
+              setPending(null);
+              if (signedIn.current) action();
+            }}
+          />
+        )}
+      </RecoveryContext.Provider>
     </RequireContext.Provider>
   );
 }
 
 /** `requireAccount(reason, action, title?)`: runs `action` now, or after the person creates an account. */
 export const useRequireAccount = () => useContext(RequireContext);
+
+/** Opens «Crea tu cuenta» straight on «¿La olvidaste?». */
+export const useOpenPasswordRecovery = () => useContext(RecoveryContext);

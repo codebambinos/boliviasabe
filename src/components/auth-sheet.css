@@ -30,3 +30,28 @@
   color: var(--color-urgent-text);
   font-size: var(--t-small);
 }
+
+.auth__sent {
+  margin: 0;
+  padding: var(--s-3);
+  border-radius: var(--r-sm);
+  background: var(--color-sunken);
+  color: var(--color-ink);
+  font-size: var(--t-small);
+}
+
+/* «¿La olvidaste?»: a text link under the password field, with a 44 px touch target */
+.auth__link {
+  justify-self: start;
+  min-height: 44px;
+  margin-top: var(--s-1);
+  padding: 0 var(--s-1);
+  border: 0;
+  background: none;
+  color: var(--color-brand-text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

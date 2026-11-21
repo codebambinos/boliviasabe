@@ -5,7 +5,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router';
 import { DEFAULT_CITY, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
 import { AppShell, type Tab } from './AppShell';
-import { AuthGate, useRequireAccount } from './AuthGate';
+import { AuthGate, useOpenPasswordRecovery, useRequireAccount } from './AuthGate';
 import { CloseIcon } from './icons';
 import { Sheet } from './Sheet';
 import { SignSheet } from './SignSheet';
@@ -40,7 +40,16 @@ function Shell() {
   const wallet = useWallet({ enabled: signedIn });
   const toggleSaved = useToggleSaved();
   const requireAccount = useRequireAccount();
+  const openRecovery = useOpenPasswordRecovery();
   const signIn = useSignInWithGoogle();
+
+  // «Pedir otro» from /nueva-contrasena: open «¿La olvidaste?» once and drop the flag from history
+  useEffect(() => {
+    if ((location.state as { forgotPassword?: boolean } | null)?.forgotPassword) {
+      openRecovery();
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, navigate, openRecovery]);
 
   const onToggleSave = (sign: Sign) =>
     requireAccount('Así guardas este letrero para verlo después.', () => toggleSaved.mutate({ kind: 'sign', id: sign.id }));
