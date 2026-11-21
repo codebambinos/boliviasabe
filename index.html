@@ -19,6 +19,8 @@
         var choice = 'dark';
         try { choice = localStorage.getItem('bs-theme') || 'dark'; } catch (e) {}
         if (choice === 'dark' || choice === 'light') document.documentElement.dataset.theme = choice;
+        var dark = choice === 'dark' || (choice === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        if (!dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f5f2ef');
       })();
     </script>
     <title>BoliviaSabe</title>

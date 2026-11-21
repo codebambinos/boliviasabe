@@ -35,12 +35,34 @@
   display: none;
 }
 
+/* With a mouse the arrows sit beside the row, never over a chip: prev · row · next.
+   «Next» keeps its place when hidden, so the row's right edge never moves. */
 @media (hover: hover) and (pointer: fine) {
+  .chip-scroller {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin-inline: 0;
+  }
+
+  .chip-scroller .chip-row {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 0;
+    scroll-padding-inline: 0;
+  }
+
+  .chip-scroller[data-more-start] .chip-row {
+    --fade-start: 1.5rem;
+  }
+
+  .chip-scroller[data-more-end] .chip-row {
+    --fade-end: 1.5rem;
+  }
+
   .chip-scroller__btn {
-    position: absolute;
-    top: 50%;
-    z-index: 1;
     display: inline-flex;
+    flex: none;
     align-items: center;
     justify-content: center;
     width: var(--touch);
@@ -50,49 +72,33 @@
     border-radius: 50%;
     background: var(--color-card);
     color: var(--color-ink);
-    box-shadow: var(--shadow-hover);
     cursor: pointer;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-50%) scale(0.9);
+    visibility: hidden;
     transition:
-      opacity var(--m-out) var(--ease),
-      transform var(--m-out) var(--ease),
-      border-color var(--m-out) var(--ease);
+      border-color var(--m-out) var(--ease),
+      transform var(--m-press) var(--ease);
   }
 
-  /* Under an arrow the row is fully clear, then fades: no chip peeks out beside it */
-  .chip-scroller[data-more-start] .chip-row {
-    --clear-start: 3.25rem;
-    --fade-start: 2rem;
-  }
-
-  .chip-scroller[data-more-end] .chip-row {
-    --clear-end: 3.25rem;
-    --fade-end: 2rem;
-  }
-
+  /* Prev appears only once the row has moved, so at rest the chips line up with the search field */
   .chip-scroller__btn--prev {
-    left: var(--s-2);
+    order: -1;
+    display: none;
   }
 
-  .chip-scroller__btn--next {
-    right: var(--s-2);
+  .chip-scroller[data-more-start] .chip-scroller__btn--prev {
+    display: inline-flex;
   }
 
   .chip-scroller[data-more-start] .chip-scroller__btn--prev,
   .chip-scroller[data-more-end] .chip-scroller__btn--next {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(-50%);
+    visibility: visible;
   }
 
   .chip-scroller__btn:hover {
     border-color: var(--color-line-strong);
-    transition-duration: var(--m-in);
   }
 
   .chip-scroller__btn:active {
-    transform: translateY(-50%) scale(0.94);
+    transform: scale(0.94);
   }
 }

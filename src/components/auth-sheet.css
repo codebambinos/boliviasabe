@@ -1,0 +1,21 @@
+/* «Crea tu cuenta para seguir» (AuthSheet.tsx) */
+.auth__reason {
+  margin: 0 0 var(--s-4);
+  color: var(--color-muted);
+}
+
+.auth__choices,
+.auth__form {
+  display: grid;
+  gap: var(--s-3);
+}
+
+.auth__google svg {
+  flex: none;
+}
+
+.auth__error {
+  margin: 0;
+  color: var(--color-urgent-text);
+  font-size: var(--t-small);
+}

@@ -2,6 +2,7 @@
 // title, zone · time and «A N les sirvió». The whole tile opens the detail; other actions live there.
 import type { Sign } from '../data';
 import { BookmarkIcon, ThumbIcon } from './icons';
+import { helpedText } from './messages';
 import { timeAgo } from './time';
 import './sign-tile.css';
 
@@ -12,25 +13,31 @@ type SignTileProps = {
 };
 
 export function SignTile({ sign, onOpen, onToggleSave }: SignTileProps) {
+  const when = timeAgo(sign.createdAt);
+  // One sentence for screen readers, in the order a sighted person reads the tile
+  const label = [sign.title, sign.price, sign.zone, when, sign.helpfulCount > 0 ? helpedText(sign.helpfulCount) : null]
+    .filter(Boolean)
+    .join(', ');
+
   return (
     <article className="tile">
       <div className="tile__media">
         {/* Thumbnail in the grid (wiki #142): small file, loaded only when near the screen */}
         <img src={sign.thumbUrl} alt="" loading="lazy" decoding="async" />
-        {sign.price && <span className="tile__price">{sign.price}</span>}
+        {sign.price && <span className="tile__price" aria-hidden="true">{sign.price}</span>}
       </div>
       <h3 className="tile__title">
         {/* Stretched button: the whole tile is one tap target and works by keyboard */}
-        <button type="button" className="tile__open" onClick={() => onOpen(sign)}>
+        <button type="button" className="tile__open" aria-label={label} onClick={() => onOpen(sign)}>
           {sign.title}
         </button>
       </h3>
-      <p className="tile__meta">
-        {sign.zone} · {timeAgo(sign.createdAt)}
+      <p className="tile__meta" aria-hidden="true">
+        {sign.zone} · {when}
       </p>
       {sign.helpfulCount > 0 && (
-        <p className="tile__meta tile__helped">
-          <ThumbIcon size={14} aria-hidden="true" /> A {sign.helpfulCount} les sirvió
+        <p className="tile__meta tile__helped" aria-hidden="true">
+          <ThumbIcon size={14} /> {helpedText(sign.helpfulCount)}
         </p>
       )}
       <button

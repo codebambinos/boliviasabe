@@ -22,7 +22,8 @@ Familiar patterns win over novelty; craft is in spacing, type and the states.
 | Token | Job | Never |
 |---|---|---|
 | `--color-brand` fuchsia `#C2185B` | the main action (primary button, FAB), links, focus ring, the current tab, marked states (Me sirvió given) | decoration, large surfaces |
-| `--color-yapita` orange `#F28C28` | the yapita: the ★ disc (`.yapita`) next to every amount | text, tabs, buttons |
+| `--color-yapita` orange `#F28C28` | the yapita: the drawn-star disc (`Yapita`) next to every amount, hints and the reward line | text, tabs, buttons |
+| `--color-yellow` aguayo yellow `#F2C230` | the price as a letrero in the detail (`.letrero-price`, wiki #148): a painted sign at weight 600 (the one place a title face goes past 500) with the aguayo stripe under it | anything else |
 | `--color-ok` green `#2E9E5B` | «Solucionada» and «Confirmado» tags, as a fill with ink text | text |
 | `--color-info` blue `#1E5AA8` | information notices (`.notice`, «Red de pruebas, sin dinero real») | actions |
 | `--color-urgent` coral | «Urgente», on its soft fill with its dark text | text on light |
@@ -95,8 +96,8 @@ Familiar patterns win over novelty; craft is in spacing, type and the states.
   border and a 3 px soft ring.
 - **Chips:** outline pills, 44 px tall; selected = ink fill, ground-colored text. Always inside
   `ChipRow`: the row bleeds to the column edges and fades only on the side where chips are hidden.
-  With a mouse it adds round arrow buttons at the edges (the area under them is fully clear) and
-  the vertical wheel scrolls sideways; touch swipes.
+  With a mouse it adds round arrow buttons beside the row (never over a chip; «anterior» appears
+  once the row has moved) and the vertical wheel scrolls sideways; touch swipes.
 - **Tags:** 13 px/500 pills. Neutral by default; `--urgent`, `--ok`, `--info`, `--muted`
   (outlined, for «Pendiente»).
 - **Rows** (Movimientos, Ajustes, avisos): 56 px rows closed by a hairline; leading glyph, the text
@@ -110,6 +111,39 @@ Familiar patterns win over novelty; craft is in spacing, type and the states.
 - **Notice:** one line of information on the blue soft fill.
 - **Skeleton:** sunken blocks with a slow breath (1.6 s opacity), never a shimmer sweep.
 - **Tilcho:** only in Yo, on the profile card (wiki rule). Nowhere else.
+
+## Overlays, states and the soft wall
+
+- **Sheet** (`Sheet.tsx`, `sheet.css`) is the one overlay: `page` (phone full screen) or `bottom`
+  (rises from the foot); a window over a scrim on desktop. Android back, Escape and the scrim close
+  the top sheet first (it pushes a history entry); the page behind and any sheet below are `inert`;
+  focus moves in and back. Actions sit in a two-column footer; a message takes its own row above.
+- **Soft wall** (`AuthGate` + `AuthSheet`, wiki #146): any action that needs an account calls
+  `requireAccount(reason, action)`. The sheet says why in one line, offers Google or e-mail, and
+  runs the pending action after signing in. Looking never needs an account.
+- **Detail actions** (wiki #154-155): the filled button appears only when it can act — «Me sirvió»
+  on someone else's letrero you have not rated, «Compartir» (WhatsApp) on your own. Once rated, the
+  slot shows the marked state «Te sirvió» / «No te sirvió». «Cómo llegar» is always the secondary;
+  sharing someone else's letrero is an icon in the sheet bar; ⋯ opens a `bottom` sheet over the
+  detail (wiki #159): No me sirvió and Reportar, or **Borrar** on your own letrero, red
+  (`--color-danger`, the one destructive color) and always confirmed.
+  Each view change inside the sheet moves focus to that view's heading, which names the letrero.
+- **The public record** (wiki #157, #164): each Movimientos row links «Ver registro» to the explorer
+  (the short hash lives in its accessible name), and Yo has «Mi cuenta de prueba»: one plain line
+  («Cada yapita queda anotada en un registro público que nadie puede cambiar»), the short address,
+  Copiar and «Ver mi registro público». Neighbor words, never cripto.
+- **FAB** folds to its «+» while the list scrolls down and unfolds on the way up (wiki #158); the
+  desktop rail's «+» keeps its verb under it.
+- **«Me sirvió»** (wiki #147, #160): after it lands, the large yapita settles in (520 ms, no
+  overshoot) beside «¡Gracias, pues!» and «<nombre> recibe +1 yapita por ayudarte» on the yapita-soft fill and the button stays marked «Te sirvió». Never a dimmed button.
+- **States** (wiki #153): errors say «Algo falló, intenta de nuevo» or «Sin conexión, intenta de
+  nuevo» with Reintentar as a secondary button; no results say «No encontramos letreros con eso»
+  with Quitar filtros; an active filter shows a one-line summary with a count and Quitar filtros.
+  `OfflineBanner` sits under the top bar. Developer messages never reach the screen.
+- **Hints** (`Hint`, wiki #149): one line on the yapita-soft fill the first time a tab opens,
+  closed with ✕ forever (per device).
+- **Icons** are drawn SVG in one 1.75 stroke; the yapita star is a drawn shape, never the ★ glyph.
+  Google's G keeps its own colors.
 
 ## Motion
 
@@ -141,7 +175,10 @@ blockchain, «puntos» alone or bolivianos.
 ## Responsive
 
 - 360 px is the design frame; check 768 and 1280, light and dark, text at 130 %.
-- Large text: the city drops to its own line in the top bar instead of being cut.
+- Large text: the top bar stays one row; «Entrar» becomes a person icon and the city truncates
+  (wiki #161). Bottom sheets carry a grabber and a top hairline; the dark scrim is 62 % black.
+- Desktop below 101 rem: the sidebar becomes a rail (icons with their names under them, the + of
+  the main action), so the full 64 rem frame still fits centered (wiki #151).
 - Desktop (1024 px+): **the feed is centered on the full width** (wiki #144); the sidebar hangs in
   the left margin against it (both margins at least the sidebar's width, so the center never
   moves). The Hoy grid picks its columns from the feed's own width (container query: 2, 3 from

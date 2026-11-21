@@ -32,16 +32,16 @@
   padding: var(--s-1) var(--s-2) var(--s-1) var(--gutter);
 }
 
-/* Large text (e.g. 130 %): rem grows with it, so the city drops to its own line instead of
-   being cut. At 100 % on a 360 px phone the bar stays on one line. */
-@container (max-width: 20rem) {
+/* Large text (e.g. 130 %): rem grows with it. The bar keeps its reading order (logo, city,
+   actions); when they no longer fit, the actions wrap to a second line on the right. */
+@container (max-width: 22rem) {
   .shell__bar {
     flex-wrap: wrap;
+    row-gap: 0;
   }
 
   .shell__city {
-    order: 3;
-    flex-basis: 100%;
+    flex: 1 1 auto;
   }
 }
 
@@ -263,16 +263,18 @@
      Both margins are the same width (at least the sidebar's), so the center never moves. */
   .shell {
     --feed: var(--frame);
+    --side: 15rem;
     display: grid;
-    grid-template-columns: minmax(15rem, 1fr) minmax(0, var(--feed)) minmax(15rem, 1fr);
-    gap: var(--s-6);
+    --gap: var(--s-6);
+    grid-template-columns: minmax(var(--side), 1fr) minmax(0, var(--feed)) minmax(var(--side), 1fr);
+    gap: var(--gap);
     padding: 0 var(--s-5);
   }
 
   .shell__sidebar {
     grid-column: 1;
     justify-self: end;
-    width: 15rem;
+    width: var(--side);
     position: sticky;
     top: 0;
     display: flex;
@@ -366,15 +368,24 @@
    two-column grid; ¿Alguien sabe? splits it into list + conversation, which together are the frame. */
 @media (min-width: 64rem) {
   .shell[data-layout='split'] {
+    --panel: 24rem;
     grid-template-columns:
-      minmax(15rem, 1fr)
-      minmax(0, calc(var(--frame) - 24rem - var(--s-6)))
-      minmax(18rem, 24rem)
-      minmax(15rem, 1fr);
+      minmax(var(--side), 1fr)
+      minmax(0, calc(var(--frame) - var(--panel) - var(--gap)))
+      var(--panel)
+      minmax(var(--side), 1fr);
+  }
+
+  /* The top bar spans the whole frame (list + conversation), as on every other tab */
+  .shell[data-layout='split'] .shell__top {
+    margin-right: calc(-1 * (var(--panel) + var(--gap)));
   }
 
   .shell[data-layout='split'] .shell__detail {
     grid-column: 3;
+    top: calc(var(--top) + 3px);
+    max-height: calc(100dvh - var(--top) - 3px);
+    padding-top: calc(var(--top) + 3px + var(--s-5));
   }
 }
 
@@ -515,5 +526,162 @@
   from {
     opacity: 0;
     transform: scale(0.9);
+  }
+}
+
+/* «Sin conexión» banner, under the top bar, inside the sticky header */
+.offline__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  padding: var(--s-2) var(--gutter);
+  border-top: var(--hairline);
+  background: var(--color-sunken);
+  color: var(--color-ink);
+  font-size: var(--t-small);
+}
+
+.offline__bar strong {
+  font-weight: 600;
+}
+
+/* Desktop below 101 rem: the full sidebar and the full 64 rem frame do not both fit centered, so
+   the sidebar becomes a rail (icons with their names under them). The frame keeps its width. */
+@media (min-width: 64rem) and (max-width: 100.99rem) {
+  .shell {
+    --side: 5.5rem;
+    --gap: var(--s-5);
+  }
+
+  .shell__sidebar {
+    align-items: center;
+  }
+
+  .shell__brand {
+    padding-left: 0;
+  }
+
+  .shell__sidebar .shell__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .shell__sidebar .tabs {
+    width: 100%;
+  }
+
+  .shell__sidebar .tabs__item {
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--s-1);
+    min-height: 4rem;
+    padding: var(--s-1);
+    border-radius: var(--r-md);
+    font-size: var(--t-label);
+    text-align: center;
+  }
+
+  .shell__sidebar .tabs__icon {
+    width: 3.5rem;
+  }
+
+  .shell__sidebar .tabs__item[aria-current='page'] {
+    background: none;
+    box-shadow: none;
+  }
+
+  .shell__sidebar .tabs__item[aria-current='page'] .tabs__icon {
+    background: var(--color-brand-soft);
+  }
+
+  .shell__side-action {
+    width: 3.5rem;
+    height: 3.5rem;
+    padding: 0;
+    border-radius: var(--r-md);
+  }
+}
+
+/* Tab names wrap evenly when the text is large */
+.tabs__label {
+  text-wrap: balance;
+}
+
+.shell__signin {
+  margin-left: var(--s-1);
+}
+
+/* FAB folds to its «+» while the list scrolls down (no width animation: the label fades) */
+.shell__fab-label {
+  transition: opacity var(--m-out) var(--ease);
+}
+
+.shell__fab[data-folded] {
+  width: 3.5rem;
+  min-height: 3.5rem;
+  padding: 0;
+}
+
+.shell__fab[data-folded] .shell__fab-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  opacity: 0;
+}
+
+/* The rail's main action keeps its name under the «+» (a verb, like the tabs) */
+.shell__rail-label {
+  display: none;
+}
+
+@media (min-width: 64rem) and (max-width: 100.99rem) {
+  .shell__side-action {
+    flex-direction: column;
+    gap: 0.125rem;
+    width: 4.5rem;
+    height: auto;
+    min-height: 4rem;
+    padding: var(--s-2) 0;
+    font-size: var(--t-label);
+  }
+
+  .shell__rail-label {
+    display: block;
+    line-height: 1.2;
+  }
+}
+
+/* «Entrar»: a word with room, an icon when the bar is tight (large text) */
+.shell__signin-icon {
+  display: none;
+}
+
+@container (max-width: 22rem) {
+  .shell__bar {
+    flex-wrap: nowrap;
+  }
+
+  .shell__signin {
+    width: var(--touch);
+    padding: 0;
+  }
+
+  .shell__signin-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .shell__signin-icon {
+    display: block;
   }
 }

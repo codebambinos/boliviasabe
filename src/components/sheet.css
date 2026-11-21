@@ -1,0 +1,225 @@
+/* Sheet (Sheet.tsx): the one overlay of the app.
+   Phone: `page` covers the screen and rises 24 px; `bottom` rises from the foot with rounded top.
+   Desktop: both are a window over a scrim (max 36 rem). Leaves in 160 ms. */
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.sheet[data-variant='bottom'] {
+  align-items: flex-end;
+}
+
+.sheet__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--color-scrim);
+  animation: sheet-fade var(--m-panel) var(--ease) both;
+}
+
+.sheet__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 100dvh;
+  background: var(--color-bg);
+  outline: none;
+  animation: sheet-in 260ms var(--ease-enter) both;
+}
+
+.sheet[data-variant='bottom'] .sheet__panel {
+  max-height: 92dvh;
+  border-top: 1px solid var(--color-line-strong);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  background: var(--color-card);
+  box-shadow: var(--shadow-float);
+}
+
+/* Grabber: says «this rose from the bottom» */
+.sheet[data-variant='bottom'] .sheet__panel::before {
+  content: '';
+  align-self: center;
+  width: 2.25rem;
+  height: 0.25rem;
+  margin-top: var(--s-2);
+  border-radius: var(--r-pill);
+  background: var(--color-line-strong);
+}
+
+.sheet[data-variant='bottom'] .sheet__bar {
+  background: var(--color-card);
+}
+
+.sheet[data-closing] .sheet__panel {
+  animation: sheet-out 160ms var(--ease) both;
+}
+
+.sheet[data-closing] .sheet__scrim {
+  animation: sheet-fade-out 160ms var(--ease) both;
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@keyframes sheet-out {
+  to {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Bar: ← Volver (phone page) or ✕ Cerrar (window, bottom sheet), title, actions */
+.sheet__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: var(--top);
+  padding: env(safe-area-inset-top, 0px) var(--s-2) 0;
+  border-bottom: var(--hairline);
+  background: var(--color-bg);
+}
+
+.sheet[data-variant='bottom'] .sheet__bar {
+  padding-top: 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+
+.sheet__bar-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding-left: var(--s-2);
+  font-size: var(--t-card);
+}
+
+.sheet__bar-sub {
+  display: block;
+  overflow: hidden;
+  font: 400 var(--t-small) / 1.3 var(--font-body);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sheet__bar-actions {
+  display: flex;
+  margin-left: auto;
+}
+
+.sheet__body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sheet__content {
+  padding: var(--s-4) var(--gutter) var(--s-5);
+}
+
+/* Actions at the thumb's reach: two equal columns; a message takes its own row above them */
+.sheet__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-2);
+  padding: var(--s-3) var(--gutter) calc(var(--s-3) + env(safe-area-inset-bottom, 0px));
+  border-top: var(--hairline);
+  background: var(--color-card);
+}
+
+.sheet__actions > :only-child,
+.sheet__actions > .sheet__full {
+  grid-column: 1 / -1;
+}
+
+.sheet__actions .btn {
+  min-height: 3rem;
+}
+
+.sheet__message {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  font-size: var(--t-small);
+}
+
+.sheet__message--error {
+  color: var(--color-urgent-text);
+}
+
+/* Phone shows ← on a page; ✕ everywhere else */
+.sheet__icon-desk {
+  display: none;
+}
+
+.sheet[data-variant='bottom'] .sheet__icon-phone {
+  display: none;
+}
+
+.sheet[data-variant='bottom'] .sheet__icon-desk {
+  display: block;
+}
+
+@media (min-width: 64rem) {
+  .sheet,
+  .sheet[data-variant='bottom'] {
+    align-items: center;
+    padding: var(--s-6);
+  }
+
+  .sheet__panel {
+    max-width: 44rem;
+  }
+
+  .sheet[data-variant='bottom'] .sheet__panel {
+    max-width: 30rem;
+  }
+
+  .sheet__panel,
+  .sheet[data-variant='bottom'] .sheet__panel {
+    max-height: min(90dvh, 52rem);
+    overflow: hidden;
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-float);
+  }
+
+  .sheet__bar {
+    padding-top: 0;
+  }
+
+  .sheet__icon-phone {
+    display: none;
+  }
+
+  .sheet__icon-desk {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet__panel,
+  .sheet__scrim {
+    animation: none !important;
+  }
+}

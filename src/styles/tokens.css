@@ -35,6 +35,8 @@
   --color-line: rgb(31 26 23 / 0.12); /* the one hairline */
   --color-line-strong: rgb(31 26 23 / 0.22); /* outlines of controls */
   --color-on-brand: #ffffff;
+  --color-danger: #b3261e; /* Borrar: the one destructive action (fill) */
+  --color-danger-text: #b3261e; /* red as text: lighter on the dark ground */
   --color-focus: #c2185b;
   --color-scrim: rgb(31 26 23 / 0.5);
 
@@ -117,6 +119,8 @@
     --color-urgent-soft: #3d2117;
     --color-urgent-text: #ffb08a;
     --color-focus: #f6a3c3;
+    --color-scrim: rgb(0 0 0 / 0.62);
+    --color-danger-text: #ff8a80;
     --shadow-float: 0 6px 20px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
     --shadow-hover: 0 8px 24px rgb(0 0 0 / 0.35);
     color-scheme: dark;
@@ -138,6 +142,8 @@
   --color-urgent-soft: #3d2117;
   --color-urgent-text: #ffb08a;
   --color-focus: #f6a3c3;
+  --color-scrim: rgb(0 0 0 / 0.62);
+  --color-danger-text: #ff8a80;
   --shadow-float: 0 6px 20px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
   --shadow-hover: 0 8px 24px rgb(0 0 0 / 0.35);
   color-scheme: dark;

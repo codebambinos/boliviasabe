@@ -101,7 +101,7 @@
   margin: 0;
   overflow: hidden;
   color: var(--color-muted);
-  font-size: var(--t-label);
+  font-size: var(--t-small);
   line-height: 1.4;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -171,7 +171,7 @@
 
 /* Time sections (wiki #140) */
 .feed-section + .feed-section {
-  margin-top: var(--s-6);
+  margin-top: var(--s-7);
 }
 
 .feed-section__head {
@@ -183,5 +183,5 @@
 
 .feed-section__title {
   margin: 0;
-  font-size: var(--t-card);
+  font-size: var(--t-h2);
 }
