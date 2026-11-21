@@ -1,6 +1,6 @@
 # SPEC 17 — Keep the list in place when opening a question on desktop
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 04 (routes, `ScrollRestoration`), SPEC 10 (`QuestionDetail` panel on desktop). Board card: «Fix visuales: errores cosméticos» (issue #49).
 > **Date:** 2026-11-21
 > **Objective:** On desktop, opening or closing a question in ¿Alguien sabe? leaves the list where it was, and the side panel shows each question from its start.
@@ -41,15 +41,15 @@ This fix introduces no new data structures. It reuses the `?p=<id>` URL state fr
 
 ## Acceptance criteria
 
-- [ ] At 1280 px, after scrolling the list of ¿Alguien sabe? down, clicking any question leaves `window.scrollY` unchanged.
-- [ ] Clicking a second question while one is open also leaves the list unchanged.
-- [ ] The URL still changes to `?p=<id>`, and a reload opens the same question in the panel.
-- [ ] Browser Back from `?p=<id>` returns to the previous question (or to the empty panel) as before.
-- [ ] After scrolling inside the panel and opening a different question, the panel shows the new one from its top.
-- [ ] Deleting my own question from the panel closes it without moving the list.
-- [ ] At 360 px, tapping a question still opens `/p/:id`, and «Volver» returns to the list at the same position as before this change.
-- [ ] Changing tabs (Hoy ↔ ¿Alguien sabe? ↔ Yo) still lands at the top of the new tab.
-- [ ] `npm run typecheck` and `npm run build` pass.
+- [x] At 1280 px, after scrolling the list of ¿Alguien sabe? down, clicking any question leaves `window.scrollY` unchanged.
+- [x] Clicking a second question while one is open also leaves the list unchanged.
+- [x] The URL still changes to `?p=<id>`, and a reload opens the same question in the panel.
+- [x] Browser Back from `?p=<id>` returns to the previous question (or to the empty panel) as before.
+- [x] After scrolling inside the panel and opening a different question, the panel shows the new one from its top.
+- [x] Deleting my own question from the panel closes it without moving the list.
+- [x] At 360 px, tapping a question still opens `/p/:id`, and «Volver» returns to the list at the same position as before this change.
+- [x] Changing tabs (Hoy ↔ ¿Alguien sabe? ↔ Yo) still lands at the top of the new tab.
+- [x] `npm run typecheck` and `npm run build` pass.
 
 ## Decisions
 
