@@ -203,7 +203,7 @@ export function SignSheet({ sign: initial, onClose, onToggleSave }: SignSheetPro
                 </h2>
                 <p className="empty__text">
                   {view === 'reported'
-                    ? 'Lo revisamos. Si más vecinos lo reportan, se oculta.'
+                    ? 'Ya no lo verás. Lo revisamos y, si más vecinos lo reportan, se oculta para todos.'
                     : 'Este letrero desaparece de tus listas. Nadie más se entera.'}
                 </p>
                 <button type="button" className="btn btn--secondary" onClick={close}>Volver a Hoy</button>

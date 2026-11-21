@@ -1,37 +1,35 @@
-// TEMPORARY smoke screen of Hoy (SPEC 01 + T11) on mock data. T18 builds the real one.
-import { useState } from 'react';
+// Hoy (wiki › flujo-final › «1 · Hoy», SPEC 05): search, tag chips and the letreros grid grouped as
+// Hoy · Esta semana · Antes, with pull-to-refresh on touch screens. The shell (ShellLayout) owns
+// the city, the lupa, the letrero detail and Guardar; this page reads them through useShell().
+import { useEffect, useState } from 'react';
 import { ChipRow } from '../components/ChipRow';
 import { SearchIcon } from '../components/icons';
 import { Hint } from '../components/Hint';
 import { errorMessage } from '../components/messages';
+import { PullIndicator } from '../components/PullIndicator';
 import { SignTile, SignTileSkeleton } from '../components/SignTile';
 import { feedSection, type FeedSection } from '../components/time';
+import { usePullToRefresh } from '../components/usePullToRefresh';
 import { useShell } from '../components/useShell';
-import { DEFAULT_CITY, TAGS, useSigns, type City, type Sign, type Tag } from '../data';
-
-export function HoyPage() {
-  const shell = useShell();
-  return <HoySample city={shell.city} searchRef={shell.searchRef} onCity={shell.setCity} onOpen={shell.openSign} onToggleSave={shell.onToggleSave} />;
-}
+import { DEFAULT_CITY, TAGS, useSigns, type Sign, type Tag } from '../data';
 
 const SECTION_TITLE: Record<FeedSection, string> = { hoy: 'Hoy', semana: 'Esta semana', antes: 'Antes' };
 
-function HoySample({
-  city,
-  searchRef,
-  onCity,
-  onOpen,
-  onToggleSave,
-}: {
-  city: City;
-  searchRef: React.RefObject<HTMLInputElement | null>;
-  onCity: (city: City) => void;
-  onOpen: (sign: Sign) => void;
-  onToggleSave: (sign: Sign) => void;
-}) {
+export function HoyPage() {
+  const { city, setCity: onCity, searchRef, openSign: onOpen, onToggleSave } = useShell();
   const [search, setSearch] = useState('');
   const [tags, setTags] = useState<Tag[]>([]);
   const signs = useSigns({ city, search, tags });
+  const pull = usePullToRefresh(() => signs.refetch(), { enabled: !signs.isPending });
+
+  // While Hoy is on screen the browser's own pull-to-reload stays off (our pull refreshes the list)
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.overscrollBehaviorY = 'contain';
+    return () => {
+      root.style.overscrollBehaviorY = '';
+    };
+  }, []);
   const items = signs.data?.pages.flatMap((page) => page.items) ?? [];
   const toggle = (tag: Tag) => setTags((t) => (t.includes(tag) ? t.filter((x) => x !== tag) : [...t, tag]));
   const filtering = search.trim() !== '' || tags.length > 0;
@@ -54,7 +52,8 @@ function HoySample({
     <>
       {/* The city is in the top bar and the first section says «Hoy» (DESIGN.md) */}
       <h1 className="sr-only">Hoy en {city}</h1>
-      <Hint id="hoy">Abre un letrero y dale «Me sirvió»: quien lo subió gana una yapita.</Hint>
+      <PullIndicator state={pull.state} distance={pull.distance} />
+      <Hint id="hoy">Si un letrero te sirve, ábrelo y dale «Me sirvió»: quien lo subió gana una yapita.</Hint>
       <div className="search">
         <label className="sr-only" htmlFor="search">Buscar letreros</label>
         <SearchIcon className="search__icon" size={20} />
