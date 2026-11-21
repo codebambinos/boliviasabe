@@ -9,6 +9,7 @@ import {
   isDataError,
   useCloseQuestion,
   useHideForMe,
+  useLiveQuestion,
   useMarkHelpful,
   useMarkNotHelpful,
   useQuestion,
@@ -74,7 +75,9 @@ function AuthorLine({ author, mine, when, prefix }: { author: Author; mine: bool
 }
 
 export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
-  const detail = useQuestion(id);
+  // Live while the question is on screen (wiki #185); the 15 s refresh only runs while the channel is down
+  const live = useLiveQuestion(id);
+  const detail = useQuestion(id, { live });
   const requireAccount = useRequireAccount();
   const toggleSaved = useToggleSaved();
   const [dialog, setDialog] = useState<Dialog | null>(null);
