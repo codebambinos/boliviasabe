@@ -1,0 +1,93 @@
+/* Pull-to-refresh indicator (usePullToRefresh). It sits just under the sticky top bar, starts hidden
+   behind it and slides down with the pull. Floating, so it is allowed the float shadow. */
+.ptr {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + var(--top));
+  left: 0;
+  right: 0;
+  z-index: 2; /* under the top bar (3): it comes out from behind it */
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transform: translateY(calc(var(--ptr-y, 0px) - 3rem));
+  opacity: var(--ptr-alpha, 0);
+}
+
+/* Springs back on release and settles while refreshing; follows the finger without lag */
+.ptr--idle,
+.ptr--refreshing {
+  transition:
+    transform var(--m-panel) var(--ease),
+    opacity var(--m-panel) var(--ease);
+}
+
+.ptr__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--r-pill);
+  background: var(--color-card);
+  color: var(--color-ink);
+  border: var(--hairline);
+  box-shadow: var(--shadow-float);
+}
+
+.ptr__arrow {
+  transform: rotate(var(--ptr-turn, 0deg));
+}
+
+.ptr--armed .ptr__chip {
+  color: var(--color-brand-text);
+}
+
+.ptr__spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-line-strong);
+  border-top-color: var(--color-brand);
+  animation: ptr-spin 700ms linear infinite;
+}
+
+/* Text shows only with reduced motion, where the movement cannot carry the meaning */
+.ptr__text {
+  display: none;
+  font-size: var(--t-label);
+  font-weight: var(--w-strong);
+}
+
+@keyframes ptr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ptr {
+    transform: translateY(var(--s-3));
+    opacity: 1;
+  }
+
+  .ptr--idle {
+    visibility: hidden;
+  }
+
+  .ptr__chip {
+    padding-inline: var(--s-4);
+  }
+
+  .ptr__arrow {
+    transform: none;
+  }
+
+  .ptr__spinner {
+    animation: none;
+  }
+
+  .ptr__text {
+    display: inline;
+  }
+}
