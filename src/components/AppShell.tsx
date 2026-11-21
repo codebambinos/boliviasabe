@@ -1,6 +1,6 @@
 // App frame: aguayo stripe + top bar, main column, bottom nav (phone) or sidebar (desktop),
 // floating action button and the ¿Alguien sabe? conversation panel (desktop only).
-// It holds no data of its own: screens and routes (T12) pass everything in.
+// It holds no data of its own: ShellLayout (SPEC 04) passes everything in and renders the route.
 import { useEffect, useState, type ReactNode } from 'react';
 import { CITIES, type City } from '../data';
 import { BellIcon, ChevronDownIcon, HomeIcon, PlusIcon, QuestionIcon, SearchIcon, UserIcon } from './icons';
