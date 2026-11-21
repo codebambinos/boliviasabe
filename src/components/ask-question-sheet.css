@@ -1,6 +1,7 @@
 /* Preguntar (AskQuestionSheet.tsx) shares the upload sheet's form classes; these are its own pieces. */
 .ask__text {
   min-height: 7rem;
+  padding-block: var(--s-3); /* .input is one line tall: a textarea needs room above its first line */
   resize: vertical;
   line-height: 1.4;
 }

@@ -171,6 +171,7 @@
 
 .answerbox__text {
   min-height: 5.5rem;
+  padding-block: var(--s-3);
   resize: vertical;
   line-height: 1.4;
 }
