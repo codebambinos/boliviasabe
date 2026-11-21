@@ -1118,6 +1118,30 @@ update public.questions set urgent_until = now() + interval '24 hours' where tex
 select pg_temp.expect_text('another zone is not notified', 'select count(*)::text from public.notifications n join public.questions q on q.id = n.ref_id
   where n.kind = ''urgent'' and q.text = ''Urgente en otra zona''', '0');
 
+-- push_details: what /api/push writes; the quoted text, where a tap opens, and gone or hidden items
+select pg_temp.expect_text('push_details of an answer quotes the answer and opens the question',
+  format('select (d->>''text'') || '' '' || (d->>''url'') || '' '' || (d->>''actor'') from (select public.push_details(id) d from public.notifications
+          where user_id = %s and kind = ''answer'') x', pg_temp.id_of('n1')),
+  format('Respuesta de n2 /p/%s Aviso 2', pg_temp.r('q_n1')));
+select pg_temp.expect_text('push_details of an urgent question has its zone',
+  format('select d->>''zone'' from (select public.push_details(id) d from public.notifications where user_id = %s and kind = ''urgent'' limit 1) x', pg_temp.id_of('n3')),
+  'Centro');
+select pg_temp.expect_text('the second «Me sirvió» on a letrero is not pushed within the hour',
+  format('select (public.push_details(max(id))->>''signPushedRecently'') from public.notifications where user_id = %s and kind = ''sign_helpful''', pg_temp.id_of('n1')),
+  'false');
+update public.notifications set pushed_at = now()
+where id = (select min(id) from public.notifications where user_id = pg_temp.id_of('n1') and kind = 'sign_helpful');
+select pg_temp.expect_text('… once the first one was pushed, the next says so',
+  format('select (public.push_details(max(id))->>''signPushedRecently'') from public.notifications where user_id = %s and kind = ''sign_helpful''', pg_temp.id_of('n1')),
+  'true');
+insert into public.hidden_items (user_id, kind, target_id) values (pg_temp.id_of('n1'), 'answer', pg_temp.r('ans_n2'));
+select pg_temp.expect_text('an answer the recipient hid is not pushed',
+  format('select public.push_details(id)->>''visible'' from public.notifications where user_id = %s and kind = ''answer''', pg_temp.id_of('n1')),
+  'false');
+select pg_temp.as_user('n1');
+select pg_temp.expect_error('a browser cannot call push_details', 'select public.push_details(1)', '42501');
+select pg_temp.as_postgres();
+
 -- Nobody can call notify() or write notifications from the browser
 select pg_temp.as_user('n1');
 select pg_temp.expect_error('a browser cannot call notify()',

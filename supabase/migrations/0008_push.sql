@@ -228,6 +228,77 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
+-- What /api/push needs to write one push (service role only): who receives it, their preferences, who caused it,
+-- the text to quote, where a tap opens, whether the item is still there for them (not deleted, not hidden by them,
+-- not in review) and whether this letrero already pushed a «Me sirvió» in the last hour.
+-- ---------------------------------------------------------------------------
+create or replace function public.push_details(p_id bigint)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  n public.notifications;
+  v_text text;
+  v_zone text;
+  v_url text;
+  v_item bigint;
+  v_item_kind text;
+  v_visible boolean;
+begin
+  select * into n from public.notifications where id = p_id;
+  if not found then return null; end if;
+
+  if n.kind = 'answer' then
+    select a.text, a.id, '/p/' || a.question_id into v_text, v_item, v_url
+    from public.answers a where a.question_id = n.ref_id and a.author_id = n.actor_id order by a.id desc limit 1;
+    v_item_kind := 'answer';
+  elsif n.kind = 'comment' then
+    select c.text, c.id, '/p/' || a.question_id into v_text, v_item, v_url
+    from public.answer_comments c join public.answers a on a.id = c.answer_id where c.id = n.ref_id;
+    v_item_kind := 'comment';
+  elsif n.kind = 'helpful' then
+    select a.text, a.id, '/p/' || a.question_id into v_text, v_item, v_url from public.answers a where a.id = n.ref_id;
+    v_item_kind := 'answer';
+  elsif n.kind = 'sign_helpful' then
+    select s.title, s.id, '/l/' || s.id into v_text, v_item, v_url from public.signs s where s.id = n.ref_id;
+    v_item_kind := 'sign';
+  elsif n.kind in ('contact_request', 'contact_accepted') then
+    select q.text, q.id, '/p/' || q.id into v_text, v_item, v_url
+    from public.contact_requests r
+    join public.questions q on q.id = coalesce(r.question_id, (select a.question_id from public.answers a where a.id = r.answer_id))
+    where r.id = n.ref_id;
+    v_item_kind := 'question';
+  elsif n.kind = 'urgent' then
+    select q.text, q.zone, q.id, '/p/' || q.id into v_text, v_zone, v_item, v_url from public.questions q where q.id = n.ref_id;
+    v_item_kind := 'question';
+  end if;
+
+  v_visible := v_item is not null
+    and not exists (select 1 from public.hidden_items h where h.user_id = n.user_id and h.kind = v_item_kind and h.target_id = v_item)
+    and public.report_count(v_item_kind, v_item) < 3;
+
+  return jsonb_build_object(
+    'userId', n.user_id,
+    'kind', n.kind,
+    'refId', n.ref_id,
+    'pushedAt', n.pushed_at,
+    'prefs', (select p.notif_prefs from public.profiles p where p.id = n.user_id),
+    'actor', (select p.display_name from public.profiles_public p where p.id = n.actor_id),
+    'text', v_text,
+    'zone', v_zone,
+    'url', v_url,
+    'visible', v_visible,
+    'signPushedRecently', n.kind = 'sign_helpful' and exists (
+      select 1 from public.notifications o
+      where o.kind = 'sign_helpful' and o.ref_id = n.ref_id and o.id <> n.id and o.pushed_at > now() - interval '1 hour')
+  );
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Grants
 -- ---------------------------------------------------------------------------
 revoke all on function public.notify(bigint, text, text, bigint, bigint) from public, anon, authenticated;
@@ -235,3 +306,5 @@ revoke all on function public.notify_on_comment(), public.notify_on_sign_helpful
   public.notify_on_urgent(), public.dispatch_push() from public, anon, authenticated;
 revoke all on function public.save_push_subscription(text, text, text), public.delete_push_subscription(text) from public, anon;
 grant execute on function public.save_push_subscription(text, text, text), public.delete_push_subscription(text) to authenticated;
+revoke all on function public.push_details(bigint) from public, anon, authenticated;
+grant execute on function public.push_details(bigint) to service_role;
