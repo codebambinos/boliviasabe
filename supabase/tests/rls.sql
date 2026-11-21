@@ -412,18 +412,19 @@ select pg_temp.as_user('a');
 select pg_temp.expect_write('Ana cannot insert a notification',
   format('insert into public.notifications (user_id, kind, ref_kind, ref_id) values (%s, ''fake'', ''question'', 1)',
     pg_temp.id_of('a')), 0);
--- Two rows: the answer from Beto (fixture) and the helpful mark from Beto (ratings), both written by triggers.
-select pg_temp.expect_select('Ana reads only her notifications (answer and helpful from triggers)', 'select id from public.notifications', 2);
+-- Five rows, all written by triggers from Beto's fixtures: his answer, his comment, his «Me sirvió» on her letrero
+-- and on her answer, and his acceptance of her contact request (0003 + 0008).
+select pg_temp.expect_select('Ana reads only her notifications (five from triggers)', 'select id from public.notifications', 5);
 select pg_temp.expect_write('Ana marks her notifications as read',
-  'update public.notifications set read_at = now()', 2);
+  'update public.notifications set read_at = now()', 5);
 select pg_temp.expect_write('Ana cannot change a notification kind',
   'update public.notifications set kind = ''fake''', 0);
 select pg_temp.expect_write('Ana cannot delete Beto''s notifications',
   format('delete from public.notifications where user_id = %s', pg_temp.id_of('b')), 0);
-select pg_temp.expect_write('Ana deletes her notifications', 'delete from public.notifications', 2);
+select pg_temp.expect_write('Ana deletes her notifications', 'delete from public.notifications', 5);
 
 select pg_temp.as_user('b');
-select pg_temp.expect_select('Beto reads his notifications (answer and helpful from triggers)', 'select id from public.notifications', 2);
+select pg_temp.expect_select('Beto reads his notifications (five from triggers)', 'select id from public.notifications', 5);
 
 -- ---------------------------------------------------------------------------
 -- rewards and wallet_keys: the owner reads rewards; wallet keys are never readable
@@ -1027,6 +1028,118 @@ select pg_temp.expect_select('anon cannot read auth.users directly', 'select id 
 
 select pg_temp.as_user('a');
 select pg_temp.expect_text('auth_method: signed-in users can call it too', 'select public.auth_method(''beto@test.local'')', 'google');
+
+-- ---------------------------------------------------------------------------
+-- Push notifications (0008, SPEC 15). Fresh people n1..n6 in Oruro so the blocks above do not interfere.
+-- The events are written as postgres: these checks are about who the triggers notify, not about RLS.
+-- ---------------------------------------------------------------------------
+select pg_temp.as_postgres();
+insert into auth.users (id, aud, role, email)
+select ('f0000000-0000-0000-0000-0000000000c' || g)::uuid, 'authenticated', 'authenticated', 'n' || g || '@test.local'
+from generate_series(1, 6) g;
+insert into public.profiles (auth_id, display_name, full_name, city, zone, notif_prefs)
+select ('f0000000-0000-0000-0000-0000000000c' || g)::uuid, 'Aviso ' || g, 'Aviso Prueba ' || g, 'Oruro',
+  case g when 5 then ' CÉNTRO ' else 'Centro' end,
+  case g when 6 then '{"urgent": false}'::jsonb else '{}'::jsonb end
+from generate_series(1, 6) g;
+insert into test_ids (name, id, auth_id)
+select 'n' || right(p.auth_id::text, 1), p.id, p.auth_id from public.profiles p
+where p.auth_id::text like 'f0000000-0000-0000-0000-0000000000c_';
+
+-- How many notifications of a kind a person has, optionally caused by someone
+create or replace function pg_temp.notes(p_person text, p_kind text, p_actor text default null) returns bigint
+language sql as $$
+  select count(*) from public.notifications
+  where user_id = pg_temp.id_of(p_person) and kind = p_kind
+    and (p_actor is null or actor_id = pg_temp.id_of(p_actor));
+$$;
+
+-- A new answer notifies the asker, with who answered
+insert into public.questions (author_id, text, city, zone) values (pg_temp.id_of('n1'), 'Pregunta con avisos', 'Oruro', 'Centro');
+insert into test_rows (name, id) select 'q_n1', id from public.questions where text = 'Pregunta con avisos';
+insert into public.answers (question_id, author_id, text) values (pg_temp.r('q_n1'), pg_temp.id_of('n2'), 'Respuesta de n2');
+insert into test_rows (name, id) select 'ans_n2', id from public.answers where text = 'Respuesta de n2';
+select pg_temp.expect_text('n1 gets an answer notification from n2', 'select pg_temp.notes(''n1'', ''answer'', ''n2'')::text', '1');
+select pg_temp.expect_text('n2 is not notified of their own answer', 'select pg_temp.notes(''n2'', ''answer'')::text', '0');
+
+-- Comments: the answer's author, the asker and the earlier commenters; never the one who comments
+insert into public.answer_comments (answer_id, author_id, text) values (pg_temp.r('ans_n2'), pg_temp.id_of('n2'), 'Comentario de n2');
+select pg_temp.expect_text('n2''s comment notifies the asker n1', 'select pg_temp.notes(''n1'', ''comment'', ''n2'')::text', '1');
+select pg_temp.expect_text('n2 is not notified of their own comment', 'select pg_temp.notes(''n2'', ''comment'')::text', '0');
+insert into public.answer_comments (answer_id, author_id, text) values (pg_temp.r('ans_n2'), pg_temp.id_of('n3'), 'Comentario de n3');
+select pg_temp.expect_text('n3''s comment notifies n1 (asker)', 'select pg_temp.notes(''n1'', ''comment'', ''n3'')::text', '1');
+select pg_temp.expect_text('n3''s comment notifies n2 (answer author)', 'select pg_temp.notes(''n2'', ''comment'', ''n3'')::text', '1');
+insert into public.answer_comments (answer_id, author_id, text) values (pg_temp.r('ans_n2'), pg_temp.id_of('n1'), 'Comentario de n1');
+select pg_temp.expect_text('n1''s comment notifies n3, who commented before', 'select pg_temp.notes(''n3'', ''comment'', ''n1'')::text', '1');
+select pg_temp.expect_text('n1 is not notified of their own comment', 'select pg_temp.notes(''n1'', ''comment'', ''n1'')::text', '0');
+select pg_temp.expect_text('n4 never took part in the thread', 'select pg_temp.notes(''n4'', ''comment'')::text', '0');
+
+-- «Me sirvió» on a letrero: a helpful vote, not a «No me sirvió»; a change to helpful notifies too
+insert into public.signs (author_id, title, photo_url, photo_thumb_url, city, zone)
+values (pg_temp.id_of('n1'), 'Letrero con avisos', 'p', 't', 'Oruro', 'Centro');
+insert into test_rows (name, id) select 'sign_n1', id from public.signs where title = 'Letrero con avisos';
+insert into public.sign_votes (sign_id, voter_id, helpful) values (pg_temp.r('sign_n1'), pg_temp.id_of('n2'), true);
+insert into public.sign_votes (sign_id, voter_id, helpful) values (pg_temp.r('sign_n1'), pg_temp.id_of('n3'), false);
+select pg_temp.expect_text('only the helpful vote notifies the letrero''s author', 'select pg_temp.notes(''n1'', ''sign_helpful'')::text', '1');
+update public.sign_votes set helpful = true where sign_id = pg_temp.r('sign_n1') and voter_id = pg_temp.id_of('n3');
+select pg_temp.expect_text('a vote changed to helpful notifies', 'select pg_temp.notes(''n1'', ''sign_helpful'', ''n3'')::text', '1');
+
+-- «Pedir contacto»: the request to who answered, the acceptance back; «Ahora no» is silent
+insert into public.contact_requests (requester_id, owner_id, question_id, answer_id) values (pg_temp.id_of('n1'), pg_temp.id_of('n2'), pg_temp.r('q_n1'), pg_temp.r('ans_n2'));
+insert into test_rows (name, id) select 'cr_n1', max(id) from public.contact_requests where requester_id = pg_temp.id_of('n1');
+select pg_temp.expect_text('the contact request notifies the owner', 'select pg_temp.notes(''n2'', ''contact_request'', ''n1'')::text', '1');
+update public.contact_requests set status = 'accepted', answered_at = now() where id = pg_temp.r('cr_n1');
+select pg_temp.expect_text('accepting notifies the requester', 'select pg_temp.notes(''n1'', ''contact_accepted'', ''n2'')::text', '1');
+insert into public.contact_requests (requester_id, owner_id, question_id, answer_id) values (pg_temp.id_of('n3'), pg_temp.id_of('n2'), pg_temp.r('q_n1'), pg_temp.r('ans_n2'));
+update public.contact_requests set status = 'declined', answered_at = now()
+where requester_id = pg_temp.id_of('n3') and owner_id = pg_temp.id_of('n2');
+select pg_temp.expect_text('declining notifies nobody', 'select pg_temp.notes(''n3'', ''contact_accepted'')::text', '0');
+
+-- Urgent: same city and zone (normalized), the notice on, never the author, at most 3 per hour each
+insert into public.questions (author_id, text, city, zone) values
+  (pg_temp.id_of('n1'), 'Urgente 1', 'Oruro', 'Centro'),
+  (pg_temp.id_of('n2'), 'Urgente 2', 'Oruro', 'Centro'),
+  (pg_temp.id_of('n4'), 'Urgente 3', 'Oruro', 'Centro'),
+  (pg_temp.id_of('n1'), 'Urgente 4', 'Oruro', 'Centro'),
+  (pg_temp.id_of('n1'), 'Urgente en otra zona', 'Oruro', 'Zona sin vecinos');
+update public.questions set urgent_until = now() + interval '24 hours' where text = 'Urgente 1';
+select pg_temp.expect_text('an urgent question reaches a neighbor of the zone', 'select pg_temp.notes(''n3'', ''urgent'', ''n1'')::text', '1');
+select pg_temp.expect_text('the zone matches without accents or case', 'select pg_temp.notes(''n5'', ''urgent'', ''n1'')::text', '1');
+select pg_temp.expect_text('whoever turned urgent off gets no row', 'select pg_temp.notes(''n6'', ''urgent'')::text', '0');
+select pg_temp.expect_text('the author is not notified', 'select pg_temp.notes(''n1'', ''urgent'')::text', '0');
+update public.questions set urgent_until = now() + interval '23 hours' where text = 'Urgente 1';
+select pg_temp.expect_text('moving an active urgent_until does not notify again', 'select pg_temp.notes(''n3'', ''urgent'')::text', '1');
+update public.questions set urgent_until = now() + interval '24 hours' where text in ('Urgente 2', 'Urgente 3');
+select pg_temp.expect_text('n3 got 3 urgent in the hour', 'select pg_temp.notes(''n3'', ''urgent'')::text', '3');
+update public.questions set urgent_until = now() + interval '24 hours' where text = 'Urgente 4';
+select pg_temp.expect_text('a 4th urgent in the hour does not reach n3', 'select pg_temp.notes(''n3'', ''urgent'')::text', '3');
+select pg_temp.expect_text('n2 had 2 in the hour (not their own), so the 4th reaches them', 'select pg_temp.notes(''n2'', ''urgent'')::text', '3');
+update public.questions set urgent_until = now() + interval '24 hours' where text = 'Urgente en otra zona';
+select pg_temp.expect_text('another zone is not notified', 'select count(*)::text from public.notifications n join public.questions q on q.id = n.ref_id
+  where n.kind = ''urgent'' and q.text = ''Urgente en otra zona''', '0');
+
+-- Nobody can call notify() or write notifications from the browser
+select pg_temp.as_user('n1');
+select pg_temp.expect_error('a browser cannot call notify()',
+  format('select public.notify(%s, ''answer'', ''question'', 1, null)', pg_temp.id_of('n2')), '42501');
+
+-- Subscriptions: saved for the caller; the same endpoint moves to whoever signs in on that phone
+select pg_temp.expect_write('n1 saves a subscription', 'select public.save_push_subscription(''https://push.example/phone-1'', ''key'', ''auth'')', 1);
+select pg_temp.expect_select('n1 reads their subscription', 'select id from public.push_subscriptions', 1);
+select pg_temp.expect_error('an endpoint must be https', 'select public.save_push_subscription(''http://push.example/x'', ''key'', ''auth'')', '23514');
+select pg_temp.as_user('n2');
+select pg_temp.expect_select('n2 cannot read n1''s subscription', 'select id from public.push_subscriptions', 0);
+select pg_temp.expect_write('n2 signs in on the same phone', 'select public.save_push_subscription(''https://push.example/phone-1'', ''key2'', ''auth2'')', 1);
+select pg_temp.expect_select('the endpoint now belongs to n2', 'select id from public.push_subscriptions', 1);
+select pg_temp.as_user('n1');
+select pg_temp.expect_select('n1 no longer has it', 'select id from public.push_subscriptions', 0);
+select pg_temp.expect_write('n1 cannot delete n2''s subscription', 'select public.delete_push_subscription(''https://push.example/phone-1'')', 1);
+select pg_temp.as_user('n2');
+select pg_temp.expect_select('n2 still has it', 'select id from public.push_subscriptions', 1);
+select pg_temp.expect_write('n2 signs out and deletes it', 'select public.delete_push_subscription(''https://push.example/phone-1'')', 1);
+select pg_temp.expect_select('the phone has no subscription', 'select id from public.push_subscriptions', 0);
+select pg_temp.as_anon();
+select pg_temp.expect_error('a guest cannot save a subscription', 'select public.save_push_subscription(''https://push.example/x'', ''k'', ''a'')', '42501');
 
 select pg_temp.as_postgres();
 do $$ begin raise notice 'rls ok'; end $$;
