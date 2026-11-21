@@ -76,7 +76,8 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [sent, setSent] = useState(false);
   const [shareDismissed, setShareDismissed] = useState(false);
-  const shareFor = (useLocation().state as { shareFor?: Id } | null)?.shareFor;
+  const navState = useLocation().state as { shareFor?: Id; chargeFailed?: boolean } | null;
+  const shareFor = navState?.shareFor;
   const [notice, setNotice] = useState<{ title: string; text: string } | null>(null);
   const markHelpful = useMarkHelpful();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -157,6 +158,9 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
 
   return (
     <div className="qd">
+      {shareFor === question.id && question.isMine && navState?.chargeFailed && (
+        <p className="notice" role="status">No pudimos cobrar, se publicó normal</p>
+      )}
       {shareFor === question.id && question.isMine && !shareDismissed && (
         <section className="qd__share" aria-labelledby={`${variant}-share`}>
           <div>

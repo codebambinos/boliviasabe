@@ -45,7 +45,6 @@ function Shell() {
   const [searchHidden, setSearchHidden] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [asking, setAsking] = useState<{ text: string } | null>(null);
-  const [questionNotice, setQuestionNotice] = useState<{ id: number; text: string } | null>(null);
   const [notice, setNotice] = useState<{ id: number; rewarded: boolean } | null>(null);
   const [freshSignId, setFreshSignId] = useState<Id | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -137,8 +136,8 @@ function Shell() {
 
   // A conversation on desktop lives in the URL (`?p=<id>`) so a reload and Back keep it; on a phone it is a page
   const selectedQuestion = tab === 'preguntas' && Number(searchParams.get('p')) > 0 ? Number(searchParams.get('p')) : null;
-  const openQuestion = (id: Id, options?: { share?: boolean }) => {
-    const state = options?.share ? { shareFor: id } : undefined;
+  const openQuestion = (id: Id, options?: { share?: boolean; chargeFailed?: boolean }) => {
+    const state = options?.share ? { shareFor: id, chargeFailed: options.chargeFailed } : undefined;
     if (window.matchMedia('(min-width: 64rem)').matches) setSearchParams({ p: String(id) }, { state });
     else goWithTransition((viewTransition) => navigate(`/p/${id}`, { viewTransition, state }), 'forward');
   };
@@ -148,8 +147,8 @@ function Shell() {
   // After publishing: the sheet closes first (it owns a history entry), then the new question opens
   const onQuestionPublished = ({ question, urgent, urgentCharged }: { question: Question; urgent: boolean; urgentCharged: boolean }) => {
     if (question.city !== city) setCity(question.city);
-    if (urgent && !urgentCharged) setQuestionNotice({ id: Date.now(), text: 'No pudimos cobrar, se publicó normal' });
-    afterSheetPop(() => openQuestion(question.id, { share: true }));
+    // The notice travels with the navigation: on a phone the conversation is a page outside this shell
+    afterSheetPop(() => openQuestion(question.id, { share: true, chargeFailed: urgent && !urgentCharged }));
   };
 
   const context: ShellContext = {
@@ -233,7 +232,6 @@ function Shell() {
           onOpenQuestion={(id) => afterSheetPop(() => openQuestion(id))}
         />
       )}
-      {questionNotice && <Toast key={questionNotice.id} message={questionNotice.text} onDone={() => setQuestionNotice(null)} />}
       {uploading && <UploadSignSheet viewingCity={city} onClose={() => setUploading(false)} onPublished={onPublished} />}
       {notice && (
         <Toast
