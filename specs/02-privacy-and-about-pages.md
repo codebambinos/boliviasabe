@@ -1,6 +1,6 @@
 # SPEC 02 — Privacy page and About sheet
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01. Board card: T30 (issue #23).
 > **Date:** 2026-11-20
 > **Objective:** Publish a public `/privacidad` page and an «Acerca de» sheet in the «Letrero» direction, both open without an account and linked from Yo and from the «Crea tu cuenta» sheet.
@@ -97,22 +97,22 @@ type HomeState = { tab?: Tab }; // Tab from src/components/AppShell.tsx
 
 ## Acceptance criteria
 
-- [ ] Opening `/privacidad` directly (dev server and `vite preview`) shows the privacy page with no session, no tab bar and no FAB.
-- [ ] After deploying to Vercel, opening `https://<deploy>/privacidad` directly returns the page, not a 404.
-- [ ] Any unknown path such as `/abc` redirects to `/`.
-- [ ] The privacy page shows the six sections in order, the e-mail as a working `mailto:` link, and the «Red de pruebas, sin dinero real» line.
-- [ ] Neither screen contains «XLM», «estelares», «tokens», «cripto», «blockchain», «puntos» alone or an amount in bolivianos (`git grep` on `src/content/legal.ts`).
-- [ ] As a guest in Yo, the «Acerca de · Privacidad» links appear under the profile card.
-- [ ] With an account in Yo, the Ajustes card shows «Acerca de» and «Privacidad» rows before «Cerrar sesión».
-- [ ] From Yo, opening Privacidad and then pressing «← Volver», browser Back or Android back lands on the Yo tab.
-- [ ] Opening `/privacidad` from a fresh tab and pressing «← Volver» goes to `/` (Hoy).
-- [ ] «Acerca de» opens as a full page on a 360 px phone and as a window on desktop. Escape, ✕ and Android back close it, and focus returns to the link that opened it.
-- [ ] Acerca de shows CodeBambinos, Diego, Aldrin and Yaeko, and the contact e-mail. It shows no social links and no Tilcho.
-- [ ] The «Crea tu cuenta» sheet shows the foot line in both modes. Its link opens `/privacidad` in a new tab, and the sheet keeps any typed e-mail.
-- [ ] Both screens pass at 360, 768 and 1280 px, in light and dark, with text at 130 %. There is no horizontal scroll and the text column stays at 40 rem or less.
-- [ ] Both screens use only tokens from `src/styles/tokens.css`. Each view has at most one filled fuchsia button (here, none).
-- [ ] `npm run typecheck` and `npm run build` pass.
-- [ ] The PR body has `Closes #23` and notes that the copy is a draft pending Yaeko's review.
+- [x] Opening `/privacidad` directly (dev server and `vite preview`) shows the privacy page with no session, no tab bar and no FAB.
+- [x] After deploying to Vercel, opening `https://<deploy>/privacidad` directly returns the page, not a 404.
+- [x] Any unknown path such as `/abc` redirects to `/`.
+- [x] The privacy page shows the six sections in order, the e-mail as a working `mailto:` link, and the «Red de pruebas, sin dinero real» line.
+- [x] Neither screen contains «XLM», «estelares», «tokens», «cripto», «blockchain», «puntos» alone or an amount in bolivianos (`git grep` on `src/content/legal.ts`).
+- [x] As a guest in Yo, the «Acerca de · Privacidad» links appear under the profile card.
+- [x] With an account in Yo, the Ajustes card shows «Acerca de» and «Privacidad» rows before «Cerrar sesión».
+- [x] From Yo, opening Privacidad and then pressing «← Volver», browser Back or Android back lands on the Yo tab.
+- [x] Opening `/privacidad` from a fresh tab and pressing «← Volver» goes to `/` (Hoy).
+- [x] «Acerca de» opens as a full page on a 360 px phone and as a window on desktop. Escape, ✕ and Android back close it, and focus returns to the link that opened it.
+- [x] Acerca de shows CodeBambinos, Diego, Aldrin and Yaeko, and the contact e-mail. It shows no social links and no Tilcho.
+- [x] The «Crea tu cuenta» sheet shows the foot line in both modes. Its link opens `/privacidad` in a new tab, and the sheet keeps any typed e-mail.
+- [x] Both screens pass at 360, 768 and 1280 px, in light and dark, with text at 130 %. There is no horizontal scroll and the text column stays at 40 rem or less.
+- [x] Both screens use only tokens from `src/styles/tokens.css`. Each view has at most one filled fuchsia button (here, none).
+- [x] `npm run typecheck` and `npm run build` pass.
+- [x] The PR body has `Closes #23` and notes that the copy is a draft pending Yaeko's review.
 
 ## Decisions
 
