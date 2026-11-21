@@ -6,6 +6,8 @@
 export type PendingAction =
   | { kind: 'save-sign'; id: number }
   | { kind: 'vote-sign'; id: number; value: 'helpful' | 'not_helpful' }
+  | { kind: 'save-question'; id: number }
+  | { kind: 'save-answer'; id: number }
   | { kind: 'open-new-sign' };
 
 /** Registered by ShellLayout, which owns what a kind needs (sheets, city, navigation). */
@@ -24,7 +26,7 @@ export type PendingRecord = {
 
 const KEY = 'bs:pending:v1';
 const MAX_AGE_MS = 10 * 60 * 1000;
-const KINDS: readonly PendingAction['kind'][] = ['save-sign', 'vote-sign', 'open-new-sign'];
+const KINDS: readonly PendingAction['kind'][] = ['save-sign', 'vote-sign', 'save-question', 'save-answer', 'open-new-sign'];
 
 export function savePending(record: PendingRecord): void {
   try {

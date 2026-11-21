@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { DEFAULT_CITY, fetchSign, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
+import { QuestionDetail } from './QuestionDetail';
 import { AppShell, type Tab } from './AppShell';
 import { AuthGate, useOpenPasswordRecovery, useRegisterPendingHandlers, useRequireAccount } from './AuthGate';
 import { CloseIcon } from './icons';
@@ -76,6 +77,8 @@ function Shell() {
       setResumeVote(value);
       setSelected(sign);
     },
+    'save-question': ({ id }) => toggleSaved.mutate({ kind: 'question', id }),
+    'save-answer': ({ id }) => toggleSaved.mutate({ kind: 'answer', id }),
     'open-new-sign': () => setUploading(true),
   });
 
@@ -185,7 +188,12 @@ function Shell() {
           )
         }
         onSearch={searchHidden ? goToSearch : undefined}
-        detailEmpty="Cuando haya preguntas, su conversación se abre aquí."
+        detail={
+          selectedQuestion ? (
+            <QuestionDetail key={selectedQuestion} id={selectedQuestion} variant="panel" onGone={() => setSearchParams({}, { replace: true })} />
+          ) : undefined
+        }
+        detailEmpty="Toca una pregunta para ver su conversación aquí."
       >
         <Outlet context={context} />
       </AppShell>
