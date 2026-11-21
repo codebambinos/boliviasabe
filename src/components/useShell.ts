@@ -1,7 +1,7 @@
 // What ShellLayout shares with the pages inside the shell, through the Outlet (SPEC 04).
 import type { RefObject } from 'react';
 import { useOutletContext } from 'react-router';
-import type { City, Sign } from '../data';
+import type { City, Id, Sign } from '../data';
 
 export type ShellContext = {
   city: City;
@@ -11,6 +11,8 @@ export type ShellContext = {
   /** Opens a letrero in its sheet. */
   openSign: (sign: Sign) => void;
   onToggleSave: (sign: Sign) => void;
+  /** The letrero just published (wiki #167): Hoy plays its entrance once. Cleared after a few seconds. */
+  freshSignId: Id | null;
   openAbout: () => void;
   openPrivacy: () => void;
   signInWithGoogle: () => void;

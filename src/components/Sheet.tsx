@@ -51,11 +51,14 @@ type SheetProps = {
   labelledBy: string;
   variant?: 'page' | 'bottom';
   onClose: () => void;
+  /** Asked before any close (button, Escape, scrim, Android back). Return false to stay open,
+   *  e.g. to ask «¿Descartar el letrero?» first. `forceClose` (2nd child argument) skips it. */
+  canClose?: () => boolean;
   className?: string;
-  children: (close: () => void) => ReactNode;
+  children: (close: () => void, forceClose: () => void) => ReactNode;
 };
 
-export function Sheet({ labelledBy, variant = 'page', onClose, className, children }: SheetProps) {
+export function Sheet({ labelledBy, variant = 'page', onClose, canClose, className, children }: SheetProps) {
   const [closing, setClosing] = useState(false);
   const host = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -63,9 +66,19 @@ export function Sheet({ labelledBy, variant = 'page', onClose, className, childr
   const closingRef = useRef(false);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const canCloseRef = useRef(canClose);
+  canCloseRef.current = canClose;
 
-  const requestClose = (fromHistory: boolean) => {
+  const requestClose = (fromHistory: boolean, force = false) => {
     if (closingRef.current) return;
+    if (!force && canCloseRef.current && !canCloseRef.current()) {
+      // Android back already popped our entry: put it back so the next back still lands here
+      if (fromHistory) {
+        window.history.pushState({ sheet: true }, '');
+        pushed.current = true;
+      }
+      return;
+    }
     closingRef.current = true;
     if (!fromHistory && pushed.current) {
       skipPops += 1;
@@ -106,12 +119,13 @@ export function Sheet({ labelledBy, variant = 'page', onClose, className, childr
   }, []);
 
   const close = () => requestClose(false);
+  const forceClose = () => requestClose(false, true);
 
   return createPortal(
     <div ref={host} className={`sheet ${className ?? ''}`} data-variant={variant} data-closing={closing || undefined}>
       <div className="sheet__scrim" onClick={close} aria-hidden="true" />
       <div ref={panel} className="sheet__panel" role="dialog" aria-modal="true" aria-labelledby={labelledBy} tabIndex={-1}>
-        {children(close)}
+        {children(close, forceClose)}
       </div>
     </div>,
     document.body,

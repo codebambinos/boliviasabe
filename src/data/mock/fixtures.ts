@@ -19,6 +19,8 @@ export type SignRec = {
   authorId: Id;
   title: string;
   photoUrl: string;
+  /** 480 px thumbnail; seeded letreros have none and use photoUrl. */
+  thumbUrl?: string;
   price: string | null;
   city: City;
   zone: string;

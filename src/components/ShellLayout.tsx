@@ -2,14 +2,17 @@
 // survive a tab change. The tab comes from the URL; pages render in the <Outlet /> (SPEC 04).
 import { useEffect, useId, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
-import { DEFAULT_CITY, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Sign } from '../data';
+import { DEFAULT_CITY, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
 import { AppShell, type Tab } from './AppShell';
 import { AuthGate, useRequireAccount } from './AuthGate';
 import { CloseIcon } from './icons';
 import { Sheet } from './Sheet';
 import { SignSheet } from './SignSheet';
+import { Toast } from './Toast';
 import { goWithTransition } from './transition';
+import { UploadSignSheet } from './UploadSignSheet';
+import { Yapita } from './Yapita';
 import type { ShellContext } from './useShell';
 
 const PATH: Record<Tab, string> = { hoy: '/', preguntas: '/preguntas', yo: '/yo' };
@@ -34,6 +37,9 @@ function Shell() {
   const [selected, setSelected] = useState<Sign | null>(null);
   const [avisos, setAvisos] = useState(false);
   const [searchHidden, setSearchHidden] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [notice, setNotice] = useState<{ id: number; rewarded: boolean } | null>(null);
+  const [freshSignId, setFreshSignId] = useState<Id | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const session = useSession();
   const signedIn = session.data?.status === 'signed-in';
@@ -66,6 +72,23 @@ function Shell() {
     goWithTransition((viewTransition) => navigate(PATH[next], { viewTransition }), direction);
   };
 
+  // After publishing (wiki #167): Hoy on the letrero's city, at the top, where the new one is first
+  const onPublished = ({ sign, rewarded }: { sign: Sign; rewarded: boolean }) => {
+    setCity(sign.city);
+    if (tab !== 'hoy') navigate(PATH.hoy);
+    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+    setNotice({ id: Date.now(), rewarded });
+    setFreshSignId(sign.id);
+  };
+
+  // The entrance plays once: coming back to Hoy later does not replay it
+  useEffect(() => {
+    if (freshSignId === null) return;
+    const timer = window.setTimeout(() => setFreshSignId(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [freshSignId]);
+
   const openPrivacy = () => goWithTransition((viewTransition) => navigate('/privacidad', { viewTransition }), 'forward');
 
   const goToSearch = () => {
@@ -80,6 +103,7 @@ function Shell() {
     searchRef,
     openSign: setSelected,
     onToggleSave,
+    freshSignId,
     openAbout: () => setAbout(true),
     openPrivacy,
     signInWithGoogle: () => signIn.mutate(),
@@ -115,7 +139,7 @@ function Shell() {
         onFab={() =>
           requireAccount(
             tab === 'hoy' ? 'Así tu letrero aparece en Hoy y ganas una yapita.' : 'Así tus vecinos pueden responderte.',
-            () => undefined,
+            tab === 'hoy' ? () => setUploading(true) : () => undefined,
           )
         }
         onSearch={searchHidden ? goToSearch : undefined}
@@ -124,6 +148,22 @@ function Shell() {
         <Outlet context={context} />
       </AppShell>
       {selected && <SignSheet key={selected.id} sign={selected} onClose={() => setSelected(null)} onToggleSave={onToggleSave} />}
+      {uploading && <UploadSignSheet viewingCity={city} onClose={() => setUploading(false)} onPublished={onPublished} />}
+      {notice && (
+        <Toast
+          key={notice.id}
+          message={
+            notice.rewarded ? (
+              <>
+                <Yapita size="sm" /> ¡Publicado! Ganaste +1 yapita
+              </>
+            ) : (
+              'Publicado. Ya subiste 10 letreros hoy, este va sin premio'
+            )
+          }
+          onDone={() => setNotice(null)}
+        />
+      )}
       {about && <AboutSheet onClose={() => setAbout(false)} onOpenPrivacy={openPrivacy} />}
       {avisos && <AvisosSheet onClose={() => setAvisos(false)} />}
     </>
