@@ -48,7 +48,7 @@
   - The description is cut to 160 characters.
 - **The brand card (`public/og.png`).**
   - 1200×630 PNG under 300 KB: the logo with «¿Alguien sabe?» on the light background `#F5F2EF`, with the ink and magenta colors of `tokens.css`.
-  - It is made once from an SVG source, `scripts/og/card.svg`, with `npm run og:card` (`scripts/og/card.ts`, `sharp`). Both the source and the PNG are committed.
+  - Its source is `scripts/og/card.html`, which uses the brand font from `scripts/og/BricolageGrotesque.ttf` (OFL, with `OFL.txt`). It is rendered once in Chromium at 1200×630, and the screenshot is saved as `public/og.png`. The source, the font and the PNG are committed. (The first plan was `sharp`, but on macOS it ignores a font file and draws Helvetica.)
 - **Home preview (`index.html`).** Fixed tags with the generic row of the table, plus `og:image` = `https://boliviasabe.vercel.app/og.png` with its width and height, and `twitter:card`.
 - **Pure helpers (`lib/og/meta.ts`).**
   - `ogFor(item | null, origin)` returns `{ title, description, image, url }`.
@@ -98,10 +98,7 @@ export function escapeHtml(value: string): string;
 ## Implementation plan
 
 1. **Wiki and board.** Add #210 to `huecos-cerrados.md`, update `log.md`, the `index.md` count, `stack.md` and `tecnico.md` in `boliviasabe-docs`, then push. Rewrite the body of issue #18.
-2. **Brand card.**
-   - `scripts/og/card.svg`, `scripts/og/card.ts` (`sharp`) and the `og:card` script in `package.json`.
-   - Generate `public/og.png` and check it is 1200×630 and under 300 KB.
-   - If `sharp` is not already in `node_modules`, install it with `--save-exact` as a dev dependency.
+2. **Brand card.** Write `scripts/og/card.html` with the brand font, render it in Chromium at 1200×630 to `public/og.png`, and check it is 1200×630 and under 300 KB.
 3. **`lib/og/meta.ts`.** `ogFor`, `renderOgHtml` and `escapeHtml`. Smoke-test them with `node` (question, question with photo, letrero with and without price, generic, a text with `<`, `"` and `&`, a 300-character question).
 4. **`api/og.ts`.** Read the item with the anon client and answer the HTML with the cache header. `npm run typecheck` passes.
 5. **`vercel.json` + `index.html`.** Add the two bot rewrites before the SPA rewrite and the fixed home tags. `npm run build` passes.
@@ -153,7 +150,7 @@ export function escapeHtml(value: string): string;
 | Generic preview with 200 for anything not available or any error | 404, or no tags | WhatsApp still shows the brand, and nothing about a deleted item leaks. |
 | Letrero picture = the 480 px thumbnail | The 1280 px photo | WhatsApp drops heavy images. The thumbnail weighs tens of KB and looks sharp in the preview. |
 | Question picture = its photo, else the brand card | Always the brand card | The photo says more. If it turns out too heavy, see the risks. |
-| One fixed brand card made from an SVG with `sharp` | `@vercel/og` image per item; the 512 px app icon | Zero cost per request, and it looks good in WhatsApp's large preview. The icon shows as a small square. |
+| One fixed brand card, an HTML page rendered once in Chromium | `@vercel/og` image per item; the 512 px app icon; `sharp` (draws Helvetica on macOS instead of the brand font) | Zero cost per request, it uses the real brand font, and it looks good in WhatsApp's large preview. The icon shows as a small square. |
 | Fixed OG tags in `index.html` for the home | No home preview | The app's link is shared in the pitch and in groups. It costs a few lines. |
 | `s-maxage=600` | No cache; one day | Repeated pastes of the same link do not hit the database, and an edit or a deletion shows within 10 minutes. WhatsApp keeps its own cache anyway. |
 
