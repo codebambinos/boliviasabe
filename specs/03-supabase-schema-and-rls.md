@@ -152,7 +152,7 @@ Rules that the table does not show:
 - [x] With 2 ratings (any values), `author_trust` returns `stars` null and `badge = 'Vecino nuevo'`.
 - [x] With 5 ratings, 5 helpful, `author_trust` returns `badge = 'De confianza'`.
 - [x] `hidden_items` lets a user insert and delete only their own rows.
-- [ ] `npm run typecheck` and `npm run build` pass, and the CI check is green on the PR.
+- [x] `npm run typecheck` and `npm run build` pass, and the CI check is green on the PR.
 - [x] `git grep -i "SECRET\|SERVICE_ROLE"` shows no values. The migrations contain no keys.
 
 ## Decisions
