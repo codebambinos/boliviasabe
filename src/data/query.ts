@@ -2,6 +2,9 @@
 // What others publish shows up when the person comes back to the app or the tab (wiki #181): a read older than
 // 10 s is fetched again then. There is no Realtime yet.
 // Mutations are never retried automatically: repeating a publish could duplicate it.
+// Without signal a read or a publish fails right away (networkMode 'always') instead of pausing until the network
+// is back, so the screen shows «Sin conexión, intenta de nuevo» + Reintentar (wiki #65); a screen that has data
+// keeps showing it, with the offline banner.
 // Reads stay in memory for 24 h, as long as the persisted copy lives (src/data/persist.ts, wiki #197).
 import { QueryClient, type QueryKey } from '@tanstack/react-query';
 import { isDataError } from './errors';
@@ -15,8 +18,8 @@ export function shouldRetry(failureCount: number, error: unknown): boolean {
 
 export const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: shouldRetry, staleTime: 10_000, gcTime: 24 * 60 * 60 * 1000, refetchOnWindowFocus: true },
-    mutations: { retry: false },
+    queries: { retry: shouldRetry, staleTime: 10_000, gcTime: 24 * 60 * 60 * 1000, refetchOnWindowFocus: true, networkMode: 'always' },
+    mutations: { retry: false, networkMode: 'always' },
   },
 });
 

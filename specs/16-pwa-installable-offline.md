@@ -160,6 +160,7 @@ New dependencies, pinned with `--save-exact`:
   `index.html` and Ajustes › Tema default to `system` (options in the order Sistema / Claro / Oscuro), and the
   status bar color follows the phone while it does. The manifest keeps `#151110`: a manifest cannot follow the
   system, and it only paints the Android splash.
+- **Reads and publishes fail right away without signal** (`networkMode: 'always'` in `query.ts`). TanStack's default pauses them until the network returns, so a question never opened before kept loading forever offline (Diego's iPhone test). Hoy and ¿Alguien sabe? show their error only when they have no list, so a failed refresh never covers the saved list.
 - **The session is never persisted either**, besides the personal keys: it holds the person's profile.
 
 ## Decisions

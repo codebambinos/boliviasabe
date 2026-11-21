@@ -96,7 +96,7 @@ export function HoyPage() {
             </div>
           </>
         )}
-        {signs.isError && (
+        {signs.isError && !signs.data && (
           <div className="empty" role="alert">
             <h2 className="empty__title">{errorMessage(signs.error)}</h2>
             <p className="empty__text">Tus filtros y lo que escribiste siguen aquí.</p>

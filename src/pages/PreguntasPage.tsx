@@ -81,7 +81,7 @@ export function PreguntasPage() {
             </div>
           </>
         )}
-        {questions.isError && (
+        {questions.isError && !questions.data && (
           <div className="empty" role="alert">
             <h2 className="empty__title">{errorMessage(questions.error)}</h2>
             <p className="empty__text">Tus filtros y lo que escribiste siguen aquí.</p>
