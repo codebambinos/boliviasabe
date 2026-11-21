@@ -97,7 +97,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (restore.path !== location.pathname) navigate(restore.path, { replace: true });
     const action = restore.resume;
     const run = action ? (handlers.current[action.kind] as ((a: PendingAction) => void | Promise<void>) | undefined) : undefined;
-    if (action && run) afterProfile(() => void Promise.resolve(run(action)).catch(() => undefined));
+    // Also with no saved action («Entrar» in the bar): a person without profile still goes through «Tu barrio»
+    afterProfile(() => {
+      if (action && run) void Promise.resolve(run(action)).catch(() => undefined);
+    });
   }, [restore, session.data, location.pathname, navigate, afterProfile]);
 
   // Before «Continuar con Google»: save the action and every registered draft
