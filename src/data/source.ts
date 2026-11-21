@@ -3,7 +3,7 @@
 // own task lands. The Supabase code loads on first use, so the mock build never ships it.
 import type { DataApi } from './api';
 import type { Session } from './types';
-import { followRealSession, mockAdapter } from './mock/adapter';
+import { followRealBalance, followRealSession, mockAdapter } from './mock/adapter';
 
 /** The mock keeps its own session, so it follows the real one (see followRealSession). */
 async function bridged(session: Promise<Session>): Promise<Session> {
@@ -29,7 +29,14 @@ function lazyAuth(): DataApi['auth'] {
 function lazyWallet(): DataApi['wallet'] {
   // Balance and status come from the chain; Movimientos stay on the mock until T17
   const load = () => import('./supabase/wallet').then((module) => module.supabaseWallet);
-  return { ...mockAdapter.wallet, get: () => load().then((wallet) => wallet.get()) };
+  return {
+    ...mockAdapter.wallet,
+    get: async () => {
+      const wallet = await load().then((real) => real.get());
+      followRealBalance(wallet.balance);
+      return wallet;
+    },
+  };
 }
 
 function pickAdapter(): DataApi {
