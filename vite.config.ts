@@ -1,11 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import pkg from './package.json' with { type: 'json' };
 
 // `/api` (Vercel functions) is served by `vercel dev` while developing; run it next to `npm run dev`.
 // PWA (SPEC 16): our own service worker (src/sw.ts), registered only in production builds; try it with
 // `npm run build && npm run preview`. Icons come from `npm run pwa:icons` (pwa-assets.config.ts).
 export default defineConfig({
+  // Discards the data a previous build saved on the device (src/data/persist.ts)
+  define: { __APP_VERSION__: JSON.stringify(`${pkg.version}-${Date.now()}`) },
   plugins: [
     react(),
     VitePWA({
