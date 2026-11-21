@@ -56,7 +56,8 @@ export interface WalletStore {
   /** The Stellar address and state of an account, as the profile has them. */
   getStellar(profileId: number): Promise<{ publicKey: string | null; status: StellarStatus }>;
   /** Inserts the reward unless its memo key exists (the unique key is what stops a second payment). A negative amount is a charge. */
-  ensureReward(reward: { profileId: number; memoKey: string; amount: number; reason: RewardReason }): Promise<RewardRow>;
+  /** `sourceId`: who gave the reward (SPEC 13 pair cap); only sirvio-l and ayuda have one. */
+  ensureReward(reward: { profileId: number; sourceId?: number | null; memoKey: string; amount: number; reason: RewardReason }): Promise<RewardRow>;
   settleReward(id: number, patch: { status: 'confirmed' | 'error'; txHash?: string }): Promise<void>;
 }
 

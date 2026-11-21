@@ -17,12 +17,19 @@ export type GastarReason = 'urgente';
 export type RewardPlan = {
   /** The profile that receives (premiar) or pays (gastar). */
   recipientId: number;
+  /** Who gave it, for the pair cap (SPEC 13): the voter of sirvio-l, the asker of ayuda; null otherwise. */
+  sourceId: number | null;
   reason: RewardReason;
   /** +1, +5 or −5. */
   amount: number;
   /** `rewards.memo_key`, and also the Stellar memo (at most 28 bytes). */
   memoKey: string;
 };
+
+/** Why a reward is saved but not paid (wiki reglas-finales › Antiabuso, #188-189). Same values as SQL `reward_cap`. */
+export type RewardCap = 'signs_per_day' | 'answers_per_question' | 'pair_per_day';
+/** A legitimate action whose reward is over a cap: nothing is paid and no `rewards` row is created. */
+export type CappedReward = { capped: RewardCap };
 
 export type QuestionFacts = { authorId: number; status: 'open' | 'solved' | 'closed'; urgent: boolean; answerCount: number };
 
@@ -34,18 +41,22 @@ export interface RewardFacts {
   answer(id: number): Promise<{ authorId: number; questionId: number } | null>;
   /** The caller's own rating of the answer, if they gave one. */
   rating(answerId: number, raterId: number): Promise<{ helpful: boolean } | null>;
+  /** The cap the reward is over, or null when it may be paid. Never caps a memo that already has a row. */
+  rewardCap(plan: RewardPlan, refId: number): Promise<RewardCap | null>;
+  /** Whether the author has another question still urgent (wiki #190: one active urgent per person). */
+  otherActiveUrgent(authorId: number, exceptQuestionId: number): Promise<boolean>;
 }
 
 export const PREMIAR_REASONS: readonly PremiarReason[] = ['letrero', 'sirvio-l', 'ayuda', 'cierre'];
 export const URGENT_COST = 5;
 
-function plan(recipientId: number, reason: RewardReason, amount: number, memoKey: string): RewardPlan {
+function plan(recipientId: number, reason: RewardReason, amount: number, memoKey: string, sourceId: number | null = null): RewardPlan {
   memoFor(memoKey); // throws if it does not fit in 28 bytes
-  return { recipientId, reason, amount, memoKey };
+  return { recipientId, sourceId, reason, amount, memoKey };
 }
 
-/** What `callerId` earns for `reason` on `refId`, or null when the action does not exist or is not theirs to claim. */
-export async function planReward(facts: RewardFacts, callerId: number, reason: PremiarReason, refId: number): Promise<RewardPlan | null> {
+/** Who would earn what for `reason` on `refId`, before the caps; null when it is not theirs to claim. */
+async function entitled(facts: RewardFacts, callerId: number, reason: PremiarReason, refId: number): Promise<RewardPlan | null> {
   switch (reason) {
     case 'letrero': {
       const sign = await facts.sign(refId);
@@ -55,7 +66,7 @@ export async function planReward(facts: RewardFacts, callerId: number, reason: P
       const sign = await facts.sign(refId);
       if (!sign || sign.authorId === callerId) return null;
       const vote = await facts.signVote(refId, callerId);
-      return vote?.helpful ? plan(sign.authorId, 'sirvio-l', 1, `sirvio-l:${refId}-${callerId}`) : null;
+      return vote?.helpful ? plan(sign.authorId, 'sirvio-l', 1, `sirvio-l:${refId}-${callerId}`, callerId) : null;
     }
     case 'ayuda': {
       const answer = await facts.answer(refId);
@@ -63,7 +74,7 @@ export async function planReward(facts: RewardFacts, callerId: number, reason: P
       const question = await facts.question(answer.questionId);
       if (!question || question.authorId !== callerId) return null;
       const rating = await facts.rating(refId, callerId);
-      return rating?.helpful ? plan(answer.authorId, 'ayuda', 5, `ayuda:${refId}`) : null;
+      return rating?.helpful ? plan(answer.authorId, 'ayuda', 5, `ayuda:${refId}`, callerId) : null;
     }
     case 'cierre': {
       const question = await facts.question(refId);
@@ -74,6 +85,24 @@ export async function planReward(facts: RewardFacts, callerId: number, reason: P
 }
 
 /**
+ * What `callerId` earns for `reason` on `refId`: the plan to pay, `{ capped }` when the action is legitimate but over
+ * a cap (saved, not paid), or null when the action does not exist or is not theirs to claim.
+ */
+export async function planReward(
+  facts: RewardFacts,
+  callerId: number,
+  reason: PremiarReason,
+  refId: number,
+): Promise<RewardPlan | CappedReward | null> {
+  const reward = await entitled(facts, callerId, reason, refId);
+  if (!reward) return null;
+  const cap = await facts.rewardCap(reward, refId);
+  return cap ? { capped: cap } : reward;
+}
+
+export const isCapped = (plan: RewardPlan | CappedReward): plan is CappedReward => 'capped' in plan;
+
+/**
  * What `callerId` pays to make their question urgent, or null when it is not theirs or no longer open. The
  * question is published as normal and becomes urgent only after this charge is confirmed (wiki #179), so an
  * already urgent question is a repeated call of a paid charge: `chargeUrgent` answers it without charging again.
@@ -81,7 +110,8 @@ export async function planReward(facts: RewardFacts, callerId: number, reason: P
 export async function planCharge(facts: RewardFacts, callerId: number, _reason: GastarReason, refId: number): Promise<RewardPlan | null> {
   const question = await facts.question(refId);
   const chargeable = question && question.authorId === callerId && (question.status === 'open' || question.urgent);
-  return chargeable ? plan(callerId, 'urgente', -URGENT_COST, `urgente:${refId}`) : null;
+  if (!chargeable || (await facts.otherActiveUrgent(callerId, refId))) return null; // one active urgent per person
+  return plan(callerId, 'urgente', -URGENT_COST, `urgente:${refId}`);
 }
 
 export type PayResult = { status: 'confirmed'; txHash: string } | { status: 'pending' };
@@ -117,7 +147,13 @@ async function withRetry<T>(attempt: () => Promise<T>): Promise<T> {
 
 /** Pays a reward once. Pending (not an error) when the recipient has no ready account or Stellar fails: the same call finishes it later. */
 export async function payReward(store: WalletStore, plan: RewardPlan, env: WalletEnv): Promise<PayResult> {
-  const reward = await store.ensureReward({ profileId: plan.recipientId, memoKey: plan.memoKey, amount: plan.amount, reason: plan.reason });
+  const reward = await store.ensureReward({
+    profileId: plan.recipientId,
+    sourceId: plan.sourceId,
+    memoKey: plan.memoKey,
+    amount: plan.amount,
+    reason: plan.reason,
+  });
   if (reward.status === 'confirmed' && reward.txHash) return { status: 'confirmed', txHash: reward.txHash };
 
   const account = await store.getStellar(plan.recipientId);
