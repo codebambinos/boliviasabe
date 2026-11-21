@@ -19,6 +19,7 @@ import {
   type ReportReason,
 } from '../data';
 import { useRequireAccount } from './AuthGate';
+import { AnswerBox } from './AnswerBox';
 import { BookmarkIcon, CheckIcon, CloseIcon, FlagIcon, MoreIcon, ShareIcon, TrashIcon } from './icons';
 import { errorMessage } from './messages';
 import { answersText, isUrgentActive } from './QuestionCard';
@@ -65,6 +66,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
   const requireAccount = useRequireAccount();
   const toggleSaved = useToggleSaved();
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [sent, setSent] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const Heading = variant === 'page' ? 'h1' : 'h2';
 
@@ -118,6 +120,8 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
       { kind: 'save-answer', id: answer.id },
     );
 
+  // Not mine, still Abierta and I have not answered yet (a guest sees the box and meets the wall at «Enviar»)
+  const canAnswer = !question.isMine && question.status === 'open' && !answers.some((a) => a.isMine);
   const canDeleteQuestion = question.isMine && question.answerCount === 0;
   const hasQuestionMenu = !question.isMine || canDeleteQuestion;
   const openMenu = (target: Target) => setDialog({ kind: 'menu', target });
@@ -205,6 +209,9 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
           </ul>
         )}
       </section>
+
+      {canAnswer && <AnswerBox questionId={question.id} onSent={() => setSent(true)} />}
+      <p className="sr-only" role="status">{sent ? 'Tu respuesta se envió' : ''}</p>
 
       {dialog?.kind === 'photo' && question.photoUrl && (
         <PhotoZoom src={question.photoUrl} onClose={() => setDialog(null)} />
