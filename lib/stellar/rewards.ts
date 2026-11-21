@@ -32,7 +32,8 @@ export interface RewardFacts {
   signVote(signId: number, voterId: number): Promise<{ helpful: boolean } | null>;
   question(id: number): Promise<QuestionFacts | null>;
   answer(id: number): Promise<{ authorId: number; questionId: number } | null>;
-  rating(answerId: number): Promise<{ raterId: number; helpful: boolean } | null>;
+  /** The caller's own rating of the answer, if they gave one. */
+  rating(answerId: number, raterId: number): Promise<{ helpful: boolean } | null>;
 }
 
 export const PREMIAR_REASONS: readonly PremiarReason[] = ['letrero', 'sirvio-l', 'ayuda', 'cierre'];
@@ -61,8 +62,8 @@ export async function planReward(facts: RewardFacts, callerId: number, reason: P
       if (!answer || answer.authorId === callerId) return null;
       const question = await facts.question(answer.questionId);
       if (!question || question.authorId !== callerId) return null;
-      const rating = await facts.rating(refId);
-      return rating?.helpful && rating.raterId === callerId ? plan(answer.authorId, 'ayuda', 5, `ayuda:${refId}`) : null;
+      const rating = await facts.rating(refId, callerId);
+      return rating?.helpful ? plan(answer.authorId, 'ayuda', 5, `ayuda:${refId}`) : null;
     }
     case 'cierre': {
       const question = await facts.question(refId);
@@ -83,7 +84,7 @@ export type ChargeResult = { status: 'confirmed'; txHash: string } | { status: '
 
 /** The movements to look through for the memo of a payment. A memo is unique, so one hit means it was paid. */
 const LOOKBACK = 20;
-const SEQUENCE_RETRIES = 3;
+const RETRIES = 3;
 
 async function findOnChain(publicKey: string, env: WalletEnv, direction: 'in' | 'out', memo: string): Promise<string | undefined> {
   const movements = await pointsMovements(publicKey, env.issuerPublic, LOOKBACK);
@@ -91,16 +92,20 @@ async function findOnChain(publicKey: string, env: WalletEnv, direction: 'in' | 
 }
 
 /**
- * The distributor is one account, so two payments at once can collide on the sequence number («tx_bad_seq»).
- * That is not a failure of the reward: try again after a short random pause, looking first for the memo.
+ * Two things that are not a failure of the payment, only of the moment: the distributor is one account, so two
+ * payments at once can collide on the sequence number («tx_bad_seq»), and Horizon can answer «504» for a
+ * transaction that is still being applied. Either way, try again after a short random pause: the attempt looks
+ * for the memo on the chain first, so a payment that did land is never sent twice.
  */
-async function withSequenceRetry<T>(attempt: () => Promise<T>): Promise<T> {
+const isTransient = (error: unknown) => /tx_bad_seq|504|Gateway Timeout|Timeout/i.test(String(error));
+
+async function withRetry<T>(attempt: () => Promise<T>): Promise<T> {
   for (let i = 0; ; i++) {
     try {
       return await attempt();
     } catch (error) {
-      if (i >= SEQUENCE_RETRIES || !String(error).includes('tx_bad_seq')) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 700));
+      if (i >= RETRIES || !isTransient(error)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 500 + Math.random() * 1000));
     }
   }
 }
@@ -114,7 +119,7 @@ export async function payReward(store: WalletStore, plan: RewardPlan, env: Walle
   if (!account.publicKey || account.status !== 'ready') return { status: 'pending' };
 
   try {
-    const hash = await withSequenceRetry(async () => {
+    const hash = await withRetry(async () => {
       const paid = await findOnChain(account.publicKey as string, env, 'in', plan.memoKey);
       if (paid) return paid;
       const result = await payPoints({
@@ -149,22 +154,24 @@ export async function chargeUrgent(store: WalletStore, plan: RewardPlan, env: Wa
   if (!account.publicKey || account.status !== 'ready' || !key) return notCharged('stellar');
 
   try {
-    const paid = await findOnChain(account.publicKey, env, 'out', plan.memoKey);
-    if (paid) {
-      await store.settleReward(reward.id, { status: 'confirmed', txHash: paid });
-      return { status: 'confirmed', txHash: paid };
+    if (Number(await pointsBalance(account.publicKey, env.issuerPublic)) < -plan.amount && !(await findOnChain(account.publicKey, env, 'out', plan.memoKey))) {
+      return await notCharged('balance');
     }
-    if (Number(await pointsBalance(account.publicKey, env.issuerPublic)) < -plan.amount) return await notCharged('balance');
-
-    const result = await payPoints({
-      from: Keypair.fromSecret(decryptSecret(key, env.encryptionKey)),
-      to: Keypair.fromSecret(env.distributorSecret).publicKey(),
-      amount: String(-plan.amount),
-      issuerPublicKey: env.issuerPublic,
-      memo: plan.memoKey,
+    const publicKey = account.publicKey;
+    const hash = await withRetry(async () => {
+      const paid = await findOnChain(publicKey, env, 'out', plan.memoKey);
+      if (paid) return paid;
+      const result = await payPoints({
+        from: Keypair.fromSecret(decryptSecret(key, env.encryptionKey)),
+        to: Keypair.fromSecret(env.distributorSecret).publicKey(),
+        amount: String(-plan.amount),
+        issuerPublicKey: env.issuerPublic,
+        memo: plan.memoKey,
+      });
+      return result.hash;
     });
-    await store.settleReward(reward.id, { status: 'confirmed', txHash: result.hash });
-    return { status: 'confirmed', txHash: result.hash };
+    await store.settleReward(reward.id, { status: 'confirmed', txHash: hash });
+    return { status: 'confirmed', txHash: hash };
   } catch (error) {
     console.error(`charge ${plan.memoKey} not charged:`, error);
     return notCharged('stellar');

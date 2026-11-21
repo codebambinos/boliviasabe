@@ -81,7 +81,7 @@ function memoryFacts(): RewardFacts {
       return null;
     },
     answer: async (id) => (id === 30 ? { authorId: 1, questionId: 20 } : id === 31 || id === 32 ? { authorId: 1, questionId: 22 } : null),
-    rating: async (answerId) => ([30, 31, 32].includes(answerId) ? { raterId: 2, helpful: true } : null),
+    rating: async (answerId, raterId) => ([30, 31, 32].includes(answerId) && raterId === 2 ? { helpful: true } : null),
   };
 }
 

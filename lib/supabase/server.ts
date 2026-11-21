@@ -3,6 +3,7 @@
  * never import this from src/. The functions validate who is calling before they touch any data.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { RewardFacts } from '../stellar/rewards.ts';
 import type { EncryptedSecret, RewardRow, WalletStore } from '../stellar/wallet.ts';
 
 function env(name: string): string {
@@ -91,6 +92,44 @@ export function supabaseWalletStore(db: SupabaseClient): WalletStore {
         .update({ status: patch.status, tx_hash: patch.txHash ?? null, updated_at: new Date().toISOString() })
         .eq('id', id);
       fail('rewards', error);
+    },
+  };
+}
+
+/** `RewardFacts` on the Supabase tables that decide whether a reward is legitimate (service role: RLS is not in the way). */
+export function supabaseRewardFacts(db: SupabaseClient): RewardFacts {
+  return {
+    async sign(id) {
+      const { data, error } = await db.from('signs').select('author_id').eq('id', id).maybeSingle();
+      fail('signs', error);
+      return data ? { authorId: data.author_id } : null;
+    },
+
+    async signVote(signId, voterId) {
+      const { data, error } = await db.from('sign_votes').select('helpful').eq('sign_id', signId).eq('voter_id', voterId).maybeSingle();
+      fail('sign_votes', error);
+      return data ? { helpful: data.helpful } : null;
+    },
+
+    async question(id) {
+      const { data, error } = await db.from('questions').select('author_id, status, urgent_until').eq('id', id).maybeSingle();
+      fail('questions', error);
+      if (!data) return null;
+      const { count, error: countError } = await db.from('answers').select('id', { count: 'exact', head: true }).eq('question_id', id);
+      fail('answers', countError);
+      return { authorId: data.author_id, status: data.status, urgent: data.urgent_until !== null, answerCount: count ?? 0 };
+    },
+
+    async answer(id) {
+      const { data, error } = await db.from('answers').select('author_id, question_id').eq('id', id).maybeSingle();
+      fail('answers', error);
+      return data ? { authorId: data.author_id, questionId: data.question_id } : null;
+    },
+
+    async rating(answerId, raterId) {
+      const { data, error } = await db.from('ratings').select('helpful').eq('answer_id', answerId).eq('rater_id', raterId).maybeSingle();
+      fail('ratings', error);
+      return data ? { helpful: data.helpful } : null;
     },
   };
 }
