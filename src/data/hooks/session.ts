@@ -1,5 +1,6 @@
 // Session hooks. Signing in or out refreshes every other query: «isMine», «savedByMe» and
-// the wallet depend on who is looking.
+// the wallet depend on who is looking. What belongs to one person (balance, movements, activity, saved, phone) is
+// dropped, not just refetched, so the next person never sees the previous one's numbers while it loads.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ProfileInput } from '../api';
 import { keys } from '../keys';
@@ -10,13 +11,17 @@ export function useSession() {
   return useQuery({ queryKey: keys.session(), queryFn: () => api.auth.getSession() });
 }
 
+const PERSONAL = [keys.wallet(), keys.activity(), keys.saved(), keys.myPhone()];
+const isPersonal = (key: readonly unknown[]) => PERSONAL.some((p) => p.every((part, i) => key[i] === part));
+
 function useSessionMutation<TInput>(run: (input: TInput) => Promise<Session>) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: run,
     onSuccess: (session) => {
       client.setQueryData(keys.session(), session);
-      void client.invalidateQueries({ queryKey: keys.all, predicate: (q) => q.queryKey[1] !== 'session' });
+      for (const key of PERSONAL) void client.resetQueries({ queryKey: key });
+      void client.invalidateQueries({ queryKey: keys.all, predicate: (q) => !isPersonal(q.queryKey) && q.queryKey[1] !== 'session' });
     },
   });
 }

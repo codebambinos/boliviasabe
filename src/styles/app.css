@@ -472,6 +472,24 @@ textarea {
   }
 }
 
+/* A number that is still loading (the balance): a short pulsing bar, never the previous value */
+.num-wait {
+  display: inline-block;
+  width: 2.2ch;
+  height: 0.8em;
+  border-radius: var(--r-sm, 0.25rem);
+  background: currentColor;
+  vertical-align: middle;
+  opacity: 0.22;
+  animation: num-wait 1.4s ease-in-out infinite;
+}
+
+@keyframes num-wait {
+  50% {
+    opacity: 0.08;
+  }
+}
+
 /* Photos fade in once loaded instead of popping in (FadeImage, wiki #194). Their frame pulses like a skeleton
    meanwhile; the letrero detail shows its blurred thumbnail instead. */
 .fade-img {

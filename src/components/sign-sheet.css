@@ -213,10 +213,14 @@
 
 .sheet__photo-thumb {
   filter: blur(8px);
-  transform: scale(1.04); /* the blur would show a soft edge */
+  transition: opacity 200ms var(--ease) 320ms;
 }
 
-/* Positioned so it paints above the transformed thumbnail */
+/* Once the full photo is in, the blurred thumbnail goes away: no soft halo around the edges */
+.sheet__photo-frame:has(.sheet__photo-full[data-loaded]) .sheet__photo-thumb {
+  opacity: 0;
+}
+
 .sheet__photo-full {
   position: relative;
 }
