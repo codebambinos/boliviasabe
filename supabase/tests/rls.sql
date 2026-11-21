@@ -566,8 +566,9 @@ select pg_temp.expect_text('author_trust has no raw rating columns',
 select pg_temp.as_anon();
 select pg_temp.expect_select('anon reads author_trust', 'select profile_id from public.author_trust', 4);
 
--- Notifications from the two triggers.
-select pg_temp.as_user('a');
+-- Notifications from the two triggers. Ana's two questions are fixtures: she already has 3 open questions
+-- with answers, the limit of 0007.
+select pg_temp.as_postgres();
 select pg_temp.expect_write('Ana asks a question to be answered',
   format('insert into public.questions (author_id, text, city, zone) values (%s, ''Pregunta para notificar'', ''Cochabamba'', ''Sarco'')',
     pg_temp.id_of('a')), 1);
@@ -870,6 +871,138 @@ select pg_temp.expect_write('mz deletes the answer', format('delete from public.
 select pg_temp.as_postgres();
 select pg_temp.expect_select('its thread and contact request are gone',
   format('select 1 from public.answer_comments where answer_id = %s union all select 1 from public.contact_requests where answer_id = %s', pg_temp.r('ans_gone'), pg_temp.r('ans_gone')), 0);
+
+-- ---------------------------------------------------------------------------
+-- Limits and reward caps (0007, SPEC 13). Fresh people l1..l5 so the blocks above do not interfere.
+-- ---------------------------------------------------------------------------
+select pg_temp.as_postgres();
+insert into auth.users (id, aud, role, email)
+select ('e0000000-0000-0000-0000-0000000000b' || g)::uuid, 'authenticated', 'authenticated', 'l' || g || '@test.local'
+from generate_series(1, 5) g;
+insert into public.profiles (auth_id, display_name, full_name, city, zone)
+select ('e0000000-0000-0000-0000-0000000000b' || g)::uuid, 'Limite ' || g, 'Limite Prueba ' || g, 'Tarija', 'Centro'
+from generate_series(1, 5) g;
+insert into test_ids (name, id, auth_id)
+select 'l' || right(p.auth_id::text, 1), p.id, p.auth_id from public.profiles p
+where p.auth_id::text like 'e0000000-0000-0000-0000-0000000000b_';
+
+-- Fails unless the statement raises BSLIM with that message, and returns the hint (when it frees).
+create or replace function pg_temp.expect_limit(p_label text, p_sql text, p_reason text)
+returns text language plpgsql as $$
+declare v_state text; v_message text; v_hint text;
+begin
+  begin
+    execute p_sql;
+  exception when others then
+    get stacked diagnostics v_state = returned_sqlstate, v_message = message_text, v_hint = pg_exception_hint;
+    if v_state = 'BSLIM' and v_message = 'limit:' || p_reason then
+      raise notice 'ok: %', p_label;
+      return v_hint;
+    end if;
+    raise exception 'FAILED: % (expected BSLIM limit:%, got % %)', p_label, p_reason, v_state, v_message;
+  end;
+  raise exception 'FAILED: % (no error, expected limit:%)', p_label, p_reason;
+end;
+$$;
+
+-- 10 questions per Bolivian day: l1 has 10 today, l2 has 10 from before today's Bolivian midnight
+insert into public.questions (author_id, text, city, zone)
+select pg_temp.id_of('l1'), 'Pregunta de hoy ' || g, 'Tarija', 'Centro' from generate_series(1, 10) g;
+insert into public.questions (author_id, text, city, zone, created_at)
+select pg_temp.id_of('l2'), 'Pregunta de ayer ' || g, 'Tarija', 'Centro', public.bolivia_day_start() - interval '1 minute'
+from generate_series(1, 10) g;
+select pg_temp.as_user('l1');
+select pg_temp.expect_text('the 11th question of the day frees at the next Bolivian midnight',
+  format('select pg_temp.expect_limit(''l1 cannot ask an 11th question today'', %L, ''questions_per_day'')',
+    format('insert into public.questions (author_id, text, city, zone) values (%s, ''La número once'', ''Tarija'', ''Centro'')', pg_temp.id_of('l1'))),
+  public.iso_utc(public.bolivia_next_midnight()));
+select pg_temp.as_user('l2');
+select pg_temp.expect_write('questions from before midnight in Bolivia do not count',
+  format('insert into public.questions (author_id, text, city, zone) values (%s, ''Primera de hoy'', ''Tarija'', ''Centro'')', pg_temp.id_of('l2')), 1);
+select pg_temp.as_postgres();
+select pg_temp.expect_write('the service role is not limited',
+  format('insert into public.questions (author_id, text, city, zone) values (%s, ''Del seed'', ''Tarija'', ''Centro'')', pg_temp.id_of('l1')), 1);
+
+-- 3 open questions with answers: l3 has three, each answered by l4
+insert into public.questions (author_id, text, city, zone)
+select pg_temp.id_of('l3'), 'Abierta con respuesta ' || g, 'Tarija', 'Centro' from generate_series(1, 3) g;
+insert into public.answers (question_id, author_id, text)
+select q.id, pg_temp.id_of('l4'), 'Respuesta de l4' from public.questions q where q.text like 'Abierta con respuesta %';
+insert into public.questions (author_id, text, city, zone)
+values (pg_temp.id_of('l3'), 'Abierta sin respuestas', 'Tarija', 'Centro');
+select pg_temp.as_user('l3');
+select pg_temp.expect_text('open_questions has no until',
+  format('select pg_temp.expect_limit(''l3 cannot ask with 3 open questions with answers'', %L, ''open_questions'')',
+    format('insert into public.questions (author_id, text, city, zone) values (%s, ''La cuarta'', ''Tarija'', ''Centro'')', pg_temp.id_of('l3'))),
+  '');
+select pg_temp.as_postgres();
+update public.questions set status = 'closed' where text = 'Abierta con respuesta 1';
+select pg_temp.as_user('l3');
+select pg_temp.expect_write('after closing one, l3 asks again',
+  format('insert into public.questions (author_id, text, city, zone) values (%s, ''Ahora sí la cuarta'', ''Tarija'', ''Centro'')', pg_temp.id_of('l3')), 1);
+
+-- 30 comments in the last hour: l4 has 30 in the window, l5 has 30 just outside it
+select pg_temp.as_postgres();
+insert into test_rows (name, id) select 'ans_comments', min(id) from public.answers where text = 'Respuesta de l4';
+insert into public.answer_comments (answer_id, author_id, text, created_at)
+select pg_temp.r('ans_comments'), pg_temp.id_of('l4'), 'Comentario ' || g, now() - ((60 - g) || ' minutes')::interval
+from generate_series(1, 30) g;
+insert into public.answer_comments (answer_id, author_id, text, created_at)
+select pg_temp.r('ans_comments'), pg_temp.id_of('l5'), 'Viejo ' || g, now() - interval '61 minutes' from generate_series(1, 30) g;
+select pg_temp.as_user('l4');
+select pg_temp.expect_text('the 31st comment frees when the oldest one leaves the hour',
+  format('select pg_temp.expect_limit(''l4 cannot write a 31st comment in an hour'', %L, ''comments_per_hour'')',
+    format('insert into public.answer_comments (answer_id, author_id, text) values (%s, %s, ''Uno más'')', pg_temp.r('ans_comments'), pg_temp.id_of('l4'))),
+  public.iso_utc(now() - interval '59 minutes' + interval '1 hour'));
+select pg_temp.as_user('l5');
+select pg_temp.expect_write('comments older than an hour do not count',
+  format('insert into public.answer_comments (answer_id, author_id, text) values (%s, %s, ''Nuevo'')', pg_temp.r('ans_comments'), pg_temp.id_of('l5')), 1);
+
+-- Reward caps
+select pg_temp.as_postgres();
+insert into public.rewards (profile_id, memo_key, amount, reason)
+select pg_temp.id_of('l1'), 'letrero:9000' || g, 1, 'letrero' from generate_series(1, 10) g;
+select pg_temp.expect_text('the 11th rewarded letrero today is capped',
+  format('select public.reward_cap(''letrero'', %s, null, ''letrero:900011'', 900011)', pg_temp.id_of('l1')), 'signs_per_day');
+select pg_temp.expect_text('a letrero memo that already exists is never capped',
+  format('select public.reward_cap(''letrero'', %s, null, ''letrero:90001'', 90001)', pg_temp.id_of('l1')), null);
+update public.rewards set created_at = public.bolivia_day_start() - interval '1 minute' where memo_key like 'letrero:9000%';
+select pg_temp.expect_text('letreros from before midnight in Bolivia do not count',
+  format('select public.reward_cap(''letrero'', %s, null, ''letrero:900011'', 900011)', pg_temp.id_of('l1')), null);
+
+-- 3 rewarded «Me sirvió» per question: l2 asks, l1, l3, l4 and l5 answer, l2 marks all four in order
+insert into public.questions (author_id, text, city, zone) values (pg_temp.id_of('l2'), 'Cuatro respuestas útiles', 'Tarija', 'Centro');
+insert into test_rows (name, id) select 'q_four', id from public.questions where text = 'Cuatro respuestas útiles';
+insert into public.answers (question_id, author_id, text)
+select pg_temp.r('q_four'), pg_temp.id_of(n), 'Útil de ' || n from unnest(array['l1', 'l3', 'l4', 'l5']) n;
+insert into test_rows (name, id) select 'ans_' || right(text, 2), id from public.answers where question_id = pg_temp.r('q_four');
+insert into public.ratings (answer_id, rater_id, helpful)
+select pg_temp.r('ans_' || n), pg_temp.id_of('l2'), true from unnest(array['l1', 'l3', 'l4', 'l5']) with ordinality as t(n, i) order by i;
+select pg_temp.expect_text('the 3rd helpful rating of a question still pays',
+  format('select public.reward_cap(''ayuda'', %s, %s, ''ayuda:%s'', %s)', pg_temp.id_of('l4'), pg_temp.id_of('l2'), pg_temp.r('ans_l4'), pg_temp.r('ans_l4')), null);
+select pg_temp.expect_text('the 4th helpful rating of a question is capped',
+  format('select public.reward_cap(''ayuda'', %s, %s, ''ayuda:%s'', %s)', pg_temp.id_of('l5'), pg_temp.id_of('l2'), pg_temp.r('ans_l5'), pg_temp.r('ans_l5')), 'answers_per_question');
+
+-- 3 rewards per day between the same two people (letrero votes and «Me sirvió» count, others do not)
+insert into public.rewards (profile_id, memo_key, amount, reason, source_id)
+select pg_temp.id_of('l3'), 'sirvio-l:8000' || g || '-1', 1, 'sirvio-l', pg_temp.id_of('l1') from generate_series(1, 3) g;
+select pg_temp.expect_text('a 4th reward from l1 to l3 today is capped',
+  format('select public.reward_cap(''sirvio-l'', %s, %s, ''sirvio-l:80009-1'', 80009)', pg_temp.id_of('l3'), pg_temp.id_of('l1')), 'pair_per_day');
+select pg_temp.expect_text('another pair is not capped',
+  format('select public.reward_cap(''sirvio-l'', %s, %s, ''sirvio-l:80009-2'', 80009)', pg_temp.id_of('l3'), pg_temp.id_of('l2')), null);
+select pg_temp.expect_text('a pair reward that already exists is never capped',
+  format('select public.reward_cap(''sirvio-l'', %s, %s, ''sirvio-l:80001-1'', 80001)', pg_temp.id_of('l3'), pg_temp.id_of('l1')), null);
+
+-- my_reward_cap: the caller's view, the same rule; reward_cap itself is service-role only
+select pg_temp.as_user('l2');
+select pg_temp.expect_text('my_reward_cap tells l2 their 4th «Me sirvió» did not pay',
+  format('select public.my_reward_cap(''ayuda'', %s)', pg_temp.r('ans_l5')), 'answers_per_question');
+select pg_temp.expect_text('my_reward_cap is null for a reward l2 cannot claim',
+  format('select public.my_reward_cap(''letrero'', %s)', pg_temp.r('sign_a')), null);
+select pg_temp.expect_error('a browser cannot call reward_cap directly',
+  format('select public.reward_cap(''letrero'', %s, null, ''letrero:1'', 1)', pg_temp.id_of('l2')), '42501');
+select pg_temp.as_anon();
+select pg_temp.expect_error('a guest cannot call my_reward_cap', 'select public.my_reward_cap(''letrero'', 1)', '42501');
 
 -- ---------------------------------------------------------------------------
 -- auth_method (0004): the sign-in sheet asks which method an e-mail has
