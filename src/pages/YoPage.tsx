@@ -32,9 +32,9 @@ type Theme = 'dark' | 'light' | 'system';
 function readTheme(): Theme {
   try {
     const value = localStorage.getItem('bs-theme');
-    return value === 'light' || value === 'system' ? value : 'dark';
+    return value === 'light' || value === 'dark' ? value : 'system';
   } catch {
-    return 'dark';
+    return 'system';
   }
 }
 
@@ -265,9 +265,9 @@ function YoSample({
             <div className="segmented">
               {(
                 [
-                  ['dark', 'Oscuro'],
-                  ['light', 'Claro'],
                   ['system', 'Sistema'],
+                  ['light', 'Claro'],
+                  ['dark', 'Oscuro'],
                 ] as const
               ).map(([value, label]) => (
                 <label key={value}>

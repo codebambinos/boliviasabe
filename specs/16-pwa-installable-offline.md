@@ -156,6 +156,10 @@ New dependencies, pinned with `--save-exact`:
 
 - **Photos load with `crossorigin="anonymous"`** (`FadeImage` and the sizer thumbnail of the letrero detail). Without it, Supabase Storage photos are opaque responses, which the photo cache does not keep. Supabase Storage answers CORS, so nothing else changes.
 - **Cerrar sesión and the persisted copy.** `removeClient()` deletes it, but the persister writes the in-memory cache again right away. What comes back is only the public lists, which refetch as a guest. The acceptance criterion now says that instead of «does not exist».
+- **The default theme is now the phone's** (wiki #201, Diego after installing it on an iPhone; replaces #143).
+  `index.html` and Ajustes › Tema default to `system` (options in the order Sistema / Claro / Oscuro), and the
+  status bar color follows the phone while it does. The manifest keeps `#151110`: a manifest cannot follow the
+  system, and it only paints the Android splash.
 - **The session is never persisted either**, besides the personal keys: it holds the person's profile.
 
 ## Decisions
