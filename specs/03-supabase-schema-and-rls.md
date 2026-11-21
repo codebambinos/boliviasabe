@@ -125,7 +125,7 @@ Rules that the table does not show:
 2. Add `supabase/migrations/0001_core_tables.sql`. It creates the `unaccent` extension, every table in the Data model with its constraints, the indexes, the `zone_norm` trigger and the three rule triggers. `npx supabase db reset` runs and exits with 0 on the local stack.
 3. Add `supabase/migrations/0002_rls.sql`. It creates the two helper functions, enables RLS on every table, adds the policies from the RLS table and creates `profiles_public`. The local reset still exits with 0. `supabase/tests/rls.sql` is added with the checks for the first table (`profiles`) only.
 4. Extend `supabase/tests/rls.sql` to cover every table in the RLS table. Each check impersonates a user with `set local role authenticated` and `set local request.jwt.claims`, then asserts the row count or the error. The script ends with `raise notice 'rls ok'` and aborts on the first failure.
-5. Add `supabase/migrations/0003_ratings_view_and_notifications.sql`. It creates the `author_trust` view and the notifications trigger function and trigger. Extend `rls.sql` to check the stars formula (2 helpful and 1 not helpful gives 3.0 stars with 3 ratings), the badge thresholds and the notification rows.
+5. Add `supabase/migrations/0003_ratings_view_and_notifications.sql`. It creates the `author_trust` view and the notifications trigger function and trigger. Extend `rls.sql` to check the stars formula (2 helpful and 1 not helpful gives 3.7 stars with 3 ratings, badge «Buen vecino»), the badge thresholds and the notification rows.
 6. Add `supabase/README.md`: how to run `npx supabase start`, `npx supabase db reset` and `psql` with `rls.sql`; that the service role key never goes into the repo; and how to add a migration.
 7. Update the T08 card on the board with the link to this spec and tick the done criteria that apply.
 
@@ -148,7 +148,8 @@ Rules that the table does not show:
 - [ ] After user B marks A's answer as «Me sirvió», A has one `notifications` row of kind `helpful`.
 - [ ] A `memo_key` longer than 28 bytes is rejected.
 - [ ] A `zone` with accents and capitals gives a `zone_norm` in lowercase without accents (`Sopocachi` and `sopocachí` give the same value).
-- [ ] With 2 helpful and 1 not helpful ratings, `author_trust` returns `stars = 3.0`, `badge = 'Vecino nuevo'`, `stars` null with fewer than 3 ratings.
+- [ ] With 2 helpful and 1 not helpful ratings, `author_trust` returns `stars = 3.7` and `badge = 'Buen vecino'`.
+- [ ] With 2 ratings (any values), `author_trust` returns `stars` null and `badge = 'Vecino nuevo'`.
 - [ ] With 5 ratings, 5 helpful, `author_trust` returns `badge = 'De confianza'`.
 - [ ] `hidden_items` lets a user insert and delete only their own rows.
 - [ ] `npm run typecheck` and `npm run build` pass, and the CI check is green on the PR.
