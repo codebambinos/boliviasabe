@@ -146,11 +146,17 @@ New dependencies, pinned with `--save-exact`:
 - [ ] On iPhone Safari, «Instalar la app» shows the 3 steps and the note; following them installs the app, and it opens standalone with the bars inside the safe areas.
 - [ ] With airplane mode, the installed app opens. Hoy and Preguntas show the last lists with their thumbnails and the banner «Sin conexión. Ves lo último que cargó». A detail that was opened before shows too.
 - [ ] Offline, a screen with nothing cached shows «Sin conexión, intenta de nuevo» + Reintentar (not a blank page or the browser dinosaur).
-- [ ] After Cerrar sesión, `bs-query-cache` does not exist in IndexedDB. Wallet, activity, saved and myPhone are never in it.
+- [ ] After Cerrar sesión, `bs-query-cache` holds no personal or session query (it is removed, then re-saved with the public lists only). Wallet, activity, saved, myPhone and the session are never in it.
 - [ ] A new deploy: after closing and reopening the app, the new version is running, with no reload in the middle of typing.
 - [ ] No Supabase REST/Auth, Horizon or `/api/` responses appear in Cache Storage.
 - [ ] Mock mode (`VITE_DATA_SOURCE=mock`) still works, with the cache persisted the same way.
 - [ ] Light and dark mode, 360 px and text at 130 % on the new row and sheet.
+
+## Changes during implementation
+
+- **Photos load with `crossorigin="anonymous"`** (`FadeImage` and the sizer thumbnail of the letrero detail). Without it, Supabase Storage photos are opaque responses, which the photo cache does not keep. Supabase Storage answers CORS, so nothing else changes.
+- **Cerrar sesión and the persisted copy.** `removeClient()` deletes it, but the persister writes the in-memory cache again right away. What comes back is only the public lists, which refetch as a guest. The acceptance criterion now says that instead of «does not exist».
+- **The session is never persisted either**, besides the personal keys: it holds the person's profile.
 
 ## Decisions
 
