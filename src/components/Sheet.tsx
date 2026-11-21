@@ -11,15 +11,28 @@ import './sheet.css';
 type Entry = { el: HTMLElement; requestClose: (fromHistory: boolean) => void };
 const stack: Entry[] = [];
 let skipPops = 0;
+const afterPop: (() => void)[] = [];
+
+/** Runs `fn` once, right after the sheet that is closing has popped its history entry. */
+export function afterSheetPop(fn: () => void): void {
+  afterPop.push(fn);
+}
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('popstate', () => {
-    if (skipPops > 0) {
-      skipPops -= 1;
-      return;
-    }
-    stack[stack.length - 1]?.requestClose(true);
-  });
+  // Capture phase and stopImmediatePropagation: while a sheet is open, a pop only closes it. It never
+  // reaches React Router or the slide-direction listener, so the screen behind does not re-navigate,
+  // restore its scroll or flag a «back» transition that never happens.
+  window.addEventListener(
+    'popstate',
+    (event) => {
+      if (stack.length === 0) return;
+      event.stopImmediatePropagation();
+      if (skipPops > 0) skipPops -= 1;
+      else stack[stack.length - 1]?.requestClose(true);
+      afterPop.splice(0).forEach((fn) => fn());
+    },
+    true,
+  );
 }
 
 const EXIT_MS = 160;

@@ -411,6 +411,11 @@
   view-transition-name: sidebar;
 }
 
+/* Desktop: the sidebar's main action fades like the phone's FAB (same rules below) */
+.shell__side-action {
+  view-transition-name: side-action;
+}
+
 .shell__detail {
   view-transition-name: detail;
 }
@@ -458,6 +463,37 @@
   width: auto;
   height: 100%;
   animation: fab-in var(--m-panel) var(--ease-enter) 90ms both;
+}
+
+/* Going to Yo the FAB has no successor: it fades out the way it fades in (shrinks a little) instead
+   of vanishing. Between Hoy and Preguntas the old one still leaves at once (the rule above). */
+::view-transition-old(fab):only-child {
+  display: block;
+  animation: fab-out var(--m-panel) var(--ease) both;
+}
+
+::view-transition-group(side-action) {
+  animation: none;
+}
+
+::view-transition-old(side-action) {
+  display: none;
+}
+
+::view-transition-new(side-action) {
+  animation: fab-in var(--m-panel) var(--ease-enter) 90ms both;
+}
+
+::view-transition-old(side-action):only-child {
+  display: block;
+  animation: fab-out var(--m-panel) var(--ease) both;
+}
+
+@keyframes fab-out {
+  to {
+    opacity: 0;
+    transform: scale(0.94);
+  }
 }
 
 @keyframes fab-in {
@@ -616,24 +652,50 @@
   margin-left: var(--s-1);
 }
 
-/* FAB folds to its «+» while the list scrolls down (no width animation: the label fades) */
+/* FAB folds to its «+» while the list scrolls down. The label's grid track shrinks 1fr → 0fr, so the
+   pill narrows smoothly instead of jumping (the label is also clipped and faded). */
+.shell__fab {
+  grid-template-columns: auto 1fr;
+  column-gap: var(--s-2);
+  align-items: center;
+  transition:
+    grid-template-columns var(--m-panel) var(--ease),
+    column-gap var(--m-panel) var(--ease),
+    padding var(--m-panel) var(--ease),
+    min-height var(--m-panel) var(--ease),
+    transform var(--m-out) var(--ease),
+    background-color var(--m-out) var(--ease);
+}
+
+/* Phone only: from 64 rem the sidebar has the main action and the FAB stays hidden (display: none) */
+@media (max-width: 63.99rem) {
+  .shell__fab {
+    display: inline-grid;
+  }
+}
+
 .shell__fab-label {
-  transition: opacity var(--m-out) var(--ease);
+  min-width: 0;
+  overflow: hidden;
+  transition: opacity var(--m-panel) var(--ease);
 }
 
 .shell__fab[data-folded] {
-  width: 3.5rem;
+  grid-template-columns: auto 0fr;
+  column-gap: 0;
   min-height: 3.5rem;
-  padding: 0;
+  padding-inline: calc((3.5rem - 20px) / 2);
 }
 
 .shell__fab[data-folded] .shell__fab-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
   opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell__fab,
+  .shell__fab-label {
+    transition: none;
+  }
 }
 
 /* The rail's main action keeps its name under the «+» (a verb, like the tabs) */

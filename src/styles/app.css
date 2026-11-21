@@ -10,6 +10,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Sheets lock the page's scroll: keep the scrollbar's room so the layout does not shift */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -1068,4 +1070,19 @@ li {
   margin: calc(var(--s-2) * -1) 0 var(--s-3);
   color: var(--color-muted);
   font-size: var(--t-small);
+}
+
+/* The feed keeps its last result while a new search, chip or city loads: it only dims, no skeleton flash */
+#letreros {
+  transition: opacity var(--m-panel) var(--ease);
+}
+
+#letreros[data-stale] {
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #letreros {
+    transition: none;
+  }
 }

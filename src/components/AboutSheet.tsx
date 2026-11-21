@@ -3,7 +3,7 @@
 import { useId, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { ABOUT, CONTACT_EMAIL } from '../content/legal';
 import { ChevronRightIcon, CloseIcon, EyeIcon, MailIcon, PlusIcon, QuestionIcon } from './icons';
-import { Sheet } from './Sheet';
+import { afterSheetPop, Sheet } from './Sheet';
 import { Yapita } from './Yapita';
 import './about-sheet.css';
 
@@ -28,7 +28,7 @@ export function AboutSheet({ onClose, onOpenPrivacy }: AboutSheetProps) {
         const toPrivacy = (event: MouseEvent<HTMLAnchorElement>) => {
           if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
           event.preventDefault();
-          window.addEventListener('popstate', onOpenPrivacy, { once: true });
+          afterSheetPop(onOpenPrivacy);
           close();
         };
         return (
