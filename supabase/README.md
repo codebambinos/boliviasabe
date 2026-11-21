@@ -103,6 +103,24 @@ select vault.create_secret('<PUSH_WEBHOOK_SECRET>', 'push_secret');
 
 Locally, point `push_url` at `vercel dev`: `http://host.docker.internal:3000/api/push`.
 
+## Hourly job (T28)
+
+`pg_cron` runs `public.run_hourly_push_jobs()` at minute 7 of every hour (job `bs-hourly-push`, 0009). It all
+happens in the database, with no endpoint and no extra secret:
+
+- **24 h reminder:** an open question whose first answer is 24-48 h old gets one `reminder` notification for its
+  author («¿Alguna respuesta te sirvió?»). The push goes out through the same trigger as every other notification.
+- **Lost pushes:** notifications 5-65 minutes old that `/api/push` never processed (`pushed_at` null) are requested
+  again. `/api/push` claims `pushed_at` first, so nothing is pushed twice.
+
+```sql
+select jobname, schedule, active from cron.job;                     -- the job is there
+select public.run_hourly_push_jobs();                               -- run it now: {"reminders": n, "resent": n}
+select status, return_message, start_time from cron.job_run_details
+where jobid = (select jobid from cron.job where jobname = 'bs-hourly-push')
+order by start_time desc limit 5;                                   -- the last runs
+```
+
 ## Security notes
 
 - RLS is the only thing that stops one neighbor from changing another's content, because the anon key is in the browser bundle.
