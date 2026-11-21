@@ -8,6 +8,23 @@ import { errorMessage } from './messages';
 
 const MAX = 1000;
 
+/**
+ * Back from Google with an answer in hand: it was saved as a draft before the redirect, so send it once, as if the
+ * person had just tapped «Enviar». Never throws: if it fails, the draft stays and the box shows it again.
+ */
+export async function sendDraftAnswer(questionId: Id, send: (input: { questionId: Id; text: string }) => Promise<unknown>): Promise<void> {
+  const key = `answer:${questionId}`;
+  const saved = (await loadDraft(key))?.fields.text;
+  const text = typeof saved === 'string' ? saved.trim() : '';
+  if (!text) return;
+  try {
+    await send({ questionId, text });
+    await clearDraft(key);
+  } catch {
+    /* the draft stays: the person sees it in the box and taps «Enviar» */
+  }
+}
+
 export function AnswerBox({ questionId, onSent }: { questionId: Id; onSent: () => void }) {
   const fieldId = useId();
   const key = `answer:${questionId}`;
@@ -52,7 +69,7 @@ export function AnswerBox({ questionId, onSent }: { questionId: Id; onSent: () =
       onSubmit={(e) => {
         e.preventDefault();
         if (!trimmed || create.isPending) return;
-        requireAccount('Así quien preguntó recibe tu respuesta.', send);
+        requireAccount('Así quien preguntó recibe tu respuesta.', send, undefined, { kind: 'send-answer', questionId });
       }}
     >
       <div className="upload__label-row">

@@ -1,6 +1,8 @@
-// Light ↔ dark without a jump: while the class `theme-fade` is on <html>, every color property
-// transitions (CSS in src/styles/app.css). It is on only for the moment of the change, so nothing else
-// in the app animates colors. With reduced motion the change is immediate.
+// Light ↔ dark without a jump. Where the browser can (View Transitions), the whole page cross-fades from a
+// picture of the old theme to the new one: text and ground change together, so the ink never passes through a
+// mid-gray that is the same as the ground (what made the letters flicker with a per-color transition).
+// Elsewhere the class `theme-fade` on <html> makes every color property transition (CSS in src/styles/app.css).
+// Either way it lasts only for the moment of the change. With reduced motion the change is immediate.
 const FADE_MS = 260;
 let timer: number | undefined;
 
@@ -11,6 +13,16 @@ export function withThemeFade(change: () => void): void {
     return;
   }
   const root = document.documentElement;
+
+  if (typeof document.startViewTransition === 'function') {
+    // The tab-change transitions name some elements (top bar, FAB…): none of them takes part in this one
+    root.classList.add('theme-vt');
+    const transition = document.startViewTransition(change);
+    const done = () => root.classList.remove('theme-vt');
+    transition.finished.then(done, done);
+    return;
+  }
+
   root.classList.add('theme-fade');
   change();
   window.clearTimeout(timer);

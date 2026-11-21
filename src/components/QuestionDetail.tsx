@@ -2,6 +2,7 @@
 // the page `/p/:id` on a phone and the side panel on desktop. It holds every action of the conversation:
 // Guardar, Compartir, ⋯ (Reportar · Borrar) and, later steps, answering and rating.
 import { useEffect, useId, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Link, useLocation } from 'react-router';
 import {
   REPORT_REASONS,
@@ -86,6 +87,8 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
     if (variant === 'panel' && detail.data) heading.current?.focus({ preventScroll: true });
   }, [variant, id, detail.isSuccess]);
 
+  // The question stays on screen while a dialog about it is open, even if a refresh already says it is gone
+  // (reporting or deleting it makes it «not found» for the person): TanStack keeps the last data on an error
   if (detail.isPending) {
     return (
       <div className="qd" aria-busy="true">
@@ -97,7 +100,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
     );
   }
 
-  if (detail.isError) {
+  if (!detail.data) {
     const gone = isDataError(detail.error) && detail.error.code === 'not_found';
     return (
       <div className="qd">
@@ -291,8 +294,9 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
           question={question}
           first={dialog}
           onClose={() => setDialog(null)}
-          onQuestionDeleted={() => {
-            setDialog(null);
+          onQuestionGone={() => {
+            // The sheet must be gone before going back: while it is open a history pop only closes it
+            flushSync(() => setDialog(null));
             onGone();
           }}
         />
@@ -322,12 +326,13 @@ function ActionSheet({
   question,
   first,
   onClose,
-  onQuestionDeleted,
+  onQuestionGone,
 }: {
   question: Question;
   first: Exclude<Dialog, { kind: 'photo' }>;
   onClose: () => void;
-  onQuestionDeleted: () => void;
+  /** The question was deleted or reported: leave it, from the button or from the ✕ alike. */
+  onQuestionGone: () => void;
 }) {
   const titleId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -371,7 +376,7 @@ function ActionSheet({
   };
 
   return (
-    <Sheet labelledBy={titleId} variant="bottom" onClose={onClose}>
+    <Sheet labelledBy={titleId} variant="bottom" onClose={isQuestion && (step === 'deleted' || step === 'reported' || step === 'hidden') ? onQuestionGone : onClose}>
       {(close) => (
         <>
           <header className="sheet__bar">
@@ -493,8 +498,8 @@ function ActionSheet({
                     ? 'Desaparece de tus listas. Nadie más se entera.'
                     : 'Ya no aparece en ¿Alguien sabe?.'}
               </p>
-              <button type="button" className="btn btn--secondary" onClick={step === 'deleted' && isQuestion ? onQuestionDeleted : close}>
-                {step === 'deleted' && isQuestion ? 'Volver' : 'Listo'}
+              <button type="button" className="btn btn--secondary" onClick={close}>
+                {isQuestion ? 'Volver' : 'Listo'}
               </button>
             </div>
           )}

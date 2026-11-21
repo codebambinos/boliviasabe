@@ -1,11 +1,12 @@
 // /p/:id: a question's conversation as its own page, outside the shell (SPEC 04, SPEC 10). «Volver» returns to
 // where the person was. It brings its own AuthGate: Guardar, Reportar and answering need the account wall here too.
 import { useParams } from 'react-router';
+import { sendDraftAnswer } from '../components/AnswerBox';
 import { AuthGate, useRegisterPendingHandlers } from '../components/AuthGate';
 import { PageFrame } from '../components/PageFrame';
 import { QuestionDetail } from '../components/QuestionDetail';
 import { useGoBack } from '../components/useGoBack';
-import { useToggleSaved } from '../data';
+import { useCreateAnswer, useToggleSaved } from '../data';
 import { UnavailablePage } from './UnavailablePage';
 
 export function QuestionDetailPage() {
@@ -21,9 +22,11 @@ export function QuestionDetailPage() {
 function Page({ id }: { id: number }) {
   const goBack = useGoBack();
   const toggleSaved = useToggleSaved();
+  const createAnswer = useCreateAnswer();
   useRegisterPendingHandlers({
     'save-question': ({ id: questionId }) => toggleSaved.mutate({ kind: 'question', id: questionId }),
     'save-answer': ({ id: answerId }) => toggleSaved.mutate({ kind: 'answer', id: answerId }),
+    'send-answer': ({ questionId }) => sendDraftAnswer(questionId, createAnswer.mutateAsync),
   });
   return (
     <PageFrame title="Pregunta">
