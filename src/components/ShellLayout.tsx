@@ -134,9 +134,10 @@ function Shell() {
 
   // A conversation on desktop lives in the URL (`?p=<id>`) so a reload and Back keep it; on a phone it is a page
   const selectedQuestion = tab === 'preguntas' && Number(searchParams.get('p')) > 0 ? Number(searchParams.get('p')) : null;
-  const openQuestion = (id: Id) => {
-    if (window.matchMedia('(min-width: 64rem)').matches) setSearchParams({ p: String(id) });
-    else goWithTransition((viewTransition) => navigate(`/p/${id}`, { viewTransition }), 'forward');
+  const openQuestion = (id: Id, options?: { share?: boolean }) => {
+    const state = options?.share ? { shareFor: id } : undefined;
+    if (window.matchMedia('(min-width: 64rem)').matches) setSearchParams({ p: String(id) }, { state });
+    else goWithTransition((viewTransition) => navigate(`/p/${id}`, { viewTransition, state }), 'forward');
   };
   const openAsk = (text = '') =>
     requireAccount('Así tus vecinos pueden responderte.', () => setAsking({ text }), undefined, { kind: 'open-ask', text });
@@ -145,7 +146,7 @@ function Shell() {
   const onQuestionPublished = ({ question, urgent, urgentCharged }: { question: Question; urgent: boolean; urgentCharged: boolean }) => {
     if (question.city !== city) setCity(question.city);
     if (urgent && !urgentCharged) setQuestionNotice({ id: Date.now(), text: 'No pudimos cobrar, se publicó normal' });
-    afterSheetPop(() => openQuestion(question.id));
+    afterSheetPop(() => openQuestion(question.id, { share: true }));
   };
 
   const context: ShellContext = {

@@ -2,7 +2,7 @@
 // the page `/p/:id` on a phone and the side panel on desktop. It holds every action of the conversation:
 // Guardar, Compartir, ⋯ (Reportar · Borrar) and, later steps, answering and rating.
 import { useEffect, useId, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import {
   REPORT_REASONS,
   isDataError,
@@ -74,6 +74,8 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
   const toggleSaved = useToggleSaved();
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [sent, setSent] = useState(false);
+  const [shareDismissed, setShareDismissed] = useState(false);
+  const shareFor = (useLocation().state as { shareFor?: Id } | null)?.shareFor;
   const [notice, setNotice] = useState<{ title: string; text: string } | null>(null);
   const markHelpful = useMarkHelpful();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -152,6 +154,20 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
 
   return (
     <div className="qd">
+      {shareFor === question.id && question.isMine && !shareDismissed && (
+        <section className="qd__share" aria-labelledby={`${variant}-share`}>
+          <div>
+            <h3 id={`${variant}-share`} className="qd__share-title">Pregúntale a tus grupos</h3>
+            <p className="meta">Comparte tu pregunta en WhatsApp y recibe respuestas más rápido.</p>
+          </div>
+          <a className="btn btn--small" href={whatsappHref(question)} target="_blank" rel="noreferrer" onClick={() => setShareDismissed(true)}>
+            <ShareIcon size={18} /> Compartir por WhatsApp
+          </a>
+          <button type="button" className="icon-btn qd__share-close" aria-label="Cerrar" onClick={() => setShareDismissed(true)}>
+            <CloseIcon size={18} />
+          </button>
+        </section>
+      )}
       <header className="qd__head">
         <p className="qd__tags">
           {question.status === 'solved' && (

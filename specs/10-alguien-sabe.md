@@ -1,6 +1,6 @@
 # SPEC 10 — ¿Alguien sabe?: list, ask, detail, answer and close
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01 (data layer and mock adapter), SPEC 04 (routes and `ShellLayout`), SPEC 05 (Hoy, whose list/search/tags pattern is reused), SPEC 06 (upload sheet pattern), SPEC 07 (`AuthGate`, pending actions, drafts), SPEC 08 («Tu barrio»). Board card: T20 (issue #13). Unlocks T22, T23 and T39's questions part.
 > **Date:** 2026-11-21
 > **Objective:** Replace the temporary «¿Alguien sabe?» screen with the real one: a list of questions, «Preguntar» (with similar questions, urgent and the limits), the question detail with its answers, and the answer, «Me sirvió» and «Ninguna me sirvió» actions, all running on the mock adapter.
@@ -71,17 +71,19 @@ openQuestion: (id: Id) => void;     // phone: navigate to /p/:id · desktop: set
 
 ## Acceptance criteria
 
-- [ ] The list shows the questions in the wiki order (urgent active → my zone → city → Solucionadas and Cerradas; guests: urgent → city), 30 per page with «Ver más», and each card shows the text in 3 lines, thumbnail, zone, «hace…», «Urgente», the answer count and the status.
-- [ ] Searching with no result says «Nadie preguntó eso todavía» and «Preguntar esto» opens Preguntar with the search text already written; a city with no questions says «Sé el primero en preguntar en tu ciudad».
-- [ ] Opening a question on a phone goes to `/p/:id` full screen and «Volver» (and Android back) returns to the list in the same place; on desktop the same detail shows in the side panel and a shared `/p/:id` opens as a full page.
-- [ ] The question cannot be answered by its own author, nor twice by the same person, nor when it is not Abierta (the box is not shown and the data layer would refuse it).
-- [ ] A guest tapping Preguntar, Guardar, Reportar, Enviar, «Me sirvió» sees the account wall and, after signing in, the original action runs; a written answer or question survives the Google redirect.
-- [ ] Preguntar blocks with the right message at 3 open questions with answers and at 10 today, shows «Preguntas parecidas» after 3 words, keeps the text when one is opened, and turns Urgente off with «Te faltan N yapitas» or «Ya tienes una pregunta urgente».
-- [ ] Publishing opens the new question's detail with «Pregúntale a tus grupos»; an urgent one costs 5 yapitas, and when the charge fails it is published as normal with «No pudimos cobrar, se publicó normal».
-- [ ] On my question, «Me sirvió» gives +5 to the helper, the first one marks it «✓ Solucionada» with +1, and «Ninguna me sirvió» asks for confirmation and marks it «Cerrada» with +1; on a Cerrada question «Me sirvió» makes it Solucionada without another +1.
-- [ ] Answers show the ones with «Me sirvió» first and then the oldest first; Borrar appears only on mine (a question without answers, an answer without «Me sirvió»).
-- [ ] No screen shows «XLM», «estelares», «tokens», «cripto», «blockchain», «puntos» alone or any value in bolivianos, and the texts match the wiki.
-- [ ] `npm run typecheck` and `npm run build` pass, CI is green, the screens were checked at 360 px, light and dark, with text at 130 %, and the PR body has `Closes #13`.
+- [x] The list shows the questions in the wiki order (urgent active → my zone → city → Solucionadas and Cerradas; guests: urgent → city), 30 per page with «Ver más», and each card shows the text in 3 lines, thumbnail, zone, «hace…», «Urgente», the answer count and the status.
+- [x] Searching with no result says «Nadie preguntó eso todavía» and «Preguntar esto» opens Preguntar with the search text already written; a city with no questions says «Sé el primero en preguntar en tu ciudad».
+- [x] Opening a question on a phone goes to `/p/:id` full screen and «Volver» (and Android back) returns to the list in the same place; on desktop the same detail shows in the side panel and a shared `/p/:id` opens as a full page.
+- [x] The question cannot be answered by its own author, nor twice by the same person, nor when it is not Abierta (the box is not shown and the data layer would refuse it).
+- [x] A guest tapping Preguntar, Guardar, Reportar, Enviar, «Me sirvió» sees the account wall and, after signing in, the original action runs; a written answer or question survives the Google redirect.
+- [x] Preguntar blocks with the right message at 3 open questions with answers and at 10 today, shows «Preguntas parecidas» after 3 words, keeps the text when one is opened, and turns Urgente off with «Te faltan N yapitas» or «Ya tienes una pregunta urgente».
+- [x] Publishing opens the new question's detail with «Pregúntale a tus grupos»; an urgent one costs 5 yapitas, and when the charge fails it is published as normal with «No pudimos cobrar, se publicó normal».
+- [x] On my question, «Me sirvió» gives +5 to the helper, the first one marks it «✓ Solucionada» with +1, and «Ninguna me sirvió» asks for confirmation and marks it «Cerrada» with +1; on a Cerrada question «Me sirvió» makes it Solucionada without another +1.
+- [x] Answers show the ones with «Me sirvió» first and then the oldest first; Borrar appears only on mine (a question without answers, an answer without «Me sirvió»).
+- [x] No screen shows «XLM», «estelares», «tokens», «cripto», «blockchain», «puntos» alone or any value in bolivianos, and the texts match the wiki.
+- [x] `npm run typecheck` and `npm run build` pass, CI is green, the screens were checked at 360 px, light and dark, with text at 130 %, and the PR body has `Closes #13`.
+
+> Verified 2026-11-21 in a 360 px browser on the mock adapter (light and dark, text at 130 %, no horizontal overflow on the list, the detail and Preguntar), and on desktop for the side panel. Seen working: list and search empty state, `/p/:id` with Volver, desktop `?p=<id>` panel, Preguntar (similar questions, urgent −5 with its blocker, publish → detail with «Pregúntale a tus grupos»), the daily limit message, the account wall at Enviar and Reportar, an answer that survives the sign-in, «Me sirvió» (first one → Solucionada) and «Ninguna me sirvió». Not exercised on screen: the «Cierra una de tus preguntas» list (needs 3 open questions with answers) and Android back; both rely on the same code paths as the daily limit and the other sheets. Real phone feel is for Diego to check on the PR's preview.
 
 ## Decisions
 

@@ -14,7 +14,7 @@ export type ShellContext = {
   /** The letrero just published (wiki #167): Hoy plays its entrance once. Cleared after a few seconds. */
   freshSignId: Id | null;
   /** Opens a question's conversation: the page `/p/:id` on a phone, the side panel (`?p=<id>`) on desktop. */
-  openQuestion: (id: Id) => void;
+  openQuestion: (id: Id, options?: { share?: boolean }) => void;
   /** The question open in the desktop panel (from `?p=<id>` on /preguntas), or null. */
   selectedQuestion: Id | null;
   /** Opens «Preguntar», with the text already written when it comes from a search. */
