@@ -34,10 +34,8 @@ export type NewSign = {
   /** 480 px thumbnail for the Hoy grid (wiki #142). */
   thumb: Blob;
   price?: string;
-  /** Defaults to the user's zone. Required while the profile is pending. */
+  /** Defaults to the user's zone. The letrero always goes to the profile's city (wiki #167). */
   zone?: string;
-  /** Only while the profile is pending (no «Tu barrio» yet). The profile's city wins (wiki #167). */
-  city?: City;
   tags?: Tag[];
   mapsUrl?: string;
 };

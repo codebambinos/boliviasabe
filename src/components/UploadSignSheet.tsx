@@ -1,10 +1,11 @@
 // «+ Subir letrero» (wiki › flujo-final › 1 · Hoy, #34, #142, #167): photo + title, the rest folded
-// in «Más detalles». The photo is compressed here; text and photo are kept as a draft while typing,
-// so a reload, a failed upload or no signal never loses them.
+// in «Más detalles». The photo is compressed here. What is typed lives in memory while the sheet is
+// open, so a failed upload or no signal never loses it; closing or reloading does (the account is
+// asked before this sheet opens, so nothing is typed when Google reloads the page).
 import { useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { MAX_TAGS, SUGGESTED_ZONES, TAGS, isDataError, useCreateSign, useSession, type City, type Sign, type Tag } from '../data';
-import { clearDraft, loadDraft, saveDraftPhoto, saveDraftText, type SignDraft } from './draft';
 import { ArrowLeftIcon, ChevronDownIcon, CloseIcon } from './icons';
+import { errorMessage } from './messages';
 import { PhotoError, preparePhoto } from './photo';
 import { Sheet } from './Sheet';
 import './upload-sign-sheet.css';
@@ -21,10 +22,21 @@ type UploadSignSheetProps = {
 
 type Photo = { photo: Blob; thumb: Blob; url: string };
 
+type Fields = {
+  title: string;
+  price: string;
+  zone: string;
+  tags: Tag[];
+  mapsUrl: string;
+  detailsOpen: boolean;
+};
+
 function publishError(error: unknown): string {
   if ((isDataError(error) && error.code === 'offline') || (typeof navigator !== 'undefined' && !navigator.onLine)) {
     return 'Sin conexión, intenta de nuevo';
   }
+  // Signed in without «Tu barrio»: nothing is published until T16 asks for it
+  if (isDataError(error) && error.code === 'unauthenticated') return errorMessage(error);
   return 'No pudimos subirlo, intenta de nuevo';
 }
 
@@ -44,45 +56,24 @@ export function UploadSignSheet({ viewingCity, onClose, onPublished }: UploadSig
   const defaultZone = profile?.zone ?? '';
   const create = useCreateSign();
 
-  const [restored, setRestored] = useState(false);
   const [view, setView] = useState<'form' | 'confirm'>('form');
   // The confirm card slides away before it unmounts (same 160 ms as a sheet leaving)
   const [confirmLeaving, setConfirmLeaving] = useState(false);
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
-  const [text, setText] = useState<SignDraft>({
+  const [text, setText] = useState<Fields>({
     title: '',
     price: '',
     zone: defaultZone,
     tags: [],
     mapsUrl: '',
     detailsOpen: false,
-    hasPhoto: false,
   });
   const [titleTouched, setTitleTouched] = useState(false);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const confirmHeading = useRef<HTMLHeadingElement>(null);
-
-  // Bring back the draft once, then keep saving it while the person types
-  useEffect(() => {
-    let alive = true;
-    loadDraft('sign').then((draft) => {
-      if (!alive) return;
-      if (draft.text) setText({ ...draft.text, zone: draft.text.zone || defaultZone, hasPhoto: Boolean(draft.photo) });
-      if (draft.photo && draft.thumb) setPhoto({ photo: draft.photo, thumb: draft.thumb, url: URL.createObjectURL(draft.photo) });
-      setRestored(true);
-    });
-    return () => {
-      alive = false;
-    };
-    // Runs once on open; the default zone only matters for that first load
-  }, []);
-
-  useEffect(() => {
-    if (restored) saveDraftText('sign', text);
-  }, [restored, text]);
 
   useEffect(() => () => {
     if (photo) URL.revokeObjectURL(photo.url);
@@ -102,7 +93,7 @@ export function UploadSignSheet({ viewingCity, onClose, onPublished }: UploadSig
     }, reduced ? 0 : 160);
   };
 
-  const set = <K extends keyof SignDraft>(key: K, value: SignDraft[K]) => setText((t) => ({ ...t, [key]: value }));
+  const set = <K extends keyof Fields>(key: K, value: Fields[K]) => setText((t) => ({ ...t, [key]: value }));
 
   const onFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -113,8 +104,6 @@ export function UploadSignSheet({ viewingCity, onClose, onPublished }: UploadSig
     try {
       const prepared = await preparePhoto(file);
       setPhoto({ ...prepared, url: URL.createObjectURL(prepared.photo) });
-      set('hasPhoto', true);
-      void saveDraftPhoto('sign', prepared.photo, prepared.thumb);
     } catch (error) {
       setPhotoError(
         error instanceof PhotoError && error.reason === 'too-big' ? 'Esa foto pesa más de 10 MB, elige otra' : 'Eso no es una foto, elige otra',
@@ -132,7 +121,7 @@ export function UploadSignSheet({ viewingCity, onClose, onPublished }: UploadSig
   const zone = text.zone.trim();
   const mapsError = mapsUrl !== '' && !mapsUrl.startsWith('https://') ? 'Pega un enlace de Google Maps' : null;
   const titleShort = title.length > 0 && title.length < TITLE_MIN;
-  const missing = missingText([...(photo ? [] : ['la foto']), ...(title ? [] : ['el título']), ...(zone ? [] : ['la zona'])]);
+  const missing = missingText([...(photo ? [] : ['la foto']), ...(title ? [] : ['el título'])]);
   const blocker = missing ?? (titleShort ? 'El título necesita al menos 3 letras' : mapsError);
   const canPublish = !blocker && !create.isPending && !preparing;
 
@@ -164,23 +153,18 @@ export function UploadSignSheet({ viewingCity, onClose, onPublished }: UploadSig
               thumb: photo.thumb,
               price: text.price.trim() || undefined,
               zone: zone || undefined,
-              city: profile ? undefined : viewingCity,
               tags: text.tags,
               mapsUrl: mapsUrl || undefined,
             },
             {
               onSuccess: (result) => {
-                void clearDraft('sign');
                 onPublished(result);
                 forceClose();
               },
             },
           );
         };
-        const discard = () => {
-          void clearDraft('sign');
-          forceClose();
-        };
+        const discard = () => forceClose();
 
         return (
           <>

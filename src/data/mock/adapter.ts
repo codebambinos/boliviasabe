@@ -197,12 +197,9 @@ export const mockSigns: DataApi['signs'] = {
 
   create: (input) =>
     simulate(() => {
-      // A signed-in user without «Tu barrio» (T16) publishes in the city on screen; zone is required then (wiki #167)
-      const user = requireUser();
-      const city = user.city ?? input.city;
-      if (!city) throw new DataError('validation', 'A city is required', { field: 'city' });
+      // Without «Tu barrio» (T16) nothing is published (wiki #167): the letrero goes to the profile's city and zone
+      const user = requireProfile();
       const zone = input.zone?.trim() || user.zone;
-      if (!zone) throw new DataError('validation', 'A zone is required', { field: 'zone' });
       const title = validateLength('title', input.title, 3, 80);
       if (!(input.photo instanceof Blob)) throw new DataError('validation', 'A photo is required', { field: 'photo' });
       const tags = validateTags(input.tags);
@@ -215,7 +212,7 @@ export const mockSigns: DataApi['signs'] = {
         photoUrl: URL.createObjectURL(input.photo),
         thumbUrl: input.thumb instanceof Blob ? URL.createObjectURL(input.thumb) : undefined,
         price: input.price?.trim() || null,
-        city,
+        city: user.city,
         zone,
         tags,
         mapsUrl,
