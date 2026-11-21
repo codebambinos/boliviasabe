@@ -51,6 +51,17 @@ function lazySigns(): DataApi['signs'] {
   };
 }
 
+function lazyQuestions(): DataApi['questions'] {
+  return {
+    list: (query) => loadData().then((data) => data.questions.list(query)),
+    get: (id) => loadData().then((data) => data.questions.get(id)),
+    similar: (text) => loadData().then((data) => data.questions.similar(text)),
+    create: (input) => loadData().then((data) => data.questions.create(input)),
+    remove: (id) => loadData().then((data) => data.questions.remove(id)),
+    closeWithoutSolution: (id) => loadData().then((data) => data.questions.closeWithoutSolution(id)),
+  };
+}
+
 function lazySaved(): DataApi['saved'] {
   return {
     toggle: (kind, id) => loadData().then((data) => data.saved.toggle(kind, id)),
@@ -67,7 +78,7 @@ function lazyReports(): DataApi['reports'] {
 
 function pickAdapter(): DataApi {
   const source = import.meta.env.VITE_DATA_SOURCE as string | undefined;
-  if (source === 'supabase') return { ...mockAdapter, auth: lazyAuth(), wallet: lazyWallet(), signs: lazySigns(), saved: lazySaved(), reports: lazyReports() };
+  if (source === 'supabase') return { ...mockAdapter, auth: lazyAuth(), wallet: lazyWallet(), signs: lazySigns(), questions: lazyQuestions(), saved: lazySaved(), reports: lazyReports() };
   if (source && source !== 'mock') console.warn(`VITE_DATA_SOURCE="${source}" is unknown. Using the mock adapter.`);
   return mockAdapter;
 }

@@ -96,6 +96,15 @@ export function supabaseWalletStore(db: SupabaseClient): WalletStore {
   };
 }
 
+const URGENT_HOURS = 24;
+
+/** Makes a paid question urgent for 24 h. A repeated call keeps the first deadline. */
+export async function markUrgent(db: SupabaseClient, questionId: number): Promise<void> {
+  const until = new Date(Date.now() + URGENT_HOURS * 3600 * 1000).toISOString();
+  const { error } = await db.from('questions').update({ urgent_until: until }).eq('id', questionId).is('urgent_until', null);
+  fail('questions', error);
+}
+
 /** `RewardFacts` on the Supabase tables that decide whether a reward is legitimate (service role: RLS is not in the way). */
 export function supabaseRewardFacts(db: SupabaseClient): RewardFacts {
   return {

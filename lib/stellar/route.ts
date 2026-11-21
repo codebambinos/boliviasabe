@@ -2,7 +2,7 @@
  * What /api/stellar/premiar and /gastar share (SPEC 09): who is calling, what they ask for, and the answers.
  * The body names the action only (`reason`, `refId`); amount, memo and recipient come from the database.
  */
-import { adminClient, supabaseRewardFacts, supabaseWalletStore, userFromRequest } from '../supabase/server.ts';
+import { adminClient, markUrgent, supabaseRewardFacts, supabaseWalletStore, userFromRequest } from '../supabase/server.ts';
 import {
   chargeUrgent,
   payReward,
@@ -76,6 +76,8 @@ export function gastar(request: Request): Promise<Response> {
     const plan = await planCharge(supabaseRewardFacts(db), callerId, reason, refId);
     if (!plan) return json({ error: 'not_allowed' }, 403);
     const result = await chargeUrgent(supabaseWalletStore(db), plan, env);
-    return result.status === 'confirmed' ? json(result) : json(result, 202);
+    if (result.status !== 'confirmed') return json(result, 202);
+    await markUrgent(db, refId); // only now, so an unpaid question never rises to the top
+    return json(result);
   });
 }
