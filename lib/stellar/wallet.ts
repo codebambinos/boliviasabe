@@ -50,6 +50,8 @@ export interface WalletStore {
   /** Stores the key only if there is none yet. Returns the key that ended up stored (the first one wins). */
   saveKey(profileId: number, key: EncryptedSecret): Promise<EncryptedSecret>;
   setStellar(profileId: number, patch: { publicKey?: string; status?: StellarStatus }): Promise<void>;
+  /** Marks the account as failed, unless a parallel call already finished it: a failure never undoes «ready». */
+  markError(profileId: number): Promise<void>;
   /** Inserts the reward unless its memo key exists (the unique key is what stops a second payment). */
   ensureReward(reward: { profileId: number; memoKey: string; amount: number; reason: 'bienvenida' }): Promise<RewardRow>;
   settleReward(id: number, patch: { status: 'confirmed' | 'error'; txHash?: string }): Promise<void>;
@@ -109,7 +111,7 @@ export async function provisionWallet(store: WalletStore, profileId: number, env
     await store.setStellar(profileId, { status: 'ready' });
     return user.publicKey();
   } catch (error) {
-    await store.setStellar(profileId, { status: 'error' }).catch(() => undefined);
+    await store.markError(profileId).catch(() => undefined);
     throw error;
   }
 }

@@ -26,23 +26,31 @@ import {
   welcomeKey,
   type EncryptedSecret,
   type RewardRow,
+  type StellarStatus,
   type WalletStore,
 } from '../../lib/stellar/wallet.ts';
 
 const EXPECTED_BALANCE = 5;
 
 /** In-memory `WalletStore`: same contract as the Supabase one, so the e2e needs no database. */
-function memoryStore(): WalletStore & { key: EncryptedSecret | null; rewards: Map<string, RewardRow>; publicKey: string | null } {
-  const state = { key: null as EncryptedSecret | null, rewards: new Map<string, RewardRow>(), publicKey: null as string | null };
+function memoryStore(): WalletStore & { key: EncryptedSecret | null; rewards: Map<string, RewardRow>; publicKey: string | null; status: StellarStatus } {
+  const state = { key: null as EncryptedSecret | null, rewards: new Map<string, RewardRow>(), publicKey: null as string | null, status: 'preparing' as StellarStatus };
   return {
     ...state,
     get key() { return state.key; },
     get rewards() { return state.rewards; },
     get publicKey() { return state.publicKey; },
+    get status() { return state.status; },
     profileExists: async () => true,
     getKey: async () => state.key,
     saveKey: async (_id, key) => (state.key ??= key),
-    setStellar: async (_id, patch) => { if (patch.publicKey) state.publicKey = patch.publicKey; },
+    setStellar: async (_id, patch) => {
+      if (patch.publicKey) state.publicKey = patch.publicKey;
+      if (patch.status) state.status = patch.status;
+    },
+    markError: async () => {
+      if (state.status !== 'ready') state.status = 'error';
+    },
     ensureReward: async ({ memoKey }) => {
       if (!state.rewards.has(memoKey)) state.rewards.set(memoKey, { id: state.rewards.size + 1, status: 'pending', txHash: null });
       return state.rewards.get(memoKey)!;
@@ -83,6 +91,27 @@ async function main() {
   for (const m of movements) {
     console.log(`   ${m.direction === 'in' ? '+' : '−'}${m.amount}  memo="${m.memo}"  ${txLink(m.hash)}`);
   }
+
+  // A Stellar failure never loses the person: the account ends in «error» with the reward «pending», and
+  // the next call (the retry) finishes the job and pays the welcome once.
+  const failing = memoryStore();
+  const brokenEnv = { ...env, distributorSecret: Keypair.random().secret() }; // an account that does not exist cannot pay
+  let failed = false;
+  try {
+    await provisionWallet(failing, 2, brokenEnv);
+  } catch {
+    failed = true;
+  }
+  if (!failed) throw new Error('Provisioning should fail when the distributor cannot pay');
+  if (failing.status !== 'error') throw new Error(`Expected status "error" after the failure, got "${failing.status}"`);
+  if (failing.rewards.get(welcomeKey(2))?.status !== 'pending') throw new Error('The reward should stay pending after the failure');
+  await provisionWallet(failing, 2, env);
+  const retried = await pointsBalance(failing.publicKey!, issuerPublic);
+  const finalStatus = (failing as { status: StellarStatus }).status; // read again: the retry changed it
+  if (finalStatus !== 'ready' || failing.rewards.get(welcomeKey(2))?.status !== 'confirmed' || Number(retried) !== 5) {
+    throw new Error(`The retry should finish the account: status ${finalStatus}, balance ${retried}`);
+  }
+  console.log('5. A failed payment left status "error" + reward "pending"; the retry paid it once (balance 5)');
 
   if (Number(balance) !== EXPECTED_BALANCE) {
     throw new Error(`Expected ${EXPECTED_BALANCE} ${ASSET_CODE}, got ${balance}`);
