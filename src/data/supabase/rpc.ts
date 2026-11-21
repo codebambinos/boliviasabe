@@ -1,9 +1,11 @@
 // Calls to the SQL functions of migration 0005 (SPEC 11) and the translation of their errors to DataError.
-// The functions raise SQLSTATEs on purpose: 28000 unauthenticated, 42501 forbidden, P0002 not_found.
-import { DataError } from '../errors';
+// The functions raise SQLSTATEs on purpose: 28000 unauthenticated, 42501 forbidden, P0002 not_found, BSLIM limit (0007).
+import { DataError, type LimitReason } from '../errors';
 import { supabase } from './client';
 
-type PgError = { code?: string; message?: string; details?: string | null };
+type PgError = { code?: string; message?: string; details?: string | null; hint?: string | null };
+
+const LIMITS: readonly LimitReason[] = ['questions_per_day', 'open_questions', 'urgent_active', 'insufficient_balance', 'comments_per_hour'];
 
 /** Postgres, PostgREST and network failures become the DataError the screens know. */
 export function toDataError(error: unknown): DataError {
@@ -14,6 +16,11 @@ export function toDataError(error: unknown): DataError {
     return new DataError('offline', 'No connection');
   }
   switch (e.code) {
+    case 'BSLIM': {
+      // 0007: message 'limit:<reason>', hint = when it frees (ISO) or empty
+      const reason = message.replace(/^limit:/, '') as LimitReason;
+      return new DataError('limit', message, { limit: LIMITS.includes(reason) ? reason : undefined, until: e.hint || undefined });
+    }
     case '28000':
       return new DataError('unauthenticated', message);
     case 'P0002':

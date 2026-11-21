@@ -13,12 +13,12 @@ export type DataErrorCode =
   /** Sign-in with e-mail: the e-mail belongs to an account that enters with Google. */
   | 'google_account';
 
-export type LimitReason = 'questions_per_day' | 'open_questions' | 'urgent_active' | 'insufficient_balance';
+export type LimitReason = 'questions_per_day' | 'open_questions' | 'urgent_active' | 'insufficient_balance' | 'comments_per_hour';
 
 type DataErrorDetails = {
   /** Which limit was hit (only with code "limit"). */
   limit?: LimitReason;
-  /** ISO date when the limit resets: next midnight in Bolivia for daily limits. */
+  /** ISO date when the limit resets: next midnight in Bolivia for daily limits, when a slot frees for comments. */
   until?: string;
   /** Which input failed (only with code "validation", or "unauthenticated" when the profile is missing). */
   field?: string;

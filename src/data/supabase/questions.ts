@@ -11,6 +11,23 @@ import { offsetOf, rpc, toDataError } from './rpc';
 
 const getQuestion = (id: number) => rpc<{ question: Question; answers: Answer[] }>('get_question', { p_id: id });
 
+/**
+ * «Ya tienes una pregunta urgente» (wiki #190): checked before anything is published, because the urgency is only set
+ * after the charge, where a trigger cannot see it. /gastar refuses a second one too.
+ */
+async function assertNoActiveUrgent(authorId: number): Promise<void> {
+  const { data, error } = await supabase
+    .from('questions')
+    .select('urgent_until')
+    .eq('author_id', authorId)
+    .gt('urgent_until', new Date().toISOString())
+    .order('urgent_until', { ascending: false })
+    .limit(1);
+  if (error) throw toDataError(error);
+  const until = (data as { urgent_until: string }[])[0]?.urgent_until;
+  if (until) throw new DataError('limit', 'You already have an urgent question', { limit: 'urgent_active', until });
+}
+
 export const supabaseQuestions: DataApi['questions'] = {
   list: ({ city, search, tags, cursor }) =>
     rpc<Page<Question>>('list_questions', {
@@ -30,6 +47,7 @@ export const supabaseQuestions: DataApi['questions'] = {
    */
   async create(input) {
     const me = await requireMe();
+    if (input.urgent) await assertNoActiveUrgent(me.id);
     const photo = input.photo instanceof Blob ? await uploadPhotos(me.id, input.photo) : null;
     const { data, error } = await supabase
       .from('questions')

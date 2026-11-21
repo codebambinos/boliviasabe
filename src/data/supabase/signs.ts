@@ -5,7 +5,7 @@ import type { Page, Sign } from '../types';
 import { supabase } from './client';
 import { requireMe } from './me';
 import { pathOf, removePaths, uploadPhotos } from './photos';
-import { requestReward } from './rewards';
+import { requestReward, rewardCapOf } from './rewards';
 import { offsetOf, rpc, toDataError } from './rpc';
 
 const getSign = (id: number) => rpc<Sign>('get_sign', { p_id: id });
@@ -44,9 +44,10 @@ export const supabaseSigns: DataApi['signs'] = {
       await removePaths(photos.paths);
       throw toDataError(error);
     }
-    requestReward('letrero', data.id);
-    // The daily cap of rewarded letreros is T23; until then every letrero is rewarded.
-    return { sign: await getSign(data.id), rewarded: true };
+    // Past 10 rewarded letreros today it is published without the +1 (SPEC 13); the server applies the same rule
+    const cap = await rewardCapOf('letrero', data.id);
+    if (!cap) requestReward('letrero', data.id);
+    return { sign: await getSign(data.id), rewarded: cap === null };
   },
 
   /** One final vote per person; the database refuses a vote on one's own letrero. */
@@ -54,8 +55,9 @@ export const supabaseSigns: DataApi['signs'] = {
     const me = await requireMe();
     const { error } = await supabase.from('sign_votes').insert({ sign_id: id, voter_id: me.id, helpful: value === 'helpful' });
     if (error) throw toDataError(error);
-    if (value === 'helpful') requestReward('sirvio-l', id);
-    return getSign(id);
+    const rewardCap = value === 'helpful' ? await rewardCapOf('sirvio-l', id) : null;
+    if (value === 'helpful' && !rewardCap) requestReward('sirvio-l', id);
+    return { sign: await getSign(id), rewardCap };
   },
 
   /** The yapitas already earned stay (wiki). The photos go after the row. */

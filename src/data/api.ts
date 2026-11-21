@@ -14,6 +14,7 @@ import type {
   Question,
   ReportKind,
   ReportReason,
+  RewardCap,
   Session,
   Sign,
   Tag,
@@ -77,7 +78,8 @@ export interface DataApi {
     get(id: Id): Promise<Sign>;
     /** Publishes even past 10 per day; then `rewarded` is false (wiki rule, not an error). */
     create(input: NewSign): Promise<{ sign: Sign; rewarded: boolean }>;
-    vote(id: Id, value: 'helpful' | 'not_helpful'): Promise<Sign>;
+    /** `rewardCap` says why a «Me sirvió» paid nothing (null when it pays, or for «No me sirvió»). */
+    vote(id: Id, value: 'helpful' | 'not_helpful'): Promise<{ sign: Sign; rewardCap: RewardCap | null }>;
     remove(id: Id): Promise<void>;
   };
   questions: {
@@ -92,7 +94,8 @@ export interface DataApi {
   };
   answers: {
     create(questionId: Id, text: string): Promise<Answer>;
-    markHelpful(id: Id): Promise<Answer>;
+    /** `rewardCap` says why the helper got no +5 (null when it pays). */
+    markHelpful(id: Id): Promise<{ answer: Answer; rewardCap: RewardCap | null }>;
     markNotHelpful(id: Id): Promise<Answer>;
     remove(id: Id): Promise<void>;
   };

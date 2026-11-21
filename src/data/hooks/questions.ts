@@ -70,11 +70,15 @@ export function useCloseQuestion() {
 }
 
 /** After any answer change, refresh that question, the lists, the wallet and «Mi actividad». */
-function useAnswerMutation<TInput>(run: (input: TInput) => Promise<Answer | void>, questionIdOf: (input: TInput) => Id | null) {
+function useAnswerMutation<TInput, TResult extends Answer | { answer: Answer } | void>(
+  run: (input: TInput) => Promise<TResult>,
+  questionIdOf: (input: TInput) => Id | null,
+) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: run,
-    onSuccess: (answer, input) => {
+    onSuccess: (result, input) => {
+      const answer = result && 'answer' in result ? result.answer : (result as Answer | void);
       const questionId = answer ? answer.questionId : questionIdOf(input);
       invalidate(client, ...(questionId ? [keys.question(questionId)] : []), keys.questions(), keys.wallet(), keys.activity());
     },
@@ -84,7 +88,7 @@ function useAnswerMutation<TInput>(run: (input: TInput) => Promise<Answer | void
 export const useCreateAnswer = () =>
   useAnswerMutation(({ questionId, text }: { questionId: Id; text: string }) => api.answers.create(questionId, text), (i) => i.questionId);
 
-/** Only the asker. Pays +5 to the helper; the first one marks the question «✓ Solucionada». */
+/** Only the asker. Pays +5 to the helper unless capped (`rewardCap`); the first one marks the question «✓ Solucionada». */
 export const useMarkHelpful = () => useAnswerMutation((id: Id) => api.answers.markHelpful(id), () => null);
 
 export const useMarkNotHelpful = () => useAnswerMutation((id: Id) => api.answers.markNotHelpful(id), () => null);

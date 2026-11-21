@@ -97,7 +97,7 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
       vote.mutate(
         { id: latest.id, value: 'helpful' },
         {
-          onSuccess: (updated) => {
+          onSuccess: ({ sign: updated }) => {
             setSign(updated);
             setThanked(true);
           },
@@ -111,7 +111,7 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
       vote.mutate(
         { id: latest.id, value: 'not_helpful' },
         {
-          onSuccess: (updated) => {
+          onSuccess: ({ sign: updated }) => {
             setSign(updated);
             setView('detail');
           },
