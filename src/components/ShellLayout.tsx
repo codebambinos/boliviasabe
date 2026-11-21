@@ -2,7 +2,7 @@
 // survive a tab change. The tab comes from the URL; pages render in the <Outlet /> (SPEC 04).
 import { useEffect, useId, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { DEFAULT_CITY, fetchSign, useCreateAnswer, useCreateComment, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Question, type Sign } from '../data';
+import { DEFAULT_CITY, fetchSign, useCreateAnswer, useCreateComment, useRefresh, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Question, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
 import { AskQuestionSheet } from './AskQuestionSheet';
 import { sendDraftAnswer } from './AnswerBox';
@@ -14,7 +14,7 @@ import { CloseIcon } from './icons';
 import { Sheet, afterSheetPop } from './Sheet';
 import { SignSheet } from './SignSheet';
 import { Toast } from './Toast';
-import { goWithTransition } from './transition';
+import { goWithTransition, navigateWithTransition } from './transition';
 import { UploadSignSheet } from './UploadSignSheet';
 import { Yapita } from './Yapita';
 import type { ShellContext } from './useShell';
@@ -59,6 +59,7 @@ function Shell() {
   const requireAccount = useRequireAccount();
   const openRecovery = useOpenPasswordRecovery();
   const signIn = useSignInWithGoogle();
+  const refresh = useRefresh();
 
   // «Pedir otro» from /nueva-contrasena: open «¿La olvidaste?» once and drop the flag from history
   useEffect(() => {
@@ -108,7 +109,12 @@ function Shell() {
 
   // A tab is a route: the screen change is a view transition that slides toward the tab's side
   // (ScrollRestoration lands it at the top)
-  const goToTab = (next: Tab) => {
+  const goToTab = (next: Tab, options?: { transition?: boolean }) => {
+    // A swipe already slid the screen (useTabSwipe): no second animation on top
+    if (options?.transition === false) {
+      navigate(PATH[next]);
+      return;
+    }
     const direction = ORDER.indexOf(next) > ORDER.indexOf(tab) ? 'forward' : 'back';
     goWithTransition((viewTransition) => navigate(PATH[next], { viewTransition }), direction);
   };
@@ -139,11 +145,24 @@ function Shell() {
     window.setTimeout(() => searchRef.current?.focus({ preventScroll: true }), smooth ? 350 : 0);
   };
 
-  // A conversation on desktop lives in the URL (`?p=<id>`) so a reload and Back keep it; on a phone it is a page
-  const selectedQuestion = tab === 'preguntas' && Number(searchParams.get('p')) > 0 ? Number(searchParams.get('p')) : null;
+  // A conversation on desktop lives in the URL (`?p=<id>`) so a reload and Back keep it; on a phone it is a page.
+  // Opening one in the panel is not a new screen: the list stays where it was (SPEC 17).
+  const [goneQuestions, setGoneQuestions] = useState<ReadonlySet<Id>>(() => new Set());
+  const asked = tab === 'preguntas' && Number(searchParams.get('p')) > 0 ? Number(searchParams.get('p')) : null;
+  const selectedQuestion = asked !== null && !goneQuestions.has(asked) ? asked : null;
+
+  // Leaving a deleted (reported, hidden) question from the panel: its card shrinks out of the list, the ones below
+  // move up and the panel fades to empty, in one animated change. The URL and the lists catch up once it is over
+  // (the URL only if that question is still the open one).
+  const leaveQuestion = (id: Id) => {
+    void navigateWithTransition(() => setGoneQuestions((gone) => new Set(gone).add(id)), 'remove').then(() => {
+      setSearchParams((params) => (params.get('p') === String(id) ? new URLSearchParams() : params), { replace: true, preventScrollReset: true });
+      refresh('questions');
+    });
+  };
   const openQuestion = (id: Id, options?: { share?: boolean; chargeFailed?: boolean }) => {
     const state = options?.share ? { shareFor: id, chargeFailed: options.chargeFailed } : undefined;
-    if (window.matchMedia('(min-width: 64rem)').matches) setSearchParams({ p: String(id) }, { state });
+    if (window.matchMedia('(min-width: 64rem)').matches) setSearchParams({ p: String(id) }, { state, preventScrollReset: true });
     else goWithTransition((viewTransition) => navigate(`/p/${id}`, { viewTransition, state }), 'forward');
   };
   const openAsk = (text = '') =>
@@ -166,6 +185,7 @@ function Shell() {
     freshSignId,
     openQuestion,
     selectedQuestion,
+    goneQuestions,
     openAsk,
     openAbout: () => setAbout(true),
     openPrivacy,
@@ -210,9 +230,10 @@ function Shell() {
         onSearch={searchHidden ? goToSearch : undefined}
         detail={
           selectedQuestion ? (
-            <QuestionDetail key={selectedQuestion} id={selectedQuestion} variant="panel" onGone={() => setSearchParams({}, { replace: true })} />
+            <QuestionDetail key={selectedQuestion} id={selectedQuestion} variant="panel" onGone={() => leaveQuestion(selectedQuestion)} />
           ) : undefined
         }
+        detailKey={selectedQuestion ?? undefined}
         detailEmpty="Toca una pregunta para ver su conversación aquí."
       >
         <Outlet context={context} />

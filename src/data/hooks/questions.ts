@@ -52,11 +52,16 @@ export function useCreateQuestion() {
   });
 }
 
+/**
+ * Deletes my question. The lists and its detail are not refreshed here: the question stays on screen under
+ * «Pregunta borrada» and leaves when the person does, with its own animation (whoever handles `onGone` refreshes
+ * `questions` then).
+ */
 export function useRemoveQuestion() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (id: Id) => api.questions.remove(id),
-    onSuccess: () => invalidate(client, keys.questions(), keys.saved(), keys.activity()),
+    onSuccess: () => invalidate(client, keys.saved(), keys.activity()),
   });
 }
 

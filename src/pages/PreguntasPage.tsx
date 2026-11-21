@@ -1,7 +1,7 @@
 // ¿Alguien sabe? (wiki › flujo-final › «2 · ¿Alguien sabe?», SPEC 10): search, tag chips and the list of
 // questions in the wiki order (urgent → your zone → city → solved/closed), 30 + «Ver más». The shell owns
 // the city, Preguntar and the open conversation; this page reads them through useShell().
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { ChipRow } from '../components/ChipRow';
 import { Hint } from '../components/Hint';
 import { SearchIcon } from '../components/icons';
@@ -13,7 +13,7 @@ import { useShell } from '../components/useShell';
 import { TAGS, useQuestions, type Tag } from '../data';
 
 export function PreguntasPage() {
-  const { city, openQuestion, selectedQuestion, openAsk } = useShell();
+  const { city, openQuestion, selectedQuestion, goneQuestions, openAsk } = useShell();
   const [search, setSearch] = useState('');
   const [tags, setTags] = useState<Tag[]>([]);
   const questions = useQuestions({ city, search, tags });
@@ -28,7 +28,7 @@ export function PreguntasPage() {
     };
   }, []);
 
-  const items = questions.data?.pages.flatMap((page) => page.items) ?? [];
+  const items = (questions.data?.pages.flatMap((page) => page.items) ?? []).filter((q) => !goneQuestions.has(q.id));
   const toggle = (tag: Tag) => setTags((t) => (t.includes(tag) ? t.filter((x) => x !== tag) : [...t, tag]));
   const filtering = search.trim() !== '' || tags.length > 0;
   const clear = () => {
@@ -108,7 +108,8 @@ export function PreguntasPage() {
         {items.length > 0 && (
           <ul className="qlist">
             {items.map((question) => (
-              <li key={question.id}>
+              // Its name for the «remove» transition: the card that leaves shrinks, the others slide into place
+              <li key={question.id} style={{ '--vt-card': `q-${question.id}` } as CSSProperties}>
                 <QuestionCard question={question} selected={question.id === selectedQuestion} onOpen={(q) => openQuestion(q.id)} />
               </li>
             ))}

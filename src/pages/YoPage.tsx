@@ -1,6 +1,6 @@
 // TEMPORARY smoke screen of Yo (SPEC 01 + T11 + SPEC 02 links). T21 and T29 build the real one.
 import { useState, type MouseEvent } from 'react';
-import { useRequireAccount } from '../components/AuthGate';
+import { useOpenEmailSignIn } from '../components/AuthGate';
 import { InstallRow } from '../components/InstallRow';
 import { NotificationSettings } from '../components/NotificationSettings';
 import { ChevronRightIcon, ExternalIcon, EyeIcon, GoogleIcon, MailIcon, QuestionIcon } from '../components/icons';
@@ -110,7 +110,7 @@ function YoSample({
 }) {
   const session = useSession();
   const signOut = useSignOut();
-  const requireAccount = useRequireAccount();
+  const openEmailSignIn = useOpenEmailSignIn();
   const signedIn = session.data?.status === 'signed-in';
   const wallet = useWallet({ enabled: signedIn });
   const movements = useMovements({ enabled: signedIn });
@@ -144,7 +144,7 @@ function YoSample({
             <button
               type="button"
               className="btn btn--secondary btn--full"
-              onClick={() => requireAccount('Entra con tu correo y contraseña.', () => undefined, 'Entra a BoliviaSabe')}
+              onClick={() => openEmailSignIn('Entra con tu correo y contraseña.', 'Entra a BoliviaSabe')}
             >
               <MailIcon size={20} /> Usar mi correo
             </button>

@@ -8,11 +8,13 @@ import { Sheet } from './Sheet';
 import './auth-sheet.css';
 
 type Mode = 'choose' | 'email' | 'forgot';
+/** The steps in order: going to a later one slides forward (from the right), to an earlier one back. */
+const ORDER: Mode[] = ['choose', 'email', 'forgot'];
 type AuthSheetProps = {
   reason: string;
   title?: string;
-  /** Opens straight on «¿La olvidaste?» (from the invalid-link page). */
-  start?: 'forgot';
+  /** Opens straight on the e-mail form («Usar mi correo» in Yo) or on «¿La olvidaste?» (invalid-link page). */
+  start?: 'email' | 'forgot';
   /** Runs (and is awaited) before leaving for Google, to save the pending action and any draft. */
   beforeGoogle?: () => Promise<void>;
   onSignedIn: () => void;
@@ -26,7 +28,13 @@ const SENT_MESSAGE = 'Te enviamos un correo. Si no llega, revisa Spam';
 
 export function AuthSheet({ reason, title = 'Crea tu cuenta para seguir', start, beforeGoogle, onSignedIn, onClose }: AuthSheetProps) {
   const titleId = useId();
-  const [mode, setMode] = useState<Mode>(start ?? 'choose');
+  const [mode, setCurrentMode] = useState<Mode>(start ?? 'choose');
+  // Like a tab change: the new step slides in from the side it lives on. The first one arrives with the sheet.
+  const [direction, setDirection] = useState<'forward' | 'back' | null>(null);
+  const setMode = (next: Mode) => {
+    setDirection(ORDER.indexOf(next) > ORDER.indexOf(mode) ? 'forward' : 'back');
+    setCurrentMode(next);
+  };
   // The e-mail is kept here so it survives going to «¿La olvidaste?» and back
   const [emailValue, setEmailValue] = useState('');
   const google = useSignInWithGoogle();
@@ -63,52 +71,54 @@ export function AuthSheet({ reason, title = 'Crea tu cuenta para seguir', start,
             </header>
             <div className="sheet__body">
               <div className="sheet__content auth">
-                <p className="auth__reason">
-                  {forgot ? 'Te enviamos un correo con un enlace para poner una contraseña nueva.' : reason}
-                </p>
-                {mode === 'choose' && (
-                  <div className="auth__choices">
-                    <button type="button" className="btn btn--secondary btn--full auth__google" disabled={googleBusy} onClick={withGoogle}>
-                      <GoogleIcon /> {googleBusy ? 'Entrando…' : 'Continuar con Google'}
-                    </button>
-                    <button type="button" className="btn btn--secondary btn--full" onClick={() => setMode('email')}>
-                      <MailIcon size={20} /> Usar mi correo
-                    </button>
-                    {google.error && <p className="auth__error" role="alert">{errorMessage(google.error)}</p>}
-                  </div>
-                )}
-                {mode === 'email' && (
-                  <EmailForm
-                    email={emailValue}
-                    onEmailChange={setEmailValue}
-                    pending={email.isPending}
-                    error={email.error}
-                    googlePending={googleBusy}
-                    onEdit={() => email.error && email.reset()}
-                    onSubmit={(values) => email.mutate(values, { onSuccess: done })}
-                    onGoogle={withGoogle}
-                    onForgot={() => {
-                      email.reset();
-                      reset.reset();
-                      setMode('forgot');
-                    }}
-                    onBack={() => setMode('choose')}
-                  />
-                )}
-                {forgot && (
-                  <ForgotForm
-                    email={emailValue}
-                    onEmailChange={setEmailValue}
-                    pending={reset.isPending}
-                    sent={reset.isSuccess}
-                    error={reset.error}
-                    onSubmit={(address) => reset.mutate(address)}
-                    onBack={() => {
-                      reset.reset();
-                      setMode('email');
-                    }}
-                  />
-                )}
+                <div key={mode} className="auth__pane" data-direction={direction ?? undefined}>
+                  <p className="auth__reason">
+                    {forgot ? 'Te enviamos un correo con un enlace para poner una contraseña nueva.' : reason}
+                  </p>
+                  {mode === 'choose' && (
+                    <div className="auth__choices">
+                      <button type="button" className="btn btn--secondary btn--full auth__google" disabled={googleBusy} onClick={withGoogle}>
+                        <GoogleIcon /> {googleBusy ? 'Entrando…' : 'Continuar con Google'}
+                      </button>
+                      <button type="button" className="btn btn--secondary btn--full" onClick={() => setMode('email')}>
+                        <MailIcon size={20} /> Usar mi correo
+                      </button>
+                      {google.error && <p className="auth__error" role="alert">{errorMessage(google.error)}</p>}
+                    </div>
+                  )}
+                  {mode === 'email' && (
+                    <EmailForm
+                      email={emailValue}
+                      onEmailChange={setEmailValue}
+                      pending={email.isPending}
+                      error={email.error}
+                      googlePending={googleBusy}
+                      onEdit={() => email.error && email.reset()}
+                      onSubmit={(values) => email.mutate(values, { onSuccess: done })}
+                      onGoogle={withGoogle}
+                      onForgot={() => {
+                        email.reset();
+                        reset.reset();
+                        setMode('forgot');
+                      }}
+                      onBack={() => setMode('choose')}
+                    />
+                  )}
+                  {forgot && (
+                    <ForgotForm
+                      email={emailValue}
+                      onEmailChange={setEmailValue}
+                      pending={reset.isPending}
+                      sent={reset.isSuccess}
+                      error={reset.error}
+                      onSubmit={(address) => reset.mutate(address)}
+                      onBack={() => {
+                        reset.reset();
+                        setMode('email');
+                      }}
+                    />
+                  )}
+                </div>
                 {/* New tab: the sheet and anything typed stay put (wiki › Entrada y cuenta) */}
                 <p className="auth__legal">
                   Al entrar aceptas{' '}

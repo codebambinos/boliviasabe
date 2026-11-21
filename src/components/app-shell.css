@@ -13,6 +13,23 @@
   padding-bottom: calc(var(--nav-h) + 5rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* Phones: while a sideways swipe moves the content (useTabSwipe) it never widens the page. `clip`, not `hidden`,
+   so the sticky top bar keeps working. */
+@media (max-width: 63.99rem) {
+  /* At least the screen's height: a short screen (Yo signed out) swipes from its empty part too (useTabSwipe) */
+  .shell__column {
+    min-height: 100dvh;
+    overflow-x: clip;
+  }
+
+  /* The sideways drag is ours from the first move (no scroll starts under the finger), on the whole column, also
+     its empty part under a short screen; vertical scroll, the pull-to-refresh and pinch-zoom stay the browser's.
+     The chip rows scroll sideways on their own. */
+  .shell__column {
+    touch-action: pan-y pinch-zoom;
+  }
+}
+
 /* Top bar: opaque, one hairline, the same at every scroll depth. The aguayo stripe sits on top. */
 .shell__top {
   position: sticky;
@@ -542,6 +559,43 @@
 :root[data-nav='up'] {
   --vt-dx: 0px;
   --vt-dy: 16px;
+}
+
+/* «remove» (a deleted question leaves the panel): not a screen change, so the screen does not fade through.
+   Each card of the list gets its own name (`--vt-card`, set on its <li>): the one that leaves shrinks and
+   fades, the ones below slide up into its place, and the panel fades to its empty hint. */
+:root[data-nav='remove'] .qlist > li {
+  view-transition-name: var(--vt-card);
+  view-transition-class: qcard;
+}
+
+:root[data-nav='remove']::view-transition-old(root),
+:root[data-nav='remove']::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(*.qcard) {
+  animation-duration: 280ms;
+  animation-timing-function: var(--ease);
+}
+
+::view-transition-old(*.qcard):only-child {
+  animation: qcard-out 220ms var(--ease) both;
+}
+
+:root[data-nav='remove']::view-transition-old(detail) {
+  animation: vt-out 160ms var(--ease) both;
+}
+
+:root[data-nav='remove']::view-transition-new(detail) {
+  animation: vt-fade-in 220ms var(--ease-enter) 120ms both;
+}
+
+@keyframes qcard-out {
+  to {
+    opacity: 0;
+    transform: scale(0.94);
+  }
 }
 
 @keyframes vt-out {

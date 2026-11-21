@@ -7,7 +7,7 @@ import { AuthGate, useRegisterPendingHandlers } from '../components/AuthGate';
 import { PageFrame } from '../components/PageFrame';
 import { QuestionDetail } from '../components/QuestionDetail';
 import { useGoBack } from '../components/useGoBack';
-import { useCreateAnswer, useCreateComment, useToggleSaved } from '../data';
+import { useCreateAnswer, useCreateComment, useRefresh, useToggleSaved } from '../data';
 import { UnavailablePage } from './UnavailablePage';
 
 export function QuestionDetailPage() {
@@ -23,6 +23,7 @@ export function QuestionDetailPage() {
 function Page({ id }: { id: number }) {
   // A question opened from a link or after signing in goes back to ¿Alguien sabe?
   const goBack = useGoBack('/preguntas');
+  const refresh = useRefresh();
   const toggleSaved = useToggleSaved();
   const createAnswer = useCreateAnswer();
   const createComment = useCreateComment();
@@ -35,7 +36,15 @@ function Page({ id }: { id: number }) {
   return (
     <PageFrame title="Pregunta">
       <main className="page__main">
-        <QuestionDetail id={id} variant="page" onGone={goBack} />
+        {/* A deleted question refreshes the lists only now, as it is left (useRemoveQuestion) */}
+        <QuestionDetail
+          id={id}
+          variant="page"
+          onGone={() => {
+            refresh('questions');
+            goBack();
+          }}
+        />
       </main>
     </PageFrame>
   );
