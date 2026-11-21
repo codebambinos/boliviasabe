@@ -15,8 +15,12 @@ const SWITCHES: { key: keyof NotifPrefs; label: string }[] = [
   { key: 'urgent', label: 'Urgentes en mi zona' },
 ];
 
+/** «celular» on a phone, «navegador» on a computer (wiki #205). */
+const ON_TEXT =
+  typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches ? 'Activadas en este celular' : 'Activadas en este navegador';
+
 const STATUS_TEXT: Record<Exclude<PushStatus, 'off'>, string> = {
-  on: 'Activadas en este celular',
+  on: ON_TEXT,
   denied: 'Bloqueadas: actívalas en los ajustes del navegador',
   'ios-not-installed': 'Primero agrega BoliviaSabe a tu pantalla de inicio',
   unsupported: 'Este navegador no permite notificaciones',
