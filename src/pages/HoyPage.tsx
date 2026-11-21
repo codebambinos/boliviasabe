@@ -77,7 +77,7 @@ export function HoyPage() {
         ))}
       </ChipRow>
 
-      <div id="letreros" tabIndex={-1} aria-busy={signs.isPending || undefined}>
+      <div id="letreros" tabIndex={-1} aria-busy={signs.isPending || signs.isPlaceholderData || undefined} data-stale={signs.isPlaceholderData || undefined}>
         {filtering && signs.isSuccess && items.length > 0 && (
           <p className="filter-summary" role="status">
             <span>

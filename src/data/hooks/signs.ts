@@ -13,6 +13,10 @@ export function useSigns(filters: Omit<ListQuery, 'cursor'>) {
     queryFn: ({ pageParam }) => api.signs.list({ ...filters, cursor: pageParam }),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
+    // Typing or a chip keeps the last grid on screen until the new one arrives; a city change
+    // starts clean (skeleton), so one city's letreros never show under another's name
+    placeholderData: (previous, previousQuery) =>
+      (previousQuery?.queryKey[3] as Omit<ListQuery, 'cursor'> | undefined)?.city === filters.city ? previous : undefined,
   });
 }
 
