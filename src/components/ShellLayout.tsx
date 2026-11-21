@@ -60,10 +60,10 @@ function Shell() {
   }, [tab]);
 
   // A tab is a route: the screen change is a view transition that slides toward the tab's side
+  // (ScrollRestoration lands it at the top)
   const goToTab = (next: Tab) => {
     const direction = ORDER.indexOf(next) > ORDER.indexOf(tab) ? 'forward' : 'back';
     goWithTransition((viewTransition) => navigate(PATH[next], { viewTransition }), direction);
-    window.scrollTo(0, 0);
   };
 
   const openPrivacy = () => goWithTransition((viewTransition) => navigate('/privacidad', { viewTransition }), 'forward');
