@@ -1,6 +1,6 @@
 # SPEC 04 — App routes and empty screens
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01, SPEC 02. Board card: T12 (issue #6).
 > **Date:** 2026-11-20
 > **Objective:** Give every wiki route its own URL and screen (`/`, `/preguntas`, `/yo`, `/p/:id`, `/l/:id`, `/privacidad`, `/nueva-contrasena`), with Volver returning to where you were and unknown paths landing on Hoy.
@@ -69,19 +69,19 @@ type ShellContext = { city: City; setCity(c: City): void; openAbout(): void; sea
 
 ## Acceptance criteria
 
-- [ ] `/`, `/preguntas`, `/yo`, `/l/1`, `/p/1`, `/privacidad` and `/nueva-contrasena` each open directly (dev server and `vite preview`) without console errors.
-- [ ] `/abc` and `/l` (no id) redirect to `/`.
-- [ ] Tapping a tab changes the URL; reloading `/preguntas` stays on ¿Alguien sabe?.
-- [ ] From Yo, opening Privacidad and then «← Volver», browser Back or Android back lands on `/yo`.
-- [ ] Opening `/l/1` in a fresh tab and pressing «← Volver» goes to `/`; with in-app history it goes back one entry.
-- [ ] Scroll in Hoy, open a detail route, go Back: the list scroll position is restored.
-- [ ] `/l/:id`, `/p/:id`, `/nueva-contrasena` and `/privacidad` show no tab bar, FAB, balance or bell, and each has one `h1` that receives focus.
-- [ ] The city picked in Hoy is still selected after switching to ¿Alguien sabe? and back.
-- [ ] No `HomeState` or `history.replaceState` hack remains in `src/`.
-- [ ] 360 px, light and dark, text at 130 %: no horizontal scroll on any route; touch targets ≥ 44 px.
-- [ ] No «XLM», «tokens», «cripto», «blockchain», «puntos» alone or bolivianos amounts in the new copy.
-- [ ] `npm run typecheck` and `npm run build` pass; CI is green.
-- [ ] The PR body has `Closes #6`.
+- [x] `/`, `/preguntas`, `/yo`, `/l/1`, `/p/1`, `/privacidad` and `/nueva-contrasena` each open directly (dev server and `vite preview`) without console errors.
+- [x] `/abc` and `/l` (no id) redirect to `/`.
+- [x] Tapping a tab changes the URL; reloading `/preguntas` stays on ¿Alguien sabe?.
+- [x] From Yo, opening Privacidad and then «← Volver», browser Back or Android back lands on `/yo`.
+- [x] Opening `/l/1` in a fresh tab and pressing «← Volver» goes to `/`; with in-app history it goes back one entry.
+- [x] Scroll in Hoy, open a detail route, go Back: the list scroll position is restored.
+- [x] `/l/:id`, `/p/:id`, `/nueva-contrasena` and `/privacidad` show no tab bar, FAB, balance or bell, and each has one `h1` that receives focus.
+- [x] The city picked in Hoy is still selected after switching to ¿Alguien sabe? and back.
+- [x] No `HomeState` or `history.replaceState` hack remains in `src/`.
+- [x] 360 px, light and dark, text at 130 %: no horizontal scroll on any route; touch targets ≥ 44 px.
+- [x] No «XLM», «tokens», «cripto», «blockchain», «puntos» alone or bolivianos amounts in the new copy.
+- [x] `npm run typecheck` and `npm run build` pass; CI is green.
+- [x] The PR body has `Closes #6`.
 
 ## Decisions
 
