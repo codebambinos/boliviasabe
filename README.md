@@ -63,6 +63,7 @@ Sin configurar nada corre con datos de ejemplo en memoria (se reinician al recar
 cp .env.example .env     # completa los valores de Supabase
 npm run stellar:setup    # crea la emisora y la distribuidora de prueba y emite YAPITA
 npm run stellar:e2e      # comprueba el flujo completo en testnet: cuenta, +5, +5, −5 → saldo 5
+npm run seed             # 5 vecinos de ejemplo con letreros y preguntas (contraseña: SEED_PASSWORD)
 ```
 
 Las funciones `/api` solo corren en Vercel (o con `vercel dev`).
