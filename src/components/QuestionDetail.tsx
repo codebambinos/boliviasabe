@@ -48,7 +48,7 @@ function whatsappHref(question: Question): string {
 function AuthorLine({ author, mine, when, prefix }: { author: Author; mine: boolean; when: string; prefix?: string }) {
   return (
     <p className="meta qd__author">
-      <span>{mine ? `${prefix ?? ''}Tú` : author.displayName}</span>
+      <span>{mine ? `${prefix ?? ''}tú` : author.displayName}</span>
       {!mine && (
         <span className="qd__badge">
           {author.badge}
@@ -136,7 +136,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
           <span className="meta">{question.zone}, {question.city}</span>
         </p>
         <Heading ref={heading} tabIndex={-1} className="qd__text">{question.text}</Heading>
-        <AuthorLine author={question.author} mine={question.isMine} when={timeAgo(question.createdAt)} prefix="Preguntaste " />
+        <AuthorLine author={question.author} mine={question.isMine} when={timeAgo(question.createdAt)} prefix="Lo preguntaste " />
         {question.photoUrl && (
           <button type="button" className="qd__photo" aria-label="Ver la foto completa" onClick={() => setDialog({ kind: 'photo' })}>
             <img src={question.photoUrl} alt="Foto de la pregunta" />
@@ -176,7 +176,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
               const hasMenu = !answer.isMine || canDelete;
               return (
                 <li key={answer.id} className="answer" data-helpful={answer.helpful || undefined}>
-                  <AuthorLine author={answer.author} mine={answer.isMine} when={timeAgo(answer.createdAt)} prefix="Respondiste " />
+                  <AuthorLine author={answer.author} mine={answer.isMine} when={timeAgo(answer.createdAt)} prefix="Lo respondiste " />
                   <p className="answer__text">{answer.text}</p>
                   {answer.helpful && (
                     <p className="answer__marked">

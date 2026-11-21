@@ -2,13 +2,14 @@
 // survive a tab change. The tab comes from the URL; pages render in the <Outlet /> (SPEC 04).
 import { useEffect, useId, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { DEFAULT_CITY, fetchSign, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Sign } from '../data';
+import { DEFAULT_CITY, fetchSign, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Question, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
+import { AskQuestionSheet } from './AskQuestionSheet';
 import { QuestionDetail } from './QuestionDetail';
 import { AppShell, type Tab } from './AppShell';
 import { AuthGate, useOpenPasswordRecovery, useRegisterPendingHandlers, useRequireAccount } from './AuthGate';
 import { CloseIcon } from './icons';
-import { Sheet } from './Sheet';
+import { Sheet, afterSheetPop } from './Sheet';
 import { SignSheet } from './SignSheet';
 import { Toast } from './Toast';
 import { goWithTransition } from './transition';
@@ -42,6 +43,8 @@ function Shell() {
   const [avisos, setAvisos] = useState(false);
   const [searchHidden, setSearchHidden] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [asking, setAsking] = useState<{ text: string } | null>(null);
+  const [questionNotice, setQuestionNotice] = useState<{ id: number; text: string } | null>(null);
   const [notice, setNotice] = useState<{ id: number; rewarded: boolean } | null>(null);
   const [freshSignId, setFreshSignId] = useState<Id | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -80,6 +83,7 @@ function Shell() {
     'save-question': ({ id }) => toggleSaved.mutate({ kind: 'question', id }),
     'save-answer': ({ id }) => toggleSaved.mutate({ kind: 'answer', id }),
     'open-new-sign': () => setUploading(true),
+    'open-ask': ({ text }) => setAsking({ text }),
   });
 
   // Lupa (wiki #140): only while Hoy's own search is off screen
@@ -134,8 +138,15 @@ function Shell() {
     if (window.matchMedia('(min-width: 64rem)').matches) setSearchParams({ p: String(id) });
     else goWithTransition((viewTransition) => navigate(`/p/${id}`, { viewTransition }), 'forward');
   };
-  // «Preguntar» arrives with step 3 of SPEC 10
-  const openAsk = (_text?: string) => undefined;
+  const openAsk = (text = '') =>
+    requireAccount('Así tus vecinos pueden responderte.', () => setAsking({ text }), undefined, { kind: 'open-ask', text });
+
+  // After publishing: the sheet closes first (it owns a history entry), then the new question opens
+  const onQuestionPublished = ({ question, urgent, urgentCharged }: { question: Question; urgent: boolean; urgentCharged: boolean }) => {
+    if (question.city !== city) setCity(question.city);
+    if (urgent && !urgentCharged) setQuestionNotice({ id: Date.now(), text: 'No pudimos cobrar, se publicó normal' });
+    afterSheetPop(() => openQuestion(question.id));
+  };
 
   const context: ShellContext = {
     city,
@@ -182,9 +193,9 @@ function Shell() {
         onFab={() =>
           requireAccount(
             tab === 'hoy' ? 'Así tu letrero aparece en Hoy y ganas una yapita.' : 'Así tus vecinos pueden responderte.',
-            tab === 'hoy' ? () => setUploading(true) : () => undefined,
+            tab === 'hoy' ? () => setUploading(true) : () => setAsking({ text: '' }),
             undefined,
-            tab === 'hoy' ? { kind: 'open-new-sign' } : undefined,
+            tab === 'hoy' ? { kind: 'open-new-sign' } : { kind: 'open-ask', text: '' },
           )
         }
         onSearch={searchHidden ? goToSearch : undefined}
@@ -209,6 +220,16 @@ function Shell() {
           onToggleSave={onToggleSave}
         />
       )}
+      {asking && (
+        <AskQuestionSheet
+          viewingCity={city}
+          initialText={asking.text}
+          onClose={() => setAsking(null)}
+          onPublished={onQuestionPublished}
+          onOpenQuestion={(id) => afterSheetPop(() => openQuestion(id))}
+        />
+      )}
+      {questionNotice && <Toast key={questionNotice.id} message={questionNotice.text} onDone={() => setQuestionNotice(null)} />}
       {uploading && <UploadSignSheet viewingCity={city} onClose={() => setUploading(false)} onPublished={onPublished} />}
       {notice && (
         <Toast
