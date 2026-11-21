@@ -1,6 +1,6 @@
 # SPEC 03 — Supabase schema, RLS and reputation view
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01 (the `DataApi` contract and the `Id` type this schema must match). Board card: T08.
 > **Date:** 2026-11-20
 > **Objective:** Create the Supabase Postgres schema from the wiki's «Datos» section as three migrations that run from scratch, enforce row-level security so no user can change another user's data, and expose stars and badges through a view.
@@ -131,29 +131,29 @@ Rules that the table does not show:
 
 ## Acceptance criteria
 
-- [ ] `npx supabase db reset` on an empty local database runs `0001`, `0002` and `0003` in order and exits with 0.
-- [ ] Running `db reset` a second time gives the same result (no leftover state).
-- [ ] Every table in the Data model has RLS enabled (`select relname from pg_class where relrowsecurity = false` returns only the Supabase system tables).
-- [ ] `supabase/tests/rls.sql` runs from `psql` against the local database and prints `rls ok`.
-- [ ] As user A, an `update` on a sign of user B changes 0 rows.
-- [ ] As user A, a `delete` on a sign of user B deletes 0 rows.
-- [ ] As user A, an insert into `sign_votes` for user B's sign is rejected, and so is a vote on A's own sign.
-- [ ] As user A, an insert into `ratings` on an answer to a question that A did not ask is rejected.
-- [ ] As user A, an insert into `answers` on A's own question is rejected.
-- [ ] As user A, a second `answers` row for the same question is rejected by the unique key.
-- [ ] As user A, `select` on `profiles` does not return the `phone` or `notif_prefs` of user B. `profiles_public` does not expose them either.
-- [ ] As an authenticated user, `select` on `wallet_keys` returns 0 rows, and so does an `insert`.
-- [ ] As user A, a `select` on `rewards` returns only A's rows, and an `insert` is rejected.
-- [ ] As user A, an `insert` into `notifications` is rejected. After A answers B's question, B has one `notifications` row of kind `answer`.
-- [ ] After user B marks A's answer as «Me sirvió», A has one `notifications` row of kind `helpful`.
-- [ ] A `memo_key` longer than 28 bytes is rejected.
-- [ ] A `zone` with accents and capitals gives a `zone_norm` in lowercase without accents (`Sopocachi` and `sopocachí` give the same value).
-- [ ] With 2 helpful and 1 not helpful ratings, `author_trust` returns `stars = 3.7` and `badge = 'Buen vecino'`.
-- [ ] With 2 ratings (any values), `author_trust` returns `stars` null and `badge = 'Vecino nuevo'`.
-- [ ] With 5 ratings, 5 helpful, `author_trust` returns `badge = 'De confianza'`.
-- [ ] `hidden_items` lets a user insert and delete only their own rows.
+- [x] `npx supabase db reset` on an empty local database runs `0001`, `0002` and `0003` in order and exits with 0.
+- [x] Running `db reset` a second time gives the same result (no leftover state).
+- [x] Every table in the Data model has RLS enabled (`select relname from pg_class where relrowsecurity = false` returns only the Supabase system tables).
+- [x] `supabase/tests/rls.sql` runs from `psql` against the local database and prints `rls ok`.
+- [x] As user A, an `update` on a sign of user B changes 0 rows.
+- [x] As user A, a `delete` on a sign of user B deletes 0 rows.
+- [x] As user A, an insert into `sign_votes` for user B's sign is rejected, and so is a vote on A's own sign.
+- [x] As user A, an insert into `ratings` on an answer to a question that A did not ask is rejected.
+- [x] As user A, an insert into `answers` on A's own question is rejected.
+- [x] As user A, a second `answers` row for the same question is rejected by the unique key.
+- [x] As user A, `select` on `profiles` does not return the `phone` or `notif_prefs` of user B. `profiles_public` does not expose them either.
+- [x] As an authenticated user, `select` on `wallet_keys` returns 0 rows, and so does an `insert`.
+- [x] As user A, a `select` on `rewards` returns only A's rows, and an `insert` is rejected.
+- [x] As user A, an `insert` into `notifications` is rejected. After A answers B's question, B has one `notifications` row of kind `answer`.
+- [x] After user B marks A's answer as «Me sirvió», A has one `notifications` row of kind `helpful`.
+- [x] A `memo_key` longer than 28 bytes is rejected.
+- [x] A `zone` with accents and capitals gives a `zone_norm` in lowercase without accents (`Sopocachi` and `sopocachí` give the same value).
+- [x] With 2 helpful and 1 not helpful ratings, `author_trust` returns `stars = 3.7` and `badge = 'Buen vecino'`.
+- [x] With 2 ratings (any values), `author_trust` returns `stars` null and `badge = 'Vecino nuevo'`.
+- [x] With 5 ratings, 5 helpful, `author_trust` returns `badge = 'De confianza'`.
+- [x] `hidden_items` lets a user insert and delete only their own rows.
 - [ ] `npm run typecheck` and `npm run build` pass, and the CI check is green on the PR.
-- [ ] `git grep -i "SECRET\|SERVICE_ROLE"` shows no values. The migrations contain no keys.
+- [x] `git grep -i "SECRET\|SERVICE_ROLE"` shows no values. The migrations contain no keys.
 
 ## Decisions
 
