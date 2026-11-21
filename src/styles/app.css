@@ -632,43 +632,57 @@ textarea {
   background: var(--color-urgent);
 }
 
-/* Yo: phone order is profile → Movimientos → cuenta → Ajustes (the yapitas before the settings).
-   With a wide frame: profile, cuenta and Ajustes on the left, Movimientos on the right. */
+/* Yo (SPEC 21): two columns that stack on their own, so a long Movimientos never leaves gaps on the left.
+   Phone: one column in the wiki order (#157) profile → Movimientos → cuenta → Mi actividad → Ajustes; the column
+   wrappers step aside (display: contents) and `order` interleaves their cards.
+   Wide frame: left = profile, cuenta, Ajustes; right = Movimientos, Mi actividad. */
 .yo-grid {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--s-3);
 }
 
-.yo-grid > .card {
+.yo-col {
+  display: contents;
+}
+
+.yo-grid .card {
   margin: 0;
+}
+
+.yo-grid__profile {
+  order: 1;
+}
+
+.yo-grid__moves {
+  order: 2;
+}
+
+.yo-grid__account {
+  order: 3;
+}
+
+.yo-grid__activity {
+  order: 4;
+}
+
+.yo-grid__settings {
+  order: 5;
 }
 
 @container (min-width: 48rem) {
   .yo-grid {
+    display: grid;
     grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
-    grid-template-areas:
-      'profile moves'
-      'account moves'
-      'settings moves';
-    grid-template-rows: auto auto 1fr;
     align-items: start;
-    gap: var(--s-4) var(--s-5);
+    gap: var(--s-5);
   }
 
-  .yo-grid__profile {
-    grid-area: profile;
-  }
-
-  .yo-grid__moves {
-    grid-area: moves;
-  }
-
-  .yo-grid__account {
-    grid-area: account;
-  }
-
-  .yo-grid__settings {
-    grid-area: settings;
+  .yo-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+    min-width: 0;
   }
 }
 
@@ -968,16 +982,6 @@ textarea {
 }
 
 /* Yo: profile card */
-.yo-col {
-  display: grid;
-  gap: var(--s-3);
-  align-content: start;
-}
-
-.yo-col > .card {
-  margin: 0;
-}
-
 .profile {
   position: relative;
   overflow: hidden;
@@ -985,14 +989,6 @@ textarea {
 
 .profile__stripe {
   margin: calc(var(--s-4) * -1) calc(var(--s-4) * -1) var(--s-4);
-}
-
-/* Tilcho only lives here (wiki): beside the name, never over text */
-.profile__tilcho {
-  float: right;
-  width: 5.25rem;
-  height: auto;
-  margin: 0 0 var(--s-2) var(--s-3);
 }
 
 .profile__name {
@@ -1147,6 +1143,33 @@ html.theme-vt * {
 html.theme-vt::view-transition-group(root) {
   animation-duration: 280ms;
   animation-timing-function: var(--ease);
+}
+
+/* Ajustes › Tema (SPEC 21): the new theme switches on in a circle that grows from the tapped option
+   (themeFade.ts sets --reveal-x/y/r). The old picture stays still underneath; only clip-path moves.
+   A gentle start and a soft landing read as a light coming on, without a jump on the first frame. */
+html.theme-reveal::view-transition-group(root) {
+  animation: none;
+}
+
+html.theme-reveal::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html.theme-reveal::view-transition-new(root) {
+  z-index: 1;
+  mix-blend-mode: normal;
+  animation: theme-reveal 480ms cubic-bezier(0.45, 0, 0.2, 1) both;
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--reveal-x) var(--reveal-y));
+  }
+  to {
+    clip-path: circle(var(--reveal-r) at var(--reveal-x) var(--reveal-y));
+  }
 }
 
 /* The feed keeps its last result while a new search, chip or city loads: it only dims, no skeleton flash */

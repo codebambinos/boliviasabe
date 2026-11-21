@@ -6,7 +6,7 @@ import type { ProfileInput } from '../api';
 import { keys } from '../keys';
 import { disablePushOnThisDevice } from '../../push/device';
 import { persister } from '../persist';
-import { isPersonalKey, PERSONAL_KEYS } from '../query';
+import { invalidate, isPersonalKey, PERSONAL_KEYS } from '../query';
 import { api } from '../source';
 import type { Session } from '../types';
 
@@ -58,3 +58,18 @@ export const useSignOut = () =>
 
 /** «Tu barrio»: saves name, city and zone. The first time it also prepares the wallet. */
 export const useSaveProfile = () => useSessionMutation<ProfileInput>((input) => api.auth.saveProfile(input));
+
+/**
+ * Yo › «Editar» (SPEC 21): same save, but the person does not change, so their balance, movements and activity are
+ * kept (no reset, no pulsing bar). The lists are fetched again because they follow the city and show the name.
+ */
+export function useEditProfile() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ProfileInput) => api.auth.saveProfile(input),
+    onSuccess: (session) => {
+      client.setQueryData(keys.session(), session);
+      invalidate(client, keys.signs(), keys.questions(), keys.activity(), keys.saved());
+    },
+  });
+}

@@ -18,7 +18,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: false,
       devOptions: { enabled: false },
-      includeAssets: ['logo.svg', 'favicon.ico', 'apple-touch-icon-180x180.png', 'tilcho/*.svg'],
+      includeAssets: ['logo.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
       injectManifest: { globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'] },
       manifest: {
         name: 'BoliviaSabe',

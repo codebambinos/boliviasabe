@@ -112,7 +112,7 @@ Familiar patterns win over novelty; craft is in spacing, type and the states.
   the finger (scale .99).
 - **Notice:** one line of information on the blue soft fill.
 - **Skeleton:** sunken blocks with a slow breath (1.6 s opacity), never a shimmer sweep.
-- **Tilcho:** only in Yo, on the profile card (wiki rule). Nowhere else.
+- **Tilcho:** not in the app (wiki #191), not even in Yo.
 
 ## Overlays, states and the soft wall
 

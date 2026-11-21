@@ -31,3 +31,13 @@
   gap: var(--s-2);
   margin-top: var(--s-2);
 }
+
+/* While it saves the button keeps its color and shows the spinner: dimmed, it read as «turned off» */
+.barrio__save[aria-busy='true']:disabled {
+  opacity: 1;
+}
+
+/* The form cannot change under a save in flight */
+.barrio:has(.barrio__save[aria-busy='true']) .barrio__form {
+  pointer-events: none;
+}

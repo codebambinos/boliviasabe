@@ -21,6 +21,8 @@ export type ShellContext = {
   goneQuestions: ReadonlySet<Id>;
   /** Opens «Preguntar», with the text already written when it comes from a search. */
   openAsk: (text?: string) => void;
+  /** Opens «Subir letrero» (Yo › Mis letreros, when empty). */
+  openUpload: () => void;
   openAbout: () => void;
   openPrivacy: () => void;
   signInWithGoogle: () => void;

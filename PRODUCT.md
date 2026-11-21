@@ -81,8 +81,7 @@ entre todos.»
   a pattern to cover surfaces.
 - Type: Bricolage Grotesque (headings) and Figtree (text), since 20 Nov (wiki #136). Art direction «Letrero» in `DESIGN.md`.
 - Logo: F5 is provisional (Bolivia map with the B and the yapita bubble) until the final one.
-- **Tilcho** (tilcayo cat mascot) appears only in the Yo tab, on the profile card. Never on entry,
-  empty states or as a guide.
+- **Tilcho** (tilcayo cat mascot) is not in the app (wiki #191), not even in Yo.
 - Voice: friendly Bolivian Spanish («¡Ya está!», «Chuta», «Gracias, pues», greeting by time of
   day). UI copy comes from the wiki.
 

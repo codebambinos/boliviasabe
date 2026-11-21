@@ -219,6 +219,8 @@ function Shell() {
     selectedQuestion,
     goneQuestions,
     openAsk,
+    openUpload: () =>
+      requireAccount('Así tu letrero aparece en Hoy y ganas una yapita.', () => setUploading(true), undefined, { kind: 'open-new-sign' }),
     openAbout: () => setAbout(true),
     openPrivacy,
     signInWithGoogle: () => signIn.mutate(),
