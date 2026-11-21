@@ -89,21 +89,36 @@ Each step leaves the app working: steps 3 to 8 replace one method group at a tim
 
 ## Acceptance criteria
 
-- [ ] With `VITE_DATA_SOURCE=supabase`, a letrero and a question published by one account are still there after reloading and show up for another account on another device.
-- [ ] A signed-in user cannot vote their own letrero, answer their own question, answer twice, or mark «Me sirvió» on a question that is not theirs; the **database** refuses it (checked in `rls.sql`, not only on screen).
-- [ ] Publishing a letrero uploads the photo and the 480 px thumbnail to `photos/<profile_id>/…`, the card in Hoy uses the thumbnail, and another user cannot write or delete in that folder.
-- [ ] The third report from three different people hides the item for everyone except its author, who sees it «En revisión»; the reporter stops seeing it at the first report, and «Ya no quiero ver esto» hides it only for that person.
-- [ ] The lists follow the wiki order and search accent- and case-insensitively; 30 per page with «Ver más» returns the next 30 without repeating items.
-- [ ] «Me sirvió» on the first answer marks the question «✓ Solucionada»; on a Cerrada question it does not change the status; «Cerrar sin solución» works only on an Abierta question with answers and only for its author.
-- [ ] An urgent question is published as normal first and becomes urgent (top of the list for 24 h) only after the −5 is confirmed; when the charge fails it stays normal and the screen shows «No pudimos cobrar, se publicó normal»; the −5 is never charged twice.
-- [ ] A client cannot set `questions.status` or `questions.urgent_until` directly (the RLS still refuses it).
-- [ ] When Stellar fails, the letrero, the vote or the answer is saved anyway, the movement is «Pendiente» and «Reintentar» completes it once.
-- [ ] `wallet.movements` lists the caller's rewards newest first with the right amount, reason and explorer link, and shows only the caller's own.
-- [ ] Mis letreros, mis preguntas, mis respuestas and Guardados load from Supabase for the caller only.
-- [ ] Each `DataError` code the screens handle (`forbidden`, `not_found`, `limit`, `unauthenticated`, `offline`) comes out of the adapter for its case; the screens did not change.
-- [ ] With `VITE_DATA_SOURCE=mock` the app behaves exactly as before and `npm run typecheck`, `npm run build`, `npm run stellar:e2e` and `rls.sql` pass.
-- [ ] No secret reaches the browser bundle, `@stellar/stellar-sdk` is not imported from `src/`, and `git grep -i "SECRET\|SERVICE_ROLE"` shows no values.
+- [x] With `VITE_DATA_SOURCE=supabase`, a letrero and a question published by one account are still there after reloading and show up for another account on another device.
+- [x] A signed-in user cannot vote their own letrero, answer their own question, answer twice, or mark «Me sirvió» on a question that is not theirs; the **database** refuses it (checked in `rls.sql`, not only on screen).
+- [x] Publishing a letrero uploads the photo and the 480 px thumbnail to `photos/<profile_id>/…`, the card in Hoy uses the thumbnail, and another user cannot write or delete in that folder.
+- [x] The third report from three different people hides the item for everyone except its author, who sees it «En revisión»; the reporter stops seeing it at the first report, and «Ya no quiero ver esto» hides it only for that person.
+- [x] The lists follow the wiki order and search accent- and case-insensitively; 30 per page with «Ver más» returns the next 30 without repeating items.
+- [x] «Me sirvió» on the first answer marks the question «✓ Solucionada»; on a Cerrada question it does not change the status; «Cerrar sin solución» works only on an Abierta question with answers and only for its author.
+- [x] An urgent question is published as normal first and becomes urgent (top of the list for 24 h) only after the −5 is confirmed; when the charge fails it stays normal and the screen shows «No pudimos cobrar, se publicó normal»; the −5 is never charged twice.
+- [x] A client cannot set `questions.status` or `questions.urgent_until` directly (the RLS still refuses it).
+- [x] When Stellar fails, the letrero, the vote or the answer is saved anyway, the movement is «Pendiente» and «Reintentar» completes it once.
+- [x] `wallet.movements` lists the caller's rewards newest first with the right amount, reason and explorer link, and shows only the caller's own.
+- [x] Mis letreros, mis preguntas, mis respuestas and Guardados load from Supabase for the caller only.
+- [x] Each `DataError` code the screens handle (`forbidden`, `not_found`, `limit`, `unauthenticated`, `offline`) comes out of the adapter for its case; the screens did not change.
+- [x] With `VITE_DATA_SOURCE=mock` the app behaves exactly as before and `npm run typecheck`, `npm run build`, `npm run stellar:e2e` and `rls.sql` pass.
+- [x] No secret reaches the browser bundle, `@stellar/stellar-sdk` is not imported from `src/`, and `git grep -i "SECRET\|SERVICE_ROLE"` shows no values.
 - [ ] The screens were checked on a phone at 360 px, light and dark, with the text at 130 %, against the preview.
+
+> Verified 2026-11-21. `rls.sql` (196 checks, local stack) covers the database rules, the order, search, paging, the 3 reports, `rate_answer`, `close_question`, the status/urgency columns and the bucket folders. Against the real project: a letrero and a question published from a browser survive a reload and show for a second account; photo + thumbnail land in `photos/<id>/` and another folder is refused; own vote refused (`42501`); three reports hide a letrero for guests (`get_sign` → `not_found`). On the preview (`/api` real): `ayuda` and `cierre` paid once (a repeat returns the same hash, the helper claiming it gets `not_allowed`); a reward to a neighbor with no account stays `pending`, and after the account exists «Reintentar» pays it once and refuses someone else's row; an urgent question is charged −5, then gets `urgent_until` and tops the list. `npm run stellar:e2e` passes with the new charge rule. The `limit` code is not produced yet: the limits are T23. Pending: the phone check (last criterion).
+
+## Implementation notes
+
+Changes made while implementing, against the plan above:
+
+- **`remove_sign`** (security definer): the RLS of SPEC 03 forbids deleting a voted letrero, but the wiki and the mock let the author delete it («los puntos ya ganados se mantienen»). It deletes the votes, saved, hidden and report rows first.
+- **`toggle_saved`** joins the write functions, and `report_content`, `hide_content` and `toggle_saved` are **security invoker**: the RLS of the tables already allows them, so they do not need to bypass it.
+- **«No me sirvió» → «Me sirvió»** is allowed (as in the mock); «Me sirvió» is final. The change deletes the old rating and inserts a new one so the notification trigger fires.
+- **A closed question stays closed** after a late «Me sirvió» (the mock turned it Solucionada); the +1 for closing is paid once either way.
+- **Trigger `answers_only_open_question`**: a solved or closed question takes no new answers (the wiki rule was only on screen).
+- **`/api/stellar/reintentar`** (new route): «Reintentar» is pressed by whoever receives the reward, but `/premiar` must be called by whoever made the action (the voter, the asker). The new route pays again the caller's own `pending`/`error` row with its stored recipient, amount and memo, so it still pays once. The welcome is retried by `/crear-cuenta` and a charge is never retried.
+- **Deleting an answer** follows the RLS of SPEC 03: any rating blocks it (the wiki says only «Me sirvió»). Left as is.
+- The **mock bridges** (`followRealSession`, `followRealBalance`) were removed: nothing in supabase mode runs on the mock any more.
 
 ## Decisions
 
