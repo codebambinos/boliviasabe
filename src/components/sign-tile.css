@@ -185,3 +185,39 @@
   margin: 0;
   font-size: var(--t-h2);
 }
+
+/* The letrero you just published (wiki #167) lands first in the grid: it rises in and its photo
+   glows once with the brand ring, so you see where it went. Plays once (ShellLayout clears it). */
+.tile-fresh {
+  animation: tile-fresh-in 420ms var(--ease-enter) 120ms both;
+}
+
+.tile-fresh .tile__media {
+  animation: tile-fresh-ring 1.6s var(--ease) 300ms both;
+}
+
+@keyframes tile-fresh-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+}
+
+@keyframes tile-fresh-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--color-brand);
+  }
+  30% {
+    box-shadow: 0 0 0 4px var(--color-brand);
+  }
+  100% {
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-fresh,
+  .tile-fresh .tile__media {
+    animation: none;
+  }
+}

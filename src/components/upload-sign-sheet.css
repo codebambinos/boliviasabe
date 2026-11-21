@@ -1,0 +1,328 @@
+/* Subir letrero (UploadSignSheet.tsx): one column at the reading measure, Publicar at the thumb. */
+.upload__form {
+  display: grid;
+  gap: var(--s-5);
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+}
+
+.upload__label {
+  margin: 0 0 var(--s-2);
+  font: 500 var(--t-small) / 1.3 var(--font-body);
+}
+
+.upload__label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.upload__label-row > label {
+  font: 500 var(--t-small) / 1.3 var(--font-body);
+}
+
+.upload__pick {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--r-md);
+  background: var(--color-sunken);
+}
+
+.upload__preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--color-sunken);
+}
+
+.upload__preview img {
+  display: block;
+  width: 100%;
+  max-height: 22rem;
+  object-fit: contain;
+}
+
+.upload__change {
+  position: absolute;
+  right: var(--s-2);
+  bottom: var(--s-2);
+  background: var(--color-card);
+  box-shadow: var(--shadow-float);
+}
+
+/* «Más detalles»: a full-width row that unfolds the optional fields */
+.upload__more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--touch);
+  padding: 0;
+  border: 0;
+  border-top: var(--hairline);
+  background: none;
+  color: var(--color-ink);
+  font: var(--w-strong) var(--t-body) / 1.3 var(--font-body);
+  cursor: pointer;
+}
+
+.upload__more svg {
+  transition: transform var(--m-in) var(--ease);
+}
+
+.upload__more[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+/* Folds open and closed: the row grows from 0fr to 1fr while the fields fade in */
+.upload__details {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: calc(var(--s-5) * -1); /* no gap under «Más detalles» while folded */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 240ms var(--ease),
+    margin-top 240ms var(--ease),
+    opacity var(--m-out) var(--ease),
+    visibility 0s linear 240ms;
+}
+
+.upload__details[data-open] {
+  grid-template-rows: 1fr;
+  margin-top: 0;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 260ms var(--ease-enter),
+    margin-top 260ms var(--ease-enter),
+    opacity var(--m-panel) var(--ease) 60ms,
+    visibility 0s;
+}
+
+.upload__details-inner {
+  display: grid;
+  gap: var(--s-4);
+  min-height: 0;
+  overflow: hidden;
+  /* room for focus rings, which overflow: hidden would clip */
+  margin: -4px;
+  padding: 4px;
+}
+
+.upload__tags {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.upload__tags > legend {
+  margin-bottom: var(--s-2);
+  padding: 0;
+  font: 500 var(--t-small) / 1.3 var(--font-body);
+}
+
+/* Tags wrap here (the Hoy chip row scrolls): all 18 are visible while choosing */
+.upload__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.upload__chips .chip {
+  transition:
+    background-color var(--m-in) var(--ease),
+    border-color var(--m-in) var(--ease),
+    color var(--m-in) var(--ease),
+    opacity var(--m-in) var(--ease),
+    transform var(--m-press) var(--ease);
+}
+
+.upload__chips .chip:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.upload__chips .chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* The chosen photo settles in; a new one replaces it the same way (keyed by its url) */
+.upload__preview {
+  animation: upload-photo-in 320ms var(--ease-enter) both;
+}
+
+.upload__preview img {
+  animation: upload-photo-fade 420ms var(--ease) both;
+}
+
+@keyframes upload-photo-in {
+  from {
+    transform: scale(0.97);
+  }
+}
+
+@keyframes upload-photo-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* While the photo is being compressed the box breathes, so the wait reads as work */
+.upload__pick[aria-busy] {
+  animation: upload-busy 1.2s ease-in-out infinite;
+}
+
+@keyframes upload-busy {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Each new line under Publicar and each field error slides in, so a change is noticed */
+.upload__msg,
+.upload .field__error {
+  animation: upload-msg-in var(--m-panel) var(--ease-enter) both;
+}
+
+@keyframes upload-msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* «Publicando…»: a small turning ring inside the button */
+.upload__spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: var(--s-2);
+  vertical-align: -0.15em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: upload-spin 700ms linear infinite;
+}
+
+@keyframes upload-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* «¿Descartar el letrero?»: a card rises over the dimmed form, which stays as it was behind it */
+.upload__confirm {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.upload__confirm-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--color-scrim);
+  animation: sheet-fade var(--m-panel) var(--ease) both;
+}
+
+.upload__confirm-card {
+  position: relative;
+  width: 100%;
+  max-width: var(--content-max);
+  padding: var(--s-5) var(--gutter) calc(var(--s-4) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--color-line-strong);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  background: var(--color-card);
+  box-shadow: var(--shadow-float);
+  animation: upload-confirm-in 260ms var(--ease-enter) both;
+}
+
+.upload__confirm-title {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-h2);
+  outline: none;
+}
+
+.upload__confirm-text {
+  margin: 0 0 var(--s-4);
+  color: var(--color-muted);
+}
+
+.upload__confirm[data-leaving] .upload__confirm-card {
+  animation: upload-confirm-out 160ms var(--ease) both;
+}
+
+.upload__confirm[data-leaving] .upload__confirm-scrim {
+  animation: sheet-fade-out 160ms var(--ease) both;
+}
+
+@keyframes upload-confirm-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes upload-confirm-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* Desktop: the sheet is a window, so the card is a centered dialog inside it */
+@media (min-width: 64rem) {
+  .upload__confirm {
+    align-items: center;
+    padding: var(--s-5);
+  }
+
+  .upload__confirm-card {
+    max-width: 26rem;
+    padding-bottom: var(--s-4);
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--r-lg);
+    animation-name: upload-confirm-pop;
+  }
+
+  .upload__confirm[data-leaving] .upload__confirm-card {
+    animation-name: upload-confirm-fade;
+  }
+}
+
+@keyframes upload-confirm-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes upload-confirm-fade {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upload__more svg,
+  .upload__details,
+  .upload__details[data-open] {
+    transition: none;
+  }
+
+  .upload__pick[aria-busy] {
+    animation: none;
+  }
+
+  /* The spinner is the only sign of work: it keeps turning, slower */
+  .upload__spinner {
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

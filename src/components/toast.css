@@ -1,0 +1,73 @@
+/* Toast (Toast.tsx): centered above the bottom nav on phones, at the foot of the frame on desktop. */
+.toast {
+  position: fixed;
+  z-index: 15;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--nav-h) + var(--s-4) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  justify-content: center;
+  padding-inline: var(--gutter);
+  pointer-events: none;
+}
+
+.toast__box {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  max-width: var(--content-max);
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-pill);
+  background: var(--color-ink);
+  color: var(--color-bg);
+  font: var(--w-strong) var(--t-body) / 1.3 var(--font-body);
+  box-shadow: var(--shadow-float);
+  animation: toast-in var(--m-panel) var(--ease-enter) both;
+}
+
+/* The yapita lands a beat after the box, like the «Me sirvió» thanks */
+.toast__box .yapita {
+  animation: toast-yapita 520ms var(--ease-enter) 120ms both;
+}
+
+.toast[data-leaving] .toast__box {
+  animation: toast-out 180ms var(--ease) both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes toast-yapita {
+  from {
+    transform: scale(0.4) rotate(-40deg);
+  }
+  60% {
+    transform: scale(1.15) rotate(8deg);
+  }
+}
+
+@media (min-width: 64rem) {
+  .toast {
+    bottom: calc(var(--s-6) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast__box,
+  .toast__box .yapita,
+  .toast[data-leaving] .toast__box {
+    animation: none;
+  }
+}
