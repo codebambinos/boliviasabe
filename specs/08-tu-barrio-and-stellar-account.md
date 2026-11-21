@@ -1,6 +1,6 @@
 # SPEC 08 — «Tu barrio» and the Stellar account
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01 (data layer and mock adapter), SPEC 03 (Supabase schema and RLS), SPEC 06 (upload a letrero), SPEC 07 (account and `AuthGate`). Board card: T16 (issue #9). Unlocks T17 (#10).
 > **Date:** 2026-11-21
 > **Objective:** After the first sign-in, one full-screen form («Tu barrio») creates the profile, and the server creates the person's Stellar testnet account and pays the +5 welcome in the background, so the person sees «Preparando tu cuenta», then the balance 5, and goes back to what they were doing.
@@ -77,7 +77,7 @@ Welcome reward: `rewards.memo_key = 'bienvenida:<profileId>'` (unique, at most 2
 
 HTTP contract of `POST /api/stellar/crear-cuenta`: no body, `Authorization: Bearer <access token>`; responses `200 {"status":"ready"}`, `202 {"status":"preparing"}`, `401 {"error":"unauthenticated"}`, `409 {"error":"profile_missing"}`, `500 {"error":"server"}`. All with `Cache-Control: no-store`.
 
-Display name: first word of the full name plus the initial of the last word, «Lucía Mamani Rojas» → «Lucía M.». A single word stays as it is. It must fit `profiles.display_name` (2 to 40 characters).
+Display name (wiki #173): the first word plus the initial of the surname. With 2 or 3 words the surname is the last one («Lucía Mamani» → «Lucía M.»); with 4 or more words there are two surnames, so it is the one before the last («Diego Marcelo Choque Ramirez» → «Diego C.»). A single word stays as it is. It must fit `profiles.display_name` (2 to 40 characters).
 
 Environment (server only unless noted): `SUPABASE_SERVICE_ROLE_KEY`, `WALLET_ENC_KEY`, `YAPITA_ISSUER_PUBLIC`, `YAPITA_DISTRIBUTOR_SECRET`, `VITE_SUPABASE_URL`. Public, in the bundle: `VITE_YAPITA_ISSUER_PUBLIC` (optional; the balance is filtered by asset code alone when it is missing).
 
@@ -92,20 +92,20 @@ Environment (server only unless noted): `SUPABASE_SERVICE_ROLE_KEY`, `WALLET_ENC
 
 ## Acceptance criteria
 
-- [ ] `npm run stellar:e2e` passes: the welcome is paid once even when `provisionWallet` runs twice, the stored key decrypts to the same account, and the final balance is 5.
-- [ ] With `VITE_DATA_SOURCE=supabase`, an account with no profile sees «Tu barrio» on its first action, and after «Listo» that action runs on its own (also after Google).
-- [ ] «Listo» stays disabled while the name or the zone is empty and says which one is missing; the name is prefilled when Google provides it.
-- [ ] Tapping a zone chip fills the field, typing another zone is accepted, and changing the city clears a zone that came from a chip but keeps a typed one.
-- [ ] Closing «Tu barrio» with ✕, Escape or Android back keeps the session, publishes nothing, and the next action opens it again.
-- [ ] After «Listo» the wallet shows «Preparando tu cuenta» and then the balance 5, read from Horizon.
-- [ ] Calling `/api/stellar/crear-cuenta` twice leaves one `bienvenida` payment on the chain and one `confirmed` row in `rewards`.
-- [ ] If Stellar fails, the profile exists, the reward stays `pending`, `stellar_status` is `error`, and the next `wallet.get` after the cooldown retries and finishes it.
-- [ ] A call with no token or a forged token gets 401; a call with a valid token and no profile gets 409.
-- [ ] `wallet_keys` holds only cipher text and IV for the new account, and decrypting needs `WALLET_ENC_KEY`.
-- [ ] `git grep -i "SECRET\|SERVICE_ROLE" -- src` shows no values, and the built bundle contains neither the service role key nor `WALLET_ENC_KEY`.
-- [ ] No file under `src/` imports `@stellar/stellar-sdk`.
-- [ ] The screen was tested at 360 px, in light and dark, with text at 130 %, and its copy matches the wiki (no «XLM», «tokens», «puntos» alone or bolivianos).
-- [ ] `npm run typecheck` and `npm run build` pass, CI is green and the PR body has `Closes #9`.
+- [x] `npm run stellar:e2e` passes: the welcome is paid once even when `provisionWallet` runs twice, the stored key decrypts to the same account, and the final balance is 5.
+- [x] With `VITE_DATA_SOURCE=supabase`, an account with no profile sees «Tu barrio» on its first action, and after «Listo» that action runs on its own (also after Google).
+- [x] «Listo» stays disabled while the name or the zone is empty and says which one is missing; the name is prefilled when Google provides it.
+- [x] Tapping a zone chip fills the field, typing another zone is accepted, and changing the city clears a zone that came from a chip but keeps a typed one.
+- [x] Closing «Tu barrio» with ✕, Escape or Android back keeps the session, publishes nothing, and the next action opens it again.
+- [x] After «Listo» the wallet shows «Preparando tu cuenta» and then the balance 5, read from Horizon.
+- [x] Calling `/api/stellar/crear-cuenta` twice leaves one `bienvenida` payment on the chain and one `confirmed` row in `rewards`.
+- [x] If Stellar fails, the profile exists, the reward stays `pending`, `stellar_status` is `error`, and the next call finishes it (covered by `stellar:e2e` with a distributor that cannot pay; the 20 s retry from `wallet.get` was not forced on a phone).
+- [x] A call with no token or a forged token gets 401; a call with a valid token and no profile gets 409.
+- [x] `wallet_keys` holds only cipher text and IV for the new account, and decrypting needs `WALLET_ENC_KEY`.
+- [x] `git grep -i "SECRET\|SERVICE_ROLE" -- src` shows no values, and the built bundle contains neither the service role key nor `WALLET_ENC_KEY`.
+- [x] No file under `src/` imports `@stellar/stellar-sdk`.
+- [x] The screen was tested at 360 px, in light and dark, with text at 130 %, and its copy matches the wiki (no «XLM», «tokens», «puntos» alone or bolivianos).
+- [x] `npm run typecheck` and `npm run build` pass, CI is green and the PR body has `Closes #9`.
 
 ## Decisions
 
@@ -124,7 +124,7 @@ Environment (server only unless noted): `SUPABASE_SERVICE_ROLE_KEY`, `WALLET_ENC
 - **Yes:** a 20 s cooldown and one request in flight in `ensureWallet`. The wallet polls every second while it is `preparing`, and that must not become a request per second.
 - **Yes:** the balance comes from Horizon with `fetch`, filtered by asset code (and by issuer when `VITE_YAPITA_ISSUER_PUBLIC` is set). It keeps the SDK out of the bundle (CLAUDE.md).
 - **Yes:** the web-standard handler (`export async function POST(request: Request)`), so no `@vercel/node` dependency.
-- **Yes:** the display name uses the last word of the full name for the initial. The wiki says «nombre + inicial del apellido» and the form asks for «nombre y apellido»; two surnames («Mamani Rojas») give «R.», accepted for the demo.
+- **Yes:** the initial comes from the last word with 2 or 3 words, and from the one before the last with 4 or more (wiki #173). The first version always used the last word and gave «Diego R.» for «Diego Marcelo Choque Ramirez» (the maternal surname), found while testing on a phone. With 3 words it stays ambiguous («Lucía Mamani Rojas» gives «R.») and the last word is kept.
 - **Yes:** end-to-end tests on the PR's Vercel preview, because the function only runs there with the real build. `vercel dev` is not needed.
 - **Pending decision:** the wiki gives no copy for the «Tu barrio» labels or validation messages. This spec proposes the title «Tu barrio», the labels «Nombre y apellido», «Ciudad» and «Zona», the button «Listo», and the reasons «Falta tu nombre», «Falta tu zona» and «Falta tu nombre y tu zona»; Diego confirms them and they are recorded in the wiki in step 1.
 
