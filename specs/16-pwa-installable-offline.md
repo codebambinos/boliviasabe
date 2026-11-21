@@ -1,6 +1,6 @@
 # SPEC 16 — Installable app (PWA) that opens without internet
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01 (QueryClient and `src/data/`), SPEC 04 (routes and shell, `OfflineBanner`), SPEC 07 (session and Ajustes in Yo). **SPEC 15 (T27) depends on this one:** it adds `push` and `notificationclick` to the `src/sw.ts` created here, and reuses the iPhone steps sheet. Board card: T26 (issue #19).
 > **Date:** 2026-11-21
 > **Objective:** Make BoliviaSabe installable on Android and iPhone (manifest, icons, standalone mode and a «Instalar la app» row in Ajustes), and make it open without signal showing the last loaded lists and thumbnails.
