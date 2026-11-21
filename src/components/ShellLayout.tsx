@@ -2,10 +2,11 @@
 // survive a tab change. The tab comes from the URL; pages render in the <Outlet /> (SPEC 04).
 import { useEffect, useId, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { DEFAULT_CITY, fetchSign, useCreateAnswer, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Question, type Sign } from '../data';
+import { DEFAULT_CITY, fetchSign, useCreateAnswer, useCreateComment, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Question, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
 import { AskQuestionSheet } from './AskQuestionSheet';
 import { sendDraftAnswer } from './AnswerBox';
+import { sendDraftComment } from './AnswerThread';
 import { QuestionDetail } from './QuestionDetail';
 import { AppShell, type Tab } from './AppShell';
 import { AuthGate, useOpenPasswordRecovery, useRegisterPendingHandlers, useRequireAccount } from './AuthGate';
@@ -53,6 +54,7 @@ function Shell() {
   const wallet = useWallet({ enabled: signedIn });
   const toggleSaved = useToggleSaved();
   const createAnswer = useCreateAnswer();
+  const createComment = useCreateComment();
   const requireAccount = useRequireAccount();
   const openRecovery = useOpenPasswordRecovery();
   const signIn = useSignInWithGoogle();
@@ -84,6 +86,7 @@ function Shell() {
     'save-question': ({ id }) => toggleSaved.mutate({ kind: 'question', id }),
     'save-answer': ({ id }) => toggleSaved.mutate({ kind: 'answer', id }),
     'send-answer': ({ questionId }) => sendDraftAnswer(questionId, createAnswer.mutateAsync),
+    'send-comment': ({ answerId, questionId }) => sendDraftComment(answerId, questionId, createComment.mutateAsync),
     'open-new-sign': () => setUploading(true),
     'open-ask': ({ text }) => setAsking({ text }),
   });

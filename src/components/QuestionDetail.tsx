@@ -1,6 +1,6 @@
 // A question and its answers (wiki › flujo-final › «2 · ¿Alguien sabe?», SPEC 10). One component, two homes:
 // the page `/p/:id` on a phone and the side panel on desktop. It holds every action of the conversation:
-// Guardar, Compartir, ⋯ (Reportar · Borrar) and, later steps, answering and rating.
+// Guardar, Compartir, ⋯ (Reportar · Borrar), answering, rating and the thread under each answer (SPEC 12).
 import { useEffect, useId, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Link, useLocation } from 'react-router';
@@ -13,17 +13,20 @@ import {
   useMarkNotHelpful,
   useQuestion,
   useRemoveAnswer,
+  useRemoveComment,
   useRemoveQuestion,
   useReport,
   useToggleSaved,
   type Answer,
   type Author,
+  type Comment,
   type Id,
   type Question,
   type ReportReason,
 } from '../data';
 import { useRequireAccount } from './AuthGate';
 import { AnswerBox } from './AnswerBox';
+import { AnswerThread } from './AnswerThread';
 import { BookmarkIcon, CheckIcon, CloseIcon, FlagIcon, MoreIcon, ShareIcon, ThumbDownIcon, ThumbIcon, TrashIcon } from './icons';
 import { errorMessage, firstName } from './messages';
 import { answersText, isUrgentActive } from './QuestionCard';
@@ -33,7 +36,7 @@ import { Yapita } from './Yapita';
 import './sign-sheet.css';
 import './question-detail.css';
 
-type Target = { type: 'question' } | { type: 'answer'; answer: Answer };
+type Target = { type: 'question' } | { type: 'answer'; answer: Answer } | { type: 'comment'; comment: Comment };
 type Dialog = { kind: 'menu' | 'report' | 'delete' | 'reported' | 'hidden' | 'deleted' | 'close' | 'closed'; target: Target } | { kind: 'photo' };
 
 /** Only the first 3 «Me sirvió» of a question pay (reglas-finales › Yapitas). */
@@ -285,6 +288,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
                       </button>
                     )}
                   </div>
+                  <AnswerThread questionId={question.id} answer={answer} onMenu={(comment) => openMenu({ type: 'comment', comment })} />
                 </li>
               );
             })}
@@ -354,7 +358,12 @@ function ActionSheet({
   const [step, setStep] = useState<Exclude<Dialog, { kind: 'photo' }>['kind']>(first.kind);
   const { target } = first;
   const isQuestion = target.type === 'question';
-  const noun = isQuestion ? 'pregunta' : 'respuesta';
+  const isComment = target.type === 'comment';
+  const noun = isQuestion ? 'pregunta' : isComment ? 'comentario' : 'respuesta';
+  // «el comentario» is masculine; «la pregunta», «la respuesta» feminine
+  const the = isComment ? 'el' : 'la';
+  const it = isComment ? 'lo' : 'la';
+  const this_ = isComment ? 'este' : 'esta';
 
   useEffect(() => {
     if (step !== 'menu') headingRef.current?.focus();
@@ -365,28 +374,34 @@ function ActionSheet({
   const hide = useHideForMe();
   const removeQuestion = useRemoveQuestion();
   const removeAnswer = useRemoveAnswer();
+  const removeComment = useRemoveComment();
   const closeQuestion = useCloseQuestion();
   const markNotHelpful = useMarkNotHelpful();
-  const kind = isQuestion ? 'question' : 'answer';
-  const itemId = isQuestion ? question.id : target.answer.id;
-  const mine = isQuestion ? question.isMine : target.answer.isMine;
-  const canDelete = isQuestion ? question.isMine && question.answerCount === 0 : target.answer.isMine && !target.answer.helpful;
-  const removing = removeQuestion.isPending || removeAnswer.isPending;
-  const removeError = removeQuestion.error ?? removeAnswer.error;
+  const kind = target.type;
+  const itemId = target.type === 'question' ? question.id : target.type === 'answer' ? target.answer.id : target.comment.id;
+  const mine = target.type === 'question' ? question.isMine : target.type === 'answer' ? target.answer.isMine : target.comment.isMine;
+  const canDelete =
+    target.type === 'question' ? question.isMine && question.answerCount === 0
+    : target.type === 'answer' ? target.answer.isMine && !target.answer.helpful
+    : target.comment.isMine;
+  const removing = removeQuestion.isPending || removeAnswer.isPending || removeComment.isPending;
+  const removeError = removeQuestion.error ?? removeAnswer.error ?? removeComment.error;
 
   const title =
-    step === 'menu' ? (isQuestion ? 'Más opciones' : 'Más opciones de la respuesta')
-    : step === 'report' ? `Reportar la ${noun}`
+    step === 'menu' ? (isQuestion ? 'Más opciones' : `Más opciones ${isComment ? 'del' : 'de la'} ${noun}`)
+    : step === 'report' ? `Reportar ${the} ${noun}`
     : step === 'delete' ? `¿Borrar tu ${noun}?`
     : step === 'close' ? '¿Cerrar sin solución?'
     : step === 'closed' ? 'Pregunta cerrada'
     : step === 'reported' ? 'Gracias por avisar'
-    : step === 'hidden' ? 'Listo, ya no la verás'
-    : `${isQuestion ? 'Pregunta' : 'Respuesta'} borrada`;
+    : step === 'hidden' ? `Listo, ya no ${it} verás`
+    : isComment ? 'Comentario borrado' : `${isQuestion ? 'Pregunta' : 'Respuesta'} borrada`;
 
   const doDelete = () => {
-    if (isQuestion) removeQuestion.mutate(question.id, { onSuccess: () => setStep('deleted') });
-    else removeAnswer.mutate({ id: target.answer.id, questionId: question.id }, { onSuccess: () => setStep('deleted') });
+    if (target.type === 'question') removeQuestion.mutate(question.id, { onSuccess: () => setStep('deleted') });
+    else if (target.type === 'answer') removeAnswer.mutate({ id: target.answer.id, questionId: question.id }, { onSuccess: () => setStep('deleted') });
+    // A deleted comment just leaves the thread: no «borrado» step, the sheet closes
+    else removeComment.mutate({ id: target.comment.id, questionId: question.id }, { onSuccess: onClose });
   };
 
   return (
@@ -402,7 +417,7 @@ function ActionSheet({
 
           {step === 'menu' && (
             <ul className="menu">
-              {!isQuestion && question.isMine && !target.answer.helpful && !target.answer.notHelpful && (
+              {target.type === 'answer' && question.isMine && !target.answer.helpful && !target.answer.notHelpful && (
                 <li>
                   <button
                     type="button"
@@ -445,7 +460,7 @@ function ActionSheet({
               }}
             >
               <fieldset className="report__set">
-                <legend className="report__legend">¿Qué pasa con esta {noun}?</legend>
+                <legend className="report__legend">¿Qué pasa con {this_} {noun}?</legend>
                 {REPORT_REASONS.map((r) => (
                   <label key={r.value} className="radio-row">
                     <input type="radio" name="reason" value={r.value} checked={reason === r.value} onChange={() => setReason(r.value)} />
@@ -471,13 +486,15 @@ function ActionSheet({
               <p className="empty__text">
                 {isQuestion
                   ? 'Desaparece para todos. Si era urgente, las 5 yapitas no se devuelven.'
-                  : 'Desaparece junto con su conversación.'}
+                  : isComment
+                    ? 'Desaparece para todos.'
+                    : 'Desaparece junto con su conversación.'}
               </p>
               {removeError && <p className="field__error" role="alert">{errorMessage(removeError)}</p>}
               <div className="confirm__actions">
-                <button type="button" className="btn btn--secondary" onClick={() => setStep('menu')}>No, dejarla</button>
+                <button type="button" className="btn btn--secondary" onClick={() => setStep('menu')}>{isComment ? 'Cancelar' : 'No, dejarla'}</button>
                 <button type="button" className="btn btn--danger" disabled={removing} onClick={doDelete}>
-                  {removing ? 'Borrando…' : 'Sí, borrar'}
+                  {removing ? 'Borrando…' : isComment ? 'Borrar' : 'Sí, borrar'}
                 </button>
               </div>
             </div>
@@ -507,7 +524,7 @@ function ActionSheet({
             <div className="sheet__content qd__confirm" role="status">
               <p className="empty__text">
                 {step === 'reported'
-                  ? 'Ya no la verás. La revisamos y, si más vecinos la reportan, se oculta para todos.'
+                  ? `Ya no ${it} verás. ${isComment ? 'Lo' : 'La'} revisamos y, si más vecinos ${it} reportan, se oculta para todos.`
                   : step === 'hidden'
                     ? 'Desaparece de tus listas. Nadie más se entera.'
                     : 'Ya no aparece en ¿Alguien sabe?.'}

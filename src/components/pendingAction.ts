@@ -9,6 +9,7 @@ export type PendingAction =
   | { kind: 'save-question'; id: number }
   | { kind: 'save-answer'; id: number }
   | { kind: 'send-answer'; questionId: number }
+  | { kind: 'send-comment'; answerId: number; questionId: number }
   | { kind: 'open-new-sign' }
   | { kind: 'open-ask'; text: string };
 
@@ -28,7 +29,7 @@ export type PendingRecord = {
 
 const KEY = 'bs:pending:v1';
 const MAX_AGE_MS = 10 * 60 * 1000;
-const KINDS: readonly PendingAction['kind'][] = ['save-sign', 'vote-sign', 'save-question', 'save-answer', 'send-answer', 'open-new-sign', 'open-ask'];
+const KINDS: readonly PendingAction['kind'][] = ['save-sign', 'vote-sign', 'save-question', 'save-answer', 'send-answer', 'send-comment', 'open-new-sign', 'open-ask'];
 
 export function savePending(record: PendingRecord): void {
   try {
