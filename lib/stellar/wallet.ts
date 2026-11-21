@@ -42,6 +42,7 @@ export function decryptSecret({ secretEnc, secretIv }: EncryptedSecret, keyBase6
 }
 
 export type StellarStatus = 'preparing' | 'ready' | 'error';
+export type RewardReason = 'bienvenida' | 'letrero' | 'sirvio-l' | 'ayuda' | 'cierre' | 'urgente' | 'canje';
 export type RewardRow = { id: number; status: 'pending' | 'confirmed' | 'error'; txHash: string | null };
 
 export interface WalletStore {
@@ -52,8 +53,10 @@ export interface WalletStore {
   setStellar(profileId: number, patch: { publicKey?: string; status?: StellarStatus }): Promise<void>;
   /** Marks the account as failed, unless a parallel call already finished it: a failure never undoes «ready». */
   markError(profileId: number): Promise<void>;
-  /** Inserts the reward unless its memo key exists (the unique key is what stops a second payment). */
-  ensureReward(reward: { profileId: number; memoKey: string; amount: number; reason: 'bienvenida' }): Promise<RewardRow>;
+  /** The Stellar address and state of an account, as the profile has them. */
+  getStellar(profileId: number): Promise<{ publicKey: string | null; status: StellarStatus }>;
+  /** Inserts the reward unless its memo key exists (the unique key is what stops a second payment). A negative amount is a charge. */
+  ensureReward(reward: { profileId: number; memoKey: string; amount: number; reason: RewardReason }): Promise<RewardRow>;
   settleReward(id: number, patch: { status: 'confirmed' | 'error'; txHash?: string }): Promise<void>;
 }
 
