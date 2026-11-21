@@ -89,6 +89,20 @@ Put the public values in `.env`: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY
 
 The local stack (`npx supabase start`) is only for the database and RLS checks. Test Google and the recovery e-mail against the remote project.
 
+## Push notifications (T27)
+
+Every new row of `notifications` calls `/api/push` through `pg_net` (0008). The URL and the shared secret live in
+Supabase Vault; without them nothing is sent and the rows are still saved (the bell works). Set them once per
+project in the SQL editor, with the same secret as `PUSH_WEBHOOK_SECRET` in Vercel:
+
+```sql
+select vault.create_secret('https://boliviasabe.vercel.app/api/push', 'push_url');
+select vault.create_secret('<PUSH_WEBHOOK_SECRET>', 'push_secret');
+-- To change one later: select vault.update_secret(id, '<new value>') from vault.secrets where name = 'push_secret';
+```
+
+Locally, point `push_url` at `vercel dev`: `http://host.docker.internal:3000/api/push`.
+
 ## Security notes
 
 - RLS is the only thing that stops one neighbor from changing another's content, because the anon key is in the browser bundle.

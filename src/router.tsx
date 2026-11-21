@@ -2,6 +2,7 @@
 // the details, Privacidad and the new password page are standalone pages.
 import { createBrowserRouter, Navigate, Outlet, ScrollRestoration } from 'react-router';
 import { ShellLayout } from './components/ShellLayout';
+import { PushPrompt } from './components/PushPrompt';
 import { setDirection } from './components/transition';
 import { NewPasswordPage } from './pages/NewPasswordPage';
 import { HoyPage } from './pages/HoyPage';
@@ -17,6 +18,7 @@ function Root() {
     <>
       <Outlet />
       <ScrollRestoration />
+      <PushPrompt />
     </>
   );
 }

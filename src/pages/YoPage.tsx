@@ -2,6 +2,7 @@
 import { useState, type MouseEvent } from 'react';
 import { useRequireAccount } from '../components/AuthGate';
 import { InstallRow } from '../components/InstallRow';
+import { NotificationSettings } from '../components/NotificationSettings';
 import { ChevronRightIcon, ExternalIcon, EyeIcon, GoogleIcon, MailIcon, QuestionIcon } from '../components/icons';
 import { timeAgo } from '../components/time';
 import { withThemeFade } from '../components/themeFade';
@@ -260,6 +261,7 @@ function YoSample({
           <ul className="rows rows--links rows--flush">
             <InstallRow />
           </ul>
+          <NotificationSettings />
           <fieldset className="setting">
             <legend className="setting__label">Tema</legend>
             <div className="segmented">

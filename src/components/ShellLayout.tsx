@@ -18,6 +18,7 @@ import { goWithTransition } from './transition';
 import { UploadSignSheet } from './UploadSignSheet';
 import { Yapita } from './Yapita';
 import type { ShellContext } from './useShell';
+import { askAfterPublish } from '../push/prompt';
 
 const PATH: Record<Tab, string> = { hoy: '/', preguntas: '/preguntas', yo: '/yo' };
 const ORDER: Tab[] = ['hoy', 'preguntas', 'yo'];
@@ -120,6 +121,7 @@ function Shell() {
     window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
     setNotice({ id: Date.now(), rewarded });
     setFreshSignId(sign.id);
+    askAfterPublish('sign');
   };
 
   // The entrance plays once: coming back to Hoy later does not replay it
@@ -152,6 +154,7 @@ function Shell() {
     if (question.city !== city) setCity(question.city);
     // The notice travels with the navigation: on a phone the conversation is a page outside this shell
     afterSheetPop(() => openQuestion(question.id, { share: true, chargeFailed: urgent && !urgentCharged }));
+    askAfterPublish('question');
   };
 
   const context: ShellContext = {

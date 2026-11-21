@@ -1,0 +1,61 @@
+/* Ajustes › Notificaciones (NotificationSettings, wiki #204-205): between Instalar la app and Tema, closed by a
+   hairline like the other groups */
+.notif {
+  margin-top: var(--s-3);
+}
+
+.notif__switches > li:last-child {
+  border-bottom: var(--hairline);
+}
+
+.notif + .setting {
+  margin-top: var(--s-3);
+}
+
+.notif__status {
+  display: grid;
+  gap: var(--s-2);
+  justify-items: start;
+  margin: var(--s-2) 0 var(--s-1);
+}
+
+.notif__line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--t-small);
+}
+
+.notif__line > svg {
+  flex: none;
+  margin-top: 0.0625rem;
+}
+
+.notif__line--on {
+  color: var(--color-ink);
+}
+
+.notif__line--on > svg {
+  color: var(--color-ok);
+}
+
+.notif__switches {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notif__switches > li + li {
+  border-top: var(--hairline);
+}
+
+.notif__switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  min-height: var(--touch);
+  cursor: pointer;
+}
