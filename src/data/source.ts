@@ -1,13 +1,27 @@
 // Picks the adapter behind the hooks. VITE_DATA_SOURCE=mock|supabase (default: mock).
-// The Supabase adapter arrives in SPEC 02; until then every value falls back to the mock.
+// With `supabase` only `auth` is real (SPEC 07, T15); the rest still runs on the mock until its
+// own task lands. The Supabase code loads on first use, so the mock build never ships it.
 import type { DataApi } from './api';
 import { mockAdapter } from './mock/adapter';
 
+function lazyAuth(): DataApi['auth'] {
+  const load = () => import('./supabase/auth').then((module) => module.supabaseAuth);
+  return {
+    getSession: () => load().then((auth) => auth.getSession()),
+    signInWithGoogle: () => load().then((auth) => auth.signInWithGoogle()),
+    signInWithEmail: (email, password) => load().then((auth) => auth.signInWithEmail(email, password)),
+    requestPasswordReset: (email) => load().then((auth) => auth.requestPasswordReset(email)),
+    recoveryReady: () => load().then((auth) => auth.recoveryReady()),
+    updatePassword: (password) => load().then((auth) => auth.updatePassword(password)),
+    signOut: () => load().then((auth) => auth.signOut()),
+    saveProfile: (input) => load().then((auth) => auth.saveProfile(input)),
+  };
+}
+
 function pickAdapter(): DataApi {
   const source = import.meta.env.VITE_DATA_SOURCE as string | undefined;
-  if (source && source !== 'mock') {
-    console.warn(`VITE_DATA_SOURCE="${source}" is not available yet (Supabase adapter: SPEC 02). Using the mock adapter.`);
-  }
+  if (source === 'supabase') return { ...mockAdapter, auth: lazyAuth() };
+  if (source && source !== 'mock') console.warn(`VITE_DATA_SOURCE="${source}" is unknown. Using the mock adapter.`);
   return mockAdapter;
 }
 
