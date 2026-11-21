@@ -86,6 +86,7 @@ export interface DataApi {
     list(): Promise<SavedItems>;
   };
   reports: {
+    /** Counts toward the 3 reports that hide it for everyone, and hides it for the reporter now (wiki #166). */
     report(kind: ContentKind, id: Id, reason: ReportReason): Promise<void>;
     hideForMe(kind: ContentKind, id: Id): Promise<void>;
   };

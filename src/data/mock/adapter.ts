@@ -547,13 +547,17 @@ export const mockSaved: DataApi['saved'] = {
 };
 
 export const mockReports: DataApi['reports'] = {
-  /** One report per person; 3 different people hide it for everyone but its author. */
+  /** One report per person; 3 different people hide it for everyone but its author.
+   * The reporter stops seeing it right away (wiki #166). */
   report: (kind, id, reason) =>
     simulate(() => {
       const user = requireUser();
       if (contentAuthor(kind, id) === user.id) throw new DataError('forbidden', 'You cannot report your own content');
       if (!store.reports.some((r) => r.userId === user.id && r.kind === kind && r.itemId === id)) {
         store.reports.push({ userId: user.id, kind, itemId: id, reason });
+      }
+      if (!store.hidden.some((h) => h.userId === user.id && h.kind === kind && h.itemId === id)) {
+        store.hidden.push({ userId: user.id, kind, itemId: id });
       }
     }),
 

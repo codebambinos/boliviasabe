@@ -5,11 +5,12 @@ import { invalidate } from '../query';
 import { api } from '../source';
 import type { ContentKind, Id, ReportReason } from '../types';
 
+/** Reports the item. It also disappears from every list of the reporter (wiki #166). */
 export function useReport() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: ({ kind, id, reason }: { kind: ContentKind; id: Id; reason: ReportReason }) => api.reports.report(kind, id, reason),
-    onSuccess: () => invalidate(client, keys.signs(), keys.questions()),
+    onSuccess: () => invalidate(client, keys.signs(), keys.questions(), keys.saved()),
   });
 }
 
