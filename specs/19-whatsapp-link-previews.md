@@ -121,7 +121,7 @@ export function escapeHtml(value: string): string;
 - [ ] With the same agent, `/p/999999` (does not exist) and `/p/abc` answer 200 with the generic preview, never 404 or 500.
 - [ ] `facebookexternalhit/1.1` and `TelegramBot (like TwitterBot)` also get the OG HTML.
 - [ ] With a Chrome agent (or none), `/p/<id>` and `/l/<id>` answer the app's `index.html`, the same as `/`.
-- [ ] The response has `cache-control: public, s-maxage=600, stale-while-revalidate=86400`.
+- [ ] `/api/og` sends `cache-control: public, s-maxage=600, stale-while-revalidate=86400`. Vercel keeps `s-maxage` for its edge and shows the client only `public`, so the check is that a repeated bot request answers `x-vercel-cache: HIT`.
 - [ ] A question whose text is `<script>"&` ends up escaped in every tag: `&lt;script&gt;&quot;&amp;`.
 - [ ] `/` (any agent) has `og:title` «BoliviaSabe», `og:image` `…/og.png` with `og:image:width` 1200 and `og:image:height` 630.
 - [ ] `public/og.png` is 1200×630 and under 300 KB.
