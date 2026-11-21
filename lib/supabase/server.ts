@@ -3,7 +3,7 @@
  * never import this from src/. The functions validate who is calling before they touch any data.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { RewardFacts } from '../stellar/rewards.ts';
+import type { RewardCap, RewardFacts } from '../stellar/rewards.ts';
 import type { EncryptedSecret, RewardRow, WalletStore } from '../stellar/wallet.ts';
 
 function env(name: string): string {
@@ -76,10 +76,13 @@ export function supabaseWalletStore(db: SupabaseClient): WalletStore {
       return { publicKey: data?.stellar_pk ?? null, status: data?.stellar_status ?? 'preparing' };
     },
 
-    async ensureReward({ profileId, memoKey, amount, reason }) {
+    async ensureReward({ profileId, sourceId, memoKey, amount, reason }) {
       const { error } = await db
         .from('rewards')
-        .upsert({ profile_id: profileId, memo_key: memoKey, amount, reason }, { onConflict: 'memo_key', ignoreDuplicates: true });
+        .upsert(
+          { profile_id: profileId, source_id: sourceId ?? null, memo_key: memoKey, amount, reason },
+          { onConflict: 'memo_key', ignoreDuplicates: true },
+        );
       fail('rewards', error);
       const { data, error: readError } = await db.from('rewards').select('id, status, tx_hash').eq('memo_key', memoKey).single();
       fail('rewards', readError);
@@ -139,6 +142,31 @@ export function supabaseRewardFacts(db: SupabaseClient): RewardFacts {
       const { data, error } = await db.from('ratings').select('helpful').eq('answer_id', answerId).eq('rater_id', raterId).maybeSingle();
       fail('ratings', error);
       return data ? { helpful: data.helpful } : null;
+    },
+
+    /** The one rule of the caps lives in SQL (0007 `reward_cap`), shared with the browser's notice. */
+    async rewardCap(plan, refId) {
+      const { data, error } = await db.rpc('reward_cap', {
+        p_reason: plan.reason,
+        p_recipient: plan.recipientId,
+        p_source: plan.sourceId,
+        p_memo: plan.memoKey,
+        p_ref: refId,
+      });
+      fail('reward_cap', error);
+      return (data as RewardCap | null) ?? null;
+    },
+
+    async otherActiveUrgent(authorId, exceptQuestionId) {
+      const { data, error } = await db
+        .from('questions')
+        .select('id')
+        .eq('author_id', authorId)
+        .neq('id', exceptQuestionId)
+        .gt('urgent_until', new Date().toISOString())
+        .limit(1);
+      fail('questions', error);
+      return (data ?? []).length > 0;
     },
   };
 }

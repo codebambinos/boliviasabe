@@ -41,12 +41,12 @@ export function useCreateSign() {
   });
 }
 
-/** «Me sirvió» / «No me sirvió» on a sign. One vote per person, final. */
+/** «Me sirvió» / «No me sirvió» on a sign. One vote per person, final. Resolves to { sign, rewardCap }. */
 export function useVoteSign() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: ({ id, value }: { id: Id; value: 'helpful' | 'not_helpful' }) => api.signs.vote(id, value),
-    onSuccess: (sign) => {
+    onSuccess: ({ sign }) => {
       client.setQueryData(keys.sign(sign.id), sign);
       invalidate(client, keys.signs());
     },

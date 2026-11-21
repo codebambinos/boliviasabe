@@ -30,7 +30,7 @@ import { AnswerBox } from './AnswerBox';
 import { AnswerThread } from './AnswerThread';
 import { ContactPanel, RequestContactButton, canRequestContact } from './ContactRequest';
 import { BookmarkIcon, CheckIcon, CloseIcon, FlagIcon, MoreIcon, ShareIcon, ThumbDownIcon, ThumbIcon, TrashIcon } from './icons';
-import { errorMessage, firstName } from './messages';
+import { errorMessage, firstName, rewardCapMessage } from './messages';
 import { answersText, isUrgentActive } from './QuestionCard';
 import { Sheet } from './Sheet';
 import { timeAgo } from './time';
@@ -40,9 +40,6 @@ import './question-detail.css';
 
 type Target = { type: 'question' } | { type: 'answer'; answer: Answer } | { type: 'comment'; comment: Comment };
 type Dialog = { kind: 'menu' | 'report' | 'delete' | 'reported' | 'hidden' | 'deleted' | 'close' | 'closed'; target: Target } | { kind: 'photo' };
-
-/** Only the first 3 «Me sirvió» of a question pay (reglas-finales › Yapitas). */
-const REWARDED_PER_QUESTION = 3;
 
 type QuestionDetailProps = {
   id: Id;
@@ -146,15 +143,16 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
   const canAnswer = !question.isMine && question.status === 'open' && !answers.some((a) => a.isMine);
   const sendHelpful = (answer: Answer) => {
     const firstOne = question.status === 'open';
-    const rewarded = answers.filter((a) => a.helpful).length < REWARDED_PER_QUESTION;
+    const name = firstName(answer.author.displayName);
     setNotice(null);
     markHelpful.mutate(answer.id, {
-      onSuccess: () =>
+      // The server says whether it paid: the first 3 of a question, 3 a day to the same person (wiki #188-189)
+      onSuccess: ({ rewardCap }) =>
         setNotice({
           title: '¡Gracias, pues!',
-          text: rewarded
-            ? `${firstName(answer.author.displayName)} recibe +5 yapitas por ayudarte.${firstOne ? ' Tu pregunta quedó Solucionada y ganas +1 yapita.' : ''}`
-            : 'Ya diste 3 «Me sirvió» con premio en esta pregunta: este queda marcado, sin yapitas.',
+          text:
+            (rewardCapMessage(rewardCap, name) ?? `${name} recibe +5 yapitas por ayudarte.`) +
+            (firstOne ? ' Tu pregunta quedó Solucionada y ganas +1 yapita.' : ''),
         }),
     });
   };

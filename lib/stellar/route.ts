@@ -5,6 +5,7 @@
 import { adminClient, markUrgent, supabaseRewardFacts, supabaseWalletStore, userFromRequest } from '../supabase/server.ts';
 import {
   chargeUrgent,
+  isCapped,
   payReward,
   planCharge,
   planReward,
@@ -66,6 +67,7 @@ export function premiar(request: Request): Promise<Response> {
     if (!PREMIAR_REASONS.includes(reason as PremiarReason)) return json({ error: 'bad_request' }, 400);
     const plan = await planReward(supabaseRewardFacts(db), callerId, reason as PremiarReason, refId);
     if (!plan) return json({ error: 'not_allowed' }, 403);
+    if (isCapped(plan)) return json({ status: 'capped', cap: plan.capped }); // saved, not paid (SPEC 13)
     const result = await payReward(supabaseWalletStore(db), plan, env);
     return result.status === 'confirmed' ? json(result) : json(result, 202);
   });
@@ -100,7 +102,8 @@ export function reintentar(request: Request): Promise<Response> {
     if (error) throw new Error(`reward lookup failed: ${error.message}`);
     if (!row) return json({ error: 'not_found' }, 404);
     if (row.amount <= 0 || !PREMIAR_REASONS.includes(row.reason as PremiarReason)) return json({ error: 'not_allowed' }, 403);
-    const plan: RewardPlan = { recipientId: callerId, reason: row.reason, amount: row.amount, memoKey: row.memo_key };
+    // The row exists, so it is never capped again and keeps its source_id
+    const plan: RewardPlan = { recipientId: callerId, sourceId: null, reason: row.reason, amount: row.amount, memoKey: row.memo_key };
     const result = await payReward(supabaseWalletStore(db), plan, env);
     return result.status === 'confirmed' ? json(result) : json(result, 202);
   });

@@ -5,7 +5,7 @@ import { DataError } from '../errors';
 import type { Answer, Question, QuestionStatus } from '../types';
 import { supabase } from './client';
 import { requireMe } from './me';
-import { requestReward } from './rewards';
+import { requestReward, rewardCapOf } from './rewards';
 import { rpc, toDataError } from './rpc';
 
 async function answerOf(questionId: number, id: number): Promise<Answer> {
@@ -32,9 +32,10 @@ export const supabaseAnswers: DataApi['answers'] = {
   /** +5 to the helper and, when it solves (or the question was already closed), +1 to the asker for closing. */
   async markHelpful(id) {
     const { answer, questionStatus } = await rpc<Rated>('rate_answer', { p_answer_id: id, p_helpful: true });
-    requestReward('ayuda', id);
+    const rewardCap = await rewardCapOf('ayuda', id); // the first 3 of a question, 3 a day per pair (SPEC 13)
+    if (!rewardCap) requestReward('ayuda', id);
     if (questionStatus !== 'open') requestReward('cierre', answer.questionId);
-    return answer;
+    return { answer, rewardCap };
   },
 
   async markNotHelpful(id) {

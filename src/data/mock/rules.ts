@@ -15,6 +15,7 @@ export const MAX_OPEN_WITH_ANSWERS = 3;
 export const MAX_REWARDED_SIGNS_PER_DAY = 10;
 export const MAX_REWARDED_ANSWERS_PER_QUESTION = 3;
 export const MAX_REWARDS_PER_PAIR_PER_DAY = 3;
+export const MAX_COMMENTS_PER_HOUR = 30;
 export const URGENT_COST = 5;
 export const URGENT_HOURS = 24;
 export const REPORTS_TO_HIDE = 3;
@@ -128,6 +129,19 @@ export function assertCanAsk(userId: Id, urgent: boolean): void {
   }
   if (confirmedBalance(userId) < URGENT_COST) {
     throw new DataError('limit', 'Not enough yapitas', { limit: 'insufficient_balance' });
+  }
+}
+
+/** 30 comments in the last hour; the error says when the oldest of them leaves the window. */
+export function assertCanComment(userId: Id): void {
+  const since = Date.now() - HOUR;
+  const recent = store.comments
+    .filter((c) => c.authorId === userId && Date.parse(c.createdAt) > since)
+    .map((c) => Date.parse(c.createdAt))
+    .sort((a, b) => a - b);
+  if (recent.length >= MAX_COMMENTS_PER_HOUR) {
+    const frees = recent[recent.length - MAX_COMMENTS_PER_HOUR] + HOUR;
+    throw new DataError('limit', 'Comment limit reached', { limit: 'comments_per_hour', until: new Date(frees).toISOString() });
   }
 }
 

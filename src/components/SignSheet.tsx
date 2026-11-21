@@ -3,7 +3,7 @@
 // neighbor a yapita, so it answers with the reward. On your own letrero the main action is
 // sharing it (WhatsApp is how neighbors arrive).
 import { useEffect, useId, useRef, useState } from 'react';
-import { REPORT_REASONS, useHideForMe, useRemoveSign, useReport, useSign, useVoteSign, type ReportReason, type Sign } from '../data';
+import { REPORT_REASONS, useHideForMe, useRemoveSign, useReport, useSign, useVoteSign, type ReportReason, type RewardCap, type Sign } from '../data';
 import { useRequireAccount } from './AuthGate';
 import {
   ArrowLeftIcon,
@@ -19,7 +19,7 @@ import {
   TrashIcon,
   CheckIcon,
 } from './icons';
-import { errorMessage, firstName, helpedText } from './messages';
+import { errorMessage, firstName, helpedText, rewardCapMessage } from './messages';
 import { Sheet } from './Sheet';
 import { isStale, timeAgo } from './time';
 import { Yapita } from './Yapita';
@@ -53,6 +53,8 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
   const fresh = useSign(initial.id);
   const [sign, setSign] = useState(initial);
   const [thanked, setThanked] = useState(false);
+  /** Why the «Me sirvió» paid nothing (3 rewards today to the same person), or null when it paid. */
+  const [rewardCap, setRewardCap] = useState<RewardCap | null>(null);
   const [sending, setSending] = useState(false);
   const thanksRef = useRef<HTMLParagraphElement>(null);
   const [view, setView] = useState<View>('detail');
@@ -97,8 +99,9 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
       vote.mutate(
         { id: latest.id, value: 'helpful' },
         {
-          onSuccess: (updated) => {
+          onSuccess: ({ sign: updated, rewardCap: cap }) => {
             setSign(updated);
+            setRewardCap(cap);
             setThanked(true);
           },
           onSettled: () => setSending(false),
@@ -111,7 +114,7 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
       vote.mutate(
         { id: latest.id, value: 'not_helpful' },
         {
-          onSuccess: (updated) => {
+          onSuccess: ({ sign: updated }) => {
             setSign(updated);
             setView('detail');
           },
@@ -274,7 +277,7 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
                   <Yapita size="lg" />
                   <span>
                     <strong>¡Gracias, pues!</strong>
-                    <span>{author} recibe +1 yapita por ayudarte.</span>
+                    <span>{rewardCapMessage(rewardCap, author) ?? `${author} recibe +1 yapita por ayudarte.`}</span>
                   </span>
                 </p>
               )}

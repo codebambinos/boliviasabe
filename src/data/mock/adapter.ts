@@ -7,6 +7,7 @@ import { mockMode, simulate } from './behavior';
 import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type CommentRec, type ContactRec, type MovementRec, type QuestionRec, type SignRec } from './fixtures';
 import {
   assertCanAsk,
+  assertCanComment,
   authorOf,
   confirmedBalance,
   currentUserId,
@@ -260,10 +261,9 @@ export const mockSigns: DataApi['signs'] = {
         throw new DataError('forbidden', 'You already voted on this sign');
       }
       store.signVotes.push({ signId: id, userId: user.id, value });
-      if (value === 'helpful' && pairCanBeRewarded(user.id, rec.authorId)) {
-        addMovement(rec.authorId, 'sirvio-l', 1, user.id);
-      }
-      return toSign(rec);
+      const rewardCap = value === 'helpful' && !pairCanBeRewarded(user.id, rec.authorId) ? 'pair_per_day' : null;
+      if (value === 'helpful' && !rewardCap) addMovement(rec.authorId, 'sirvio-l', 1, user.id);
+      return { sign: toSign(rec), rewardCap };
     }),
 
   remove: (id) =>
@@ -512,13 +512,17 @@ export const mockAnswers: DataApi['answers'] = {
       const answer = findVisibleAnswer(id);
       const question = findVisibleQuestion(answer.questionId);
       if (question.authorId !== user.id) throw new DataError('forbidden', 'Only the asker can mark «Me sirvió»');
-      if (answer.helpful) return toAnswer(answer);
+      if (answer.helpful) return { answer: toAnswer(answer), rewardCap: null };
       const alreadyRewarded = store.answers.filter((a) => a.questionId === question.id && a.helpful).length;
       answer.helpful = true;
       answer.notHelpful = false;
-      if (alreadyRewarded < MAX_REWARDED_ANSWERS_PER_QUESTION && pairCanBeRewarded(user.id, answer.authorId)) {
-        addMovement(answer.authorId, 'ayuda', 5, user.id);
-      }
+      const rewardCap =
+        alreadyRewarded >= MAX_REWARDED_ANSWERS_PER_QUESTION
+          ? ('answers_per_question' as const)
+          : !pairCanBeRewarded(user.id, answer.authorId)
+            ? ('pair_per_day' as const)
+            : null;
+      if (!rewardCap) addMovement(answer.authorId, 'ayuda', 5, user.id);
       if (question.status !== 'solved') {
         question.status = 'solved';
         if (!question.closureRewarded) {
@@ -526,7 +530,7 @@ export const mockAnswers: DataApi['answers'] = {
           addMovement(user.id, 'cierre', 1, null);
         }
       }
-      return toAnswer(answer);
+      return { answer: toAnswer(answer), rewardCap };
     }),
 
   markNotHelpful: (id) =>
@@ -588,6 +592,7 @@ export const mockComments: DataApi['comments'] = {
     simulate(() => {
       const user = requireProfile();
       findVisibleAnswer(answerId);
+      assertCanComment(user.id);
       const rec: CommentRec = {
         id: nextId('comment'),
         answerId,

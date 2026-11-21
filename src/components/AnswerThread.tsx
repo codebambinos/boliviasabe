@@ -6,7 +6,7 @@ import { useCreateComment, type Answer, type Comment, type Id } from '../data';
 import { useDraftSaver, useRequireAccount } from './AuthGate';
 import { clearDraft, loadDraft } from './draftStore';
 import { CommentIcon, MoreIcon } from './icons';
-import { errorMessage } from './messages';
+import { errorMessage, limitMessage } from './messages';
 import { timeAgo } from './time';
 import './answer-thread.css';
 
@@ -166,11 +166,11 @@ export function AnswerThread({ questionId, answer, onMenu }: AnswerThreadProps) 
               setText(e.target.value);
             }}
           />
-          {create.error && <p className="field__error" role="alert">{errorMessage(create.error)}</p>}
+          {create.error && <p className="field__error" role="alert">{limitMessage(create.error) ?? errorMessage(create.error)}</p>}
           <div className="thread__buttons">
             <button type="button" className="btn btn--secondary btn--small" onClick={cancel}>Cancelar</button>
             <button type="submit" className="btn btn--small" disabled={!trimmed || create.isPending}>
-              {create.isPending ? 'Enviando…' : create.error ? 'Reintentar' : 'Enviar'}
+              {create.isPending ? 'Enviando…' : create.error && !limitMessage(create.error) ? 'Reintentar' : 'Enviar'}
             </button>
           </div>
         </form>

@@ -111,6 +111,12 @@ export type Answer = {
 /** 30 items per page. `nextCursor` is null on the last page. */
 export type Page<T> = { items: T[]; nextCursor: string | null };
 
+/**
+ * Why a «Me sirvió» or a letrero was saved without yapitas (wiki reglas-finales › Antiabuso, #188-189): 10 letreros a
+ * day, the first 3 «Me sirvió» of a question, 3 rewards a day between the same two people.
+ */
+export type RewardCap = 'signs_per_day' | 'answers_per_question' | 'pair_per_day';
+
 export type RewardReason = 'bienvenida' | 'letrero' | 'sirvio-l' | 'ayuda' | 'cierre' | 'urgente' | 'canje';
 
 /** `amount` is signed: +5 for a reward, −5 for a spend. */

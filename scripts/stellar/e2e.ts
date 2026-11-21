@@ -9,6 +9,8 @@
  *      when the balance is short.
  *   4. A Stellar failure leaves the reward «pending» and the same call finishes it later.
  *   5. Balances and memos are read from the chain.
+ *   6. Caps (SPEC 13): the 4th «Me sirvió» of a question and the 4th reward of a pair in a day are saved but
+ *      not paid, and a second active urgent question is not charged.
  *
  *   npm run stellar:e2e
  */
@@ -22,7 +24,16 @@ import {
   requireEnv,
   txLink,
 } from '../../lib/stellar/points.ts';
-import { chargeUrgent, payReward, planCharge, planReward, type RewardFacts } from '../../lib/stellar/rewards.ts';
+import {
+  chargeUrgent,
+  isCapped,
+  payReward,
+  planCharge,
+  planReward,
+  type RewardCap,
+  type RewardFacts,
+  type RewardPlan,
+} from '../../lib/stellar/rewards.ts';
 import {
   decryptSecret,
   provisionWallet,
@@ -38,7 +49,7 @@ type Account = { key: EncryptedSecret | null; publicKey: string | null; status: 
 /** In-memory `WalletStore` for any number of profiles: same contract as the Supabase one, so the e2e needs no database. */
 function memoryStore() {
   const accounts = new Map<number, Account>();
-  const rewards = new Map<string, RewardRow & { profileId: number }>();
+  const rewards = new Map<string, RewardRow & { profileId: number; sourceId: number | null; reason: string }>();
   const account = (id: number) => {
     if (!accounts.has(id)) accounts.set(id, { key: null, publicKey: null, status: 'preparing' });
     return accounts.get(id)!;
@@ -55,8 +66,10 @@ function memoryStore() {
       if (account(id).status !== 'ready') account(id).status = 'error';
     },
     getStellar: async (id) => ({ publicKey: account(id).publicKey, status: account(id).status }),
-    ensureReward: async ({ profileId, memoKey }) => {
-      if (!rewards.has(memoKey)) rewards.set(memoKey, { id: rewards.size + 1, status: 'pending', txHash: null, profileId });
+    ensureReward: async ({ profileId, sourceId, memoKey, reason }) => {
+      if (!rewards.has(memoKey)) {
+        rewards.set(memoKey, { id: rewards.size + 1, status: 'pending', txHash: null, profileId, sourceId: sourceId ?? null, reason });
+      }
       return { ...rewards.get(memoKey)! };
     },
     settleReward: async (id, patch) => {
@@ -69,19 +82,38 @@ function memoryStore() {
 /**
  * The rows the rules read, as the app would have saved them.
  * Profiles: 1 helps (publishes, answers), 2 asks (votes, rates, asks).
+ * Question 23 has four answers by 1 (40-43), all marked helpful by 2 in that order.
+ * The caps follow SQL `reward_cap` (0007), counting the reward rows of the store (all of them are «today»).
  */
-function memoryFacts(): RewardFacts {
+function memoryFacts(rewards: ReturnType<typeof memoryStore>['rewards'], activeUrgent: Set<number>): RewardFacts {
+  const helpfulOrder: Record<number, number[]> = { 20: [30], 22: [31, 32], 23: [40, 41, 42, 43] };
+  const questionOf = (answerId: number) => Number(Object.keys(helpfulOrder).find((q) => helpfulOrder[Number(q)].includes(answerId)));
   return {
-    sign: async (id) => (id === 10 ? { authorId: 1 } : null),
+    sign: async (id) => (id === 10 || id === 11 ? { authorId: 1 } : null),
     signVote: async (signId, voterId) => (signId === 10 && voterId === 2 ? { helpful: true } : null),
     question: async (id) => {
       if (id === 20) return { authorId: 2, status: 'solved', urgent: true, answerCount: 1 };
       if (id === 21) return { authorId: 2, status: 'open', urgent: true, answerCount: 0 };
       if (id === 22) return { authorId: 2, status: 'solved', urgent: false, answerCount: 2 };
+      if (id === 23) return { authorId: 2, status: 'solved', urgent: false, answerCount: 4 };
       return null;
     },
-    answer: async (id) => (id === 30 ? { authorId: 1, questionId: 20 } : id === 31 || id === 32 ? { authorId: 1, questionId: 22 } : null),
-    rating: async (answerId, raterId) => ([30, 31, 32].includes(answerId) && raterId === 2 ? { helpful: true } : null),
+    answer: async (id) => (questionOf(id) ? { authorId: 1, questionId: questionOf(id) } : null),
+    rating: async (answerId, raterId) => (questionOf(answerId) && raterId === 2 ? { helpful: true } : null),
+    rewardCap: async (plan: RewardPlan, refId: number): Promise<RewardCap | null> => {
+      if (rewards.has(plan.memoKey)) return null;
+      const rows = [...rewards.values()];
+      if (plan.reason === 'letrero') {
+        return rows.filter((r) => r.profileId === plan.recipientId && r.reason === 'letrero').length >= 10 ? 'signs_per_day' : null;
+      }
+      if (plan.reason === 'ayuda' && helpfulOrder[questionOf(refId)].indexOf(refId) >= 3) return 'answers_per_question';
+      if (plan.sourceId !== null) {
+        const pair = rows.filter((r) => r.profileId === plan.recipientId && r.sourceId === plan.sourceId && ['ayuda', 'sirvio-l'].includes(r.reason));
+        if (pair.length >= 3) return 'pair_per_day';
+      }
+      return null;
+    },
+    otherActiveUrgent: async (_authorId, exceptQuestionId) => [...activeUrgent].some((id) => id !== exceptQuestionId),
   };
 }
 
@@ -95,7 +127,8 @@ async function main() {
   const encryptionKey = process.env.WALLET_ENC_KEY || randomBytes(32).toString('base64');
   const env = { issuerPublic, distributorSecret: requireEnv('YAPITA_DISTRIBUTOR_SECRET'), encryptionKey };
   const { store, account, rewards } = memoryStore();
-  const facts = memoryFacts();
+  const activeUrgent = new Set<number>();
+  const facts = memoryFacts(rewards, activeUrgent);
   const [HELPER, ASKER] = [1, 2];
 
   // 1. Accounts and welcome, paid once per account even when provisioning runs twice
@@ -114,6 +147,7 @@ async function main() {
   // 2. Rewards: right amount, right recipient, once
   const reward = async (caller: number, reason: Parameters<typeof planReward>[2], refId: number) => {
     const plan = await planReward(facts, caller, reason, refId);
+    if (plan && isCapped(plan)) throw new Error(`${reason}:${refId} should not be capped (${plan.capped})`);
     return plan ? { plan, result: await payReward(store, plan, env) } : null;
   };
   const expectPaid = async (label: string, caller: number, reason: Parameters<typeof planReward>[2], refId: number, memoKey: string) => {
@@ -145,21 +179,31 @@ async function main() {
 
   // 3. Two calls at once pay once
   const concurrent = await planReward(facts, ASKER, 'ayuda', 31);
-  check(concurrent !== null, 'The plan for answer 31 should exist');
+  check(concurrent !== null && !isCapped(concurrent), 'The plan for answer 31 should exist');
   const [one, two] = await Promise.all([payReward(store, concurrent, env), payReward(store, concurrent, env)]);
   check(one.status === 'confirmed' && two.status === 'confirmed', `Two simultaneous calls should both end confirmed: ${one.status}, ${two.status}`);
   check((await balanceOf(helperKey)) === 12 + 5, 'Two simultaneous calls must pay once (12 + 5)');
   console.log('3. Two simultaneous calls paid +5 once');
 
   // 4. A Stellar failure leaves it pending; the same call finishes it
-  const failingPlan = await planReward(facts, ASKER, 'ayuda', 32);
-  check(failingPlan !== null, 'The plan for answer 32 should exist');
+  const failingPlan = await planReward(facts, HELPER, 'letrero', 11);
+  check(failingPlan !== null && !isCapped(failingPlan), 'The plan for letrero 11 should exist');
   const broken = await payReward(store, failingPlan, { ...env, distributorSecret: Keypair.random().secret() });
-  check(broken.status === 'pending' && rewards.get('ayuda:32')?.status === 'pending', 'A failed payment should leave the reward pending');
+  check(broken.status === 'pending' && rewards.get('letrero:11')?.status === 'pending', 'A failed payment should leave the reward pending');
   check((await balanceOf(helperKey)) === 17, 'A failed payment must not move yapitas');
   const retried = await payReward(store, failingPlan, env);
-  check(retried.status === 'confirmed' && (await balanceOf(helperKey)) === 22, 'The retry should pay once (17 + 5)');
+  check(retried.status === 'confirmed' && (await balanceOf(helperKey)) === 18, 'The retry should pay once (17 + 1)');
   console.log('4. A failed payment stayed pending; the same call paid it once');
+
+  // 4b. Caps: legitimate actions over a cap are saved by the app but not paid, and leave no reward row
+  const before = rewards.size;
+  const fourth = await planReward(facts, ASKER, 'ayuda', 43);
+  check(fourth !== null && isCapped(fourth) && fourth.capped === 'answers_per_question', 'The 4th «Me sirvió» of a question should be capped');
+  const pairFourth = await planReward(facts, ASKER, 'ayuda', 32);
+  check(pairFourth !== null && isCapped(pairFourth) && pairFourth.capped === 'pair_per_day', 'A 4th reward from 2 to 1 today should be capped');
+  check(rewards.size === before && (await balanceOf(helperKey)) === 18, 'A capped reward must not create a row or move yapitas');
+  check([...rewards.values()].filter((r) => r.sourceId === ASKER).length === 3, 'The pair rewards should carry source_id');
+  console.log('4b. The 4th «Me sirvió» of a question and the 4th reward of a pair were not paid');
 
   // 5. Urgent: charged once; not charged when the balance is short
   const urgent = await planCharge(facts, ASKER, 'urgente', 20);
@@ -174,11 +218,14 @@ async function main() {
   check(refused.status === 'not_charged' && refused.why === 'balance', 'With 1 yapita the urgent charge should be refused for balance');
   check(rewards.get('urgente:21')?.status === 'error' && (await balanceOf(askerKey)) === 1, 'A refused charge should leave the row in error and the balance alone');
   check((await planCharge(facts, HELPER, 'urgente', 20)) === null, 'Only the asker can pay for the question');
+  activeUrgent.add(20); // /gastar made it urgent after the charge
+  check((await planCharge(facts, ASKER, 'urgente', 21)) === null, 'A second active urgent question must not be charged');
+  check((await planCharge(facts, ASKER, 'urgente', 20)) !== null, 'Repeating the call for the urgent question itself still answers');
   console.log(`5. Urgent −5 charged once → ${txLink((charged as { txHash: string }).txHash)}; with 1 yapita left it was refused`);
 
   // 6. Every memo is on the chain exactly once
   const movements = await pointsMovements(helperKey, issuerPublic, 30);
-  for (const memo of ['bienvenida', 'letrero:10', 'sirvio-l:10-2', 'ayuda:30', 'ayuda:31', 'ayuda:32']) {
+  for (const memo of ['bienvenida', 'letrero:10', 'sirvio-l:10-2', 'ayuda:30', 'ayuda:31', 'letrero:11']) {
     check(movements.filter((m) => m.memo === memo).length === 1, `The memo "${memo}" should be on the chain once`);
   }
   console.log(`6. Helper balance ${await balanceOf(helperKey)} ${ASSET_CODE}; every memo is on the chain once`);

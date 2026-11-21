@@ -2,7 +2,9 @@
 // names the action; the server checks it in the database, pays and keeps it idempotent.
 import { keys } from '../keys';
 import { invalidate, queryClient } from '../query';
+import type { RewardCap } from '../types';
 import { supabase } from './client';
+import { rpc } from './rpc';
 
 export type PremiarReason = 'letrero' | 'sirvio-l' | 'ayuda' | 'cierre';
 
@@ -13,6 +15,18 @@ async function post(path: string, body: unknown): Promise<Response> {
     headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token ?? ''}` },
     body: JSON.stringify(body),
   });
+}
+
+/**
+ * Whether the reward of an action just saved is over a cap (SPEC 13), with the same SQL rule /premiar uses. A
+ * failure to ask counts as «not capped»: the server still decides, and a wrong +N notice is better than no action.
+ */
+export async function rewardCapOf(reason: 'letrero' | 'sirvio-l' | 'ayuda', refId: number): Promise<RewardCap | null> {
+  try {
+    return await rpc<RewardCap | null>('my_reward_cap', { p_reason: reason, p_ref: refId });
+  } catch {
+    return null;
+  }
 }
 
 /**
