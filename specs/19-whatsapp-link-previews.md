@@ -23,7 +23,7 @@
 
 - **Only preview bots go to the function (`vercel.json`).**
   - A rewrite with a `has` condition on the `user-agent` header sends `/p/:id` and `/l/:id` to `/api/og?kind=question|sign&id=:id`.
-  - It applies only to the known preview bots: `WhatsApp`, `facebookexternalhit`, `Facebot`, `Twitterbot`, `TelegramBot`, `Slackbot`, `Discordbot`, `LinkedInBot`, `SkypeUriPreview`, `Pinterest`, `redditbot` and `Embedly`, case-insensitive. iMessage uses the `facebookexternalhit` / `Twitterbot` agent.
+  - It applies only to the known preview bots: `WhatsApp`, `facebookexternalhit`, `Facebot`, `Twitterbot`, `TelegramBot`, `Slackbot`, `Discordbot`, `LinkedInBot`, `SkypeUriPreview`, `Pinterest`, `redditbot` and `Embedly`, with the exact case each bot sends (no regex flags, which Vercel may not support). iMessage uses the `facebookexternalhit` / `Twitterbot` agent.
   - The rewrite goes before the SPA catch-all.
   - People (any other agent) keep getting `index.html`, with no function in between.
 - **`GET /api/og` (`api/og.ts`).**
@@ -91,7 +91,7 @@ export function escapeHtml(value: string): string;
 
 ```json
 // vercel.json — before the SPA rewrite
-{ "source": "/p/:id", "has": [{ "type": "header", "key": "user-agent", "value": "(?i).*(whatsapp|facebookexternalhit|facebot|twitterbot|telegrambot|slackbot|discordbot|linkedinbot|skypeuripreview|pinterest|redditbot|embedly).*" }], "destination": "/api/og?kind=question&id=:id" },
+{ "source": "/p/:id", "has": [{ "type": "header", "key": "user-agent", "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|Discordbot|LinkedInBot|SkypeUriPreview|Pinterest|redditbot|Embedly).*" }], "destination": "/api/og?kind=question&id=:id" },
 { "source": "/l/:id", "has": [ …same… ], "destination": "/api/og?kind=sign&id=:id" }
 ```
 
