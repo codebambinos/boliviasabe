@@ -76,6 +76,25 @@ La Paz has a few items, and Cobija is empty (empty states).
 Rewards show as «Pendiente» and become «Confirmado» about 2 s later; `useWallet` and
 `useMovements` refresh by themselves while something is pending.
 
+## Supabase adapter
+
+With `VITE_DATA_SOURCE=supabase` (preview and production) every method runs on Supabase
+([`specs/11-supabase-data-adapter.md`](../../specs/11-supabase-data-adapter.md)); `source.ts` loads it on first use.
+
+| File | What it does |
+|---|---|
+| `supabase/client.ts` | The browser client (URL and anon key only). |
+| `supabase/auth.ts`, `supabase/wallet.ts` | Accounts and «Tu barrio» (SPEC 07); balance from Horizon (SPEC 08). |
+| `supabase/rpc.ts` | Calls the SQL functions of migration `0005` and maps their errors: `28000` → `unauthenticated`, `42501`/`23505` → `forbidden`, `P0002` → `not_found`, `23514` → `validation`, no network → `offline`. |
+| `supabase/signs.ts`, `questions.ts`, `answers.ts` | Reads through SQL functions (they apply «Ya no quiero ver esto», the 3 reports and the per-caller fields); writes through the tables (RLS) or `rate_answer`, `close_question`, `remove_sign`. |
+| `supabase/saved.ts` | Guardados, reports and «Ya no quiero ver esto». |
+| `supabase/activity.ts` | Mis letreros / preguntas / respuestas, and Movimientos from `rewards` with «Reintentar». |
+| `supabase/photos.ts` | Photos in the public `photos` bucket, `<profile id>/<uuid>.jpg` (+ `-480.jpg` thumbnail). |
+| `supabase/rewards.ts` | Asks `/api/stellar/premiar`, `/gastar` and `/reintentar` after the action is saved; never blocks it. |
+
+A new SQL function goes in a new migration; apply it to the remote project (`supabase/README.md`) **before**
+deploying the code that calls it.
+
 ## Adding a method
 
 1. Add it to the `DataApi` contract in `api.ts` (types in `types.ts`).

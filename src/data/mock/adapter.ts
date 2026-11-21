@@ -131,65 +131,6 @@ function prepareWallet(userId: Id): void {
   }, SETTLE_MS);
 }
 
-/**
- * Development bridge (VITE_DATA_SOURCE=supabase, SPEC 07). Sign-in is real, but letreros, saved items and
- * votes still run on this mock, which keeps its own idea of who is signed in. This makes the mock follow
- * the real session: a mock neighbor with the same e-mail, and a made-up profile while the real one is
- * pending («Tu barrio», T16), replaced by the real one as soon as it is saved. It goes away as each part of the data layer moves to Supabase.
- */
-export function followRealSession(session: Session): void {
-  if (session.status === 'guest') {
-    store.session.userId = null;
-    return;
-  }
-  const email = session.email.toLowerCase();
-  let user = store.users.find((u) => u.email === email);
-  if (!user) {
-    const id = nextId('user');
-    user = {
-      id,
-      email,
-      provider: 'password',
-      password: null,
-      fullName: session.profile?.fullName ?? email.split('@')[0].split('+')[0],
-      city: session.profile?.city ?? DEFAULT_CITY,
-      zone: session.profile?.zone ?? 'Centro',
-      walletStatus: 'ready',
-      address: fakeAddress(id),
-    };
-    store.users.push(user);
-  }
-  // «Tu barrio» saved (T16): the mock neighbor takes the real name, city and zone instead of the made-up ones
-  if (session.profile) {
-    user.fullName = session.profile.fullName;
-    user.city = session.profile.city;
-    user.zone = session.profile.zone;
-  }
-  store.session.userId = user.id;
-}
-
-/**
- * With VITE_DATA_SOURCE=supabase the balance on screen is the real one (Horizon) but the mock still applies the
- * rules of «Urgente» and the like to its own movements. Until those move to Supabase (T39), the mock takes the
- * real balance as its own, so a person with 5 yapitas is not refused for «not enough yapitas».
- */
-export function followRealBalance(balance: number | null): void {
-  const userId = store.session.userId;
-  if (userId === null || balance === null) return;
-  const diff = balance - confirmedBalance(userId);
-  if (diff === 0) return;
-  store.movements.push({
-    id: nextId('movement'),
-    userId,
-    reason: 'bienvenida',
-    amount: diff,
-    createdAt: new Date().toISOString(),
-    status: 'confirmed',
-    txHash: null,
-    sourceUserId: null,
-  });
-}
-
 export const mockAuth: DataApi['auth'] = {
   getSession: () => simulate(() => sessionOf()),
 

@@ -73,10 +73,15 @@ export async function planReward(facts: RewardFacts, callerId: number, reason: P
   }
 }
 
-/** What `callerId` pays to make their question urgent, or null when it is not theirs or not urgent. */
+/**
+ * What `callerId` pays to make their question urgent, or null when it is not theirs or no longer open. The
+ * question is published as normal and becomes urgent only after this charge is confirmed (wiki #179), so an
+ * already urgent question is a repeated call of a paid charge: `chargeUrgent` answers it without charging again.
+ */
 export async function planCharge(facts: RewardFacts, callerId: number, _reason: GastarReason, refId: number): Promise<RewardPlan | null> {
   const question = await facts.question(refId);
-  return question && question.authorId === callerId && question.urgent ? plan(callerId, 'urgente', -URGENT_COST, `urgente:${refId}`) : null;
+  const chargeable = question && question.authorId === callerId && (question.status === 'open' || question.urgent);
+  return chargeable ? plan(callerId, 'urgente', -URGENT_COST, `urgente:${refId}`) : null;
 }
 
 export type PayResult = { status: 'confirmed'; txHash: string } | { status: 'pending' };

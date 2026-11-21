@@ -1,47 +1,71 @@
 // Picks the adapter behind the hooks. VITE_DATA_SOURCE=mock|supabase (default: mock).
-// With `supabase` only `auth` (SPEC 07, T15) and the wallet balance (SPEC 08, T16) are real; the rest still runs on the mock until its
-// own task lands. The Supabase code loads on first use, so the mock build never ships it.
+// With `supabase` every method is real (SPEC 07, 08 and 11). The Supabase code loads on first use, so the mock
+// build never ships it; the mock stays for working offline and for the tests.
 import type { DataApi } from './api';
-import type { Session } from './types';
-import { followRealBalance, followRealSession, mockAdapter } from './mock/adapter';
+import { mockAdapter } from './mock/adapter';
 
-/** The mock keeps its own session, so it follows the real one (see followRealSession). */
-async function bridged(session: Promise<Session>): Promise<Session> {
-  const result = await session;
-  followRealSession(result);
-  return result;
-}
+const loadAuth = () => import('./supabase/auth').then((module) => module.supabaseAuth);
+const loadWallet = () => import('./supabase/wallet').then((module) => module.supabaseWallet);
+const loadData = () => import('./supabase/index').then((module) => module.supabaseData);
 
-function lazyAuth(): DataApi['auth'] {
-  const load = () => import('./supabase/auth').then((module) => module.supabaseAuth);
+function supabaseAdapter(): DataApi {
   return {
-    getSession: () => bridged(load().then((auth) => auth.getSession())),
-    signInWithGoogle: () => bridged(load().then((auth) => auth.signInWithGoogle())),
-    signInWithEmail: (email, password) => bridged(load().then((auth) => auth.signInWithEmail(email, password))),
-    requestPasswordReset: (email) => load().then((auth) => auth.requestPasswordReset(email)),
-    recoveryReady: () => load().then((auth) => auth.recoveryReady()),
-    updatePassword: (password) => bridged(load().then((auth) => auth.updatePassword(password))),
-    signOut: () => bridged(load().then((auth) => auth.signOut())),
-    saveProfile: (input) => load().then((auth) => auth.saveProfile(input)),
-  };
-}
-
-function lazyWallet(): DataApi['wallet'] {
-  // Balance and status come from the chain; Movimientos stay on the mock until T17
-  const load = () => import('./supabase/wallet').then((module) => module.supabaseWallet);
-  return {
-    ...mockAdapter.wallet,
-    get: async () => {
-      const wallet = await load().then((real) => real.get());
-      followRealBalance(wallet.balance);
-      return wallet;
+    auth: {
+      getSession: () => loadAuth().then((auth) => auth.getSession()),
+      signInWithGoogle: () => loadAuth().then((auth) => auth.signInWithGoogle()),
+      signInWithEmail: (email, password) => loadAuth().then((auth) => auth.signInWithEmail(email, password)),
+      requestPasswordReset: (email) => loadAuth().then((auth) => auth.requestPasswordReset(email)),
+      recoveryReady: () => loadAuth().then((auth) => auth.recoveryReady()),
+      updatePassword: (password) => loadAuth().then((auth) => auth.updatePassword(password)),
+      signOut: () => loadAuth().then((auth) => auth.signOut()),
+      saveProfile: (input) => loadAuth().then((auth) => auth.saveProfile(input)),
+    },
+    signs: {
+      list: (query) => loadData().then((data) => data.signs.list(query)),
+      get: (id) => loadData().then((data) => data.signs.get(id)),
+      create: (input) => loadData().then((data) => data.signs.create(input)),
+      vote: (id, value) => loadData().then((data) => data.signs.vote(id, value)),
+      remove: (id) => loadData().then((data) => data.signs.remove(id)),
+    },
+    questions: {
+      list: (query) => loadData().then((data) => data.questions.list(query)),
+      get: (id) => loadData().then((data) => data.questions.get(id)),
+      similar: (text) => loadData().then((data) => data.questions.similar(text)),
+      create: (input) => loadData().then((data) => data.questions.create(input)),
+      remove: (id) => loadData().then((data) => data.questions.remove(id)),
+      closeWithoutSolution: (id) => loadData().then((data) => data.questions.closeWithoutSolution(id)),
+    },
+    answers: {
+      create: (questionId, text) => loadData().then((data) => data.answers.create(questionId, text)),
+      markHelpful: (id) => loadData().then((data) => data.answers.markHelpful(id)),
+      markNotHelpful: (id) => loadData().then((data) => data.answers.markNotHelpful(id)),
+      remove: (id) => loadData().then((data) => data.answers.remove(id)),
+    },
+    saved: {
+      toggle: (kind, id) => loadData().then((data) => data.saved.toggle(kind, id)),
+      list: () => loadData().then((data) => data.saved.list()),
+    },
+    reports: {
+      report: (kind, id, reason) => loadData().then((data) => data.reports.report(kind, id, reason)),
+      hideForMe: (kind, id) => loadData().then((data) => data.reports.hideForMe(kind, id)),
+    },
+    wallet: {
+      // Balance and status come from the chain (SPEC 08); Movimientos from `rewards` (SPEC 11)
+      get: () => loadWallet().then((wallet) => wallet.get()),
+      movements: (query) => loadData().then((data) => data.movements.movements(query)),
+      retry: (movementId) => loadData().then((data) => data.movements.retry(movementId)),
+    },
+    activity: {
+      myQuestions: () => loadData().then((data) => data.activity.myQuestions()),
+      myAnswers: () => loadData().then((data) => data.activity.myAnswers()),
+      mySigns: () => loadData().then((data) => data.activity.mySigns()),
     },
   };
 }
 
 function pickAdapter(): DataApi {
   const source = import.meta.env.VITE_DATA_SOURCE as string | undefined;
-  if (source === 'supabase') return { ...mockAdapter, auth: lazyAuth(), wallet: lazyWallet() };
+  if (source === 'supabase') return supabaseAdapter();
   if (source && source !== 'mock') console.warn(`VITE_DATA_SOURCE="${source}" is unknown. Using the mock adapter.`);
   return mockAdapter;
 }

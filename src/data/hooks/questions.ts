@@ -16,9 +16,17 @@ export function useQuestions(filters: Omit<ListQuery, 'cursor'>) {
   });
 }
 
+/** Every 15 s while an open question is on screen, so a new answer shows up by itself (wiki #181). */
+const OPEN_QUESTION_REFRESH_MS = 15_000;
+
 /** A question with its answers (helpful first, then oldest first). */
 export function useQuestion(id: Id) {
-  return useQuery({ queryKey: keys.question(id), queryFn: () => api.questions.get(id) });
+  return useQuery({
+    queryKey: keys.question(id),
+    queryFn: () => api.questions.get(id),
+    // Only while it is open and the page is visible (TanStack pauses the interval in a background tab)
+    refetchInterval: (query) => (query.state.data?.question.status === 'open' ? OPEN_QUESTION_REFRESH_MS : false),
+  });
 }
 
 /** «Preguntas parecidas»: only queries once the text has 3 words. */

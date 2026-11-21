@@ -2,7 +2,7 @@
  * What /api/stellar/premiar and /gastar share (SPEC 09): who is calling, what they ask for, and the answers.
  * The body names the action only (`reason`, `refId`); amount, memo and recipient come from the database.
  */
-import { adminClient, supabaseRewardFacts, supabaseWalletStore, userFromRequest } from '../supabase/server.ts';
+import { adminClient, markUrgent, supabaseRewardFacts, supabaseWalletStore, userFromRequest } from '../supabase/server.ts';
 import {
   chargeUrgent,
   payReward,
@@ -11,6 +11,7 @@ import {
   PREMIAR_REASONS,
   type GastarReason,
   type PremiarReason,
+  type RewardPlan,
 } from './rewards.ts';
 import { walletEnv } from './wallet.ts';
 
@@ -76,6 +77,31 @@ export function gastar(request: Request): Promise<Response> {
     const plan = await planCharge(supabaseRewardFacts(db), callerId, reason, refId);
     if (!plan) return json({ error: 'not_allowed' }, 403);
     const result = await chargeUrgent(supabaseWalletStore(db), plan, env);
+    if (result.status !== 'confirmed') return json(result, 202);
+    await markUrgent(db, refId); // only now, so an unpaid question never rises to the top
+    return json(result);
+  });
+}
+
+/**
+ * «Reintentar» in Movimientos (SPEC 11): pays again one of the caller's own rewards that stayed pending or failed.
+ * It is the recipient who sees the button, while /premiar must be called by whoever made the action (the voter,
+ * the asker), so the retry works from the existing row: same recipient, amount and memo, so it still pays once.
+ * Body: { refId: <rewards.id> }. The welcome is retried by /crear-cuenta and a charge is never retried.
+ */
+export function reintentar(request: Request): Promise<Response> {
+  return handle(request, 'reintentar', async ({ db, env, callerId, refId }) => {
+    const { data: row, error } = await db
+      .from('rewards')
+      .select('profile_id, memo_key, amount, reason, status')
+      .eq('id', refId)
+      .eq('profile_id', callerId)
+      .maybeSingle();
+    if (error) throw new Error(`reward lookup failed: ${error.message}`);
+    if (!row) return json({ error: 'not_found' }, 404);
+    if (row.amount <= 0 || !PREMIAR_REASONS.includes(row.reason as PremiarReason)) return json({ error: 'not_allowed' }, 403);
+    const plan: RewardPlan = { recipientId: callerId, reason: row.reason, amount: row.amount, memoKey: row.memo_key };
+    const result = await payReward(supabaseWalletStore(db), plan, env);
     return result.status === 'confirmed' ? json(result) : json(result, 202);
   });
 }
