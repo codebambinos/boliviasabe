@@ -9,7 +9,6 @@ import { HoyPage } from './pages/HoyPage';
 import { PreguntasPage } from './pages/PreguntasPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { QuestionDetailPage } from './pages/QuestionDetailPage';
-import { SignDetailPage } from './pages/SignDetailPage';
 import { YoPage } from './pages/YoPage';
 
 /** Back / Forward return to the same scroll position; a new screen starts at the top. */
@@ -33,9 +32,10 @@ export const router = createBrowserRouter([
           { path: '/', element: <HoyPage /> },
           { path: '/preguntas', element: <PreguntasPage /> },
           { path: '/yo', element: <YoPage /> },
+          // A shared letrero: Hoy with its sheet open (SPEC 19)
+          { path: '/l/:id', element: <HoyPage /> },
         ],
       },
-      { path: '/l/:id', element: <SignDetailPage /> },
       { path: '/p/:id', element: <QuestionDetailPage /> },
       { path: '/privacidad', element: <PrivacyPage /> },
       { path: '/nueva-contrasena', element: <NewPasswordPage /> },

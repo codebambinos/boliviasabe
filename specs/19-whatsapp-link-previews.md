@@ -62,6 +62,12 @@
   - `tecnico.md`: same endpoint.
   - Issue #18: same wording.
 
+**Fix found in the production test:**
+
+- `/l/:id` was still the SPEC 04 placeholder, so it showed «Esto ya no está disponible» for every letrero. Inside the app, letreros open as a sheet over Hoy, so nobody had noticed.
+- Now `/l/:id` is a route of the shell: Hoy, in the letrero's city, with its sheet open. The URL becomes `/`.
+- Deleted, hidden or in review (or a bad id) → «Esto ya no está disponible» + Ir a Hoy. Any other failure just leaves Hoy.
+
 **Out:**
 
 - Changing the share buttons, their `wa.me` text or where they appear.
