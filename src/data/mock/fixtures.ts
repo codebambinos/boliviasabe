@@ -6,6 +6,9 @@ import { placeholderPhoto } from './svg';
 export type UserRec = {
   id: Id;
   email: string;
+  /** How the account enters: Google has no password, e-mail does (SPEC 07). */
+  provider: 'google' | 'password';
+  password: string | null;
   /** null until «Tu barrio» is saved. */
   fullName: string | null;
   city: City | null;
@@ -95,12 +98,15 @@ const ANA = 3;
 const MARCO = 4;
 const ROSA = 5;
 
+/** Password of the seed neighbors that sign in with e-mail (documented in src/data/README.md). */
+export const SEED_PASSWORD = 'vecino123';
+
 export const users: UserRec[] = [
-  { id: LUCIA, email: 'lucia@example.com', fullName: 'Lucía Mamani', city: 'Cochabamba', zone: 'Cala Cala', walletStatus: 'ready', address: fakeAddress(LUCIA) },
-  { id: JORGE, email: 'jorge@example.com', fullName: 'Jorge Rojas', city: 'Cochabamba', zone: 'Sarco', walletStatus: 'ready', address: fakeAddress(JORGE) },
-  { id: ANA, email: 'ana@example.com', fullName: 'Ana Rivera', city: 'Cochabamba', zone: 'Queru Queru', walletStatus: 'ready', address: fakeAddress(ANA) },
-  { id: MARCO, email: 'marco@example.com', fullName: 'Marco Vargas', city: 'Cochabamba', zone: 'Centro', walletStatus: 'ready', address: fakeAddress(MARCO) },
-  { id: ROSA, email: 'rosa@example.com', fullName: 'Rosa Quispe', city: 'La Paz', zone: 'Sopocachi', walletStatus: 'ready', address: fakeAddress(ROSA) },
+  { id: LUCIA, email: 'lucia@example.com', provider: 'google', password: null, fullName: 'Lucía Mamani', city: 'Cochabamba', zone: 'Cala Cala', walletStatus: 'ready', address: fakeAddress(LUCIA) },
+  { id: JORGE, email: 'jorge@example.com', provider: 'password', password: SEED_PASSWORD, fullName: 'Jorge Rojas', city: 'Cochabamba', zone: 'Sarco', walletStatus: 'ready', address: fakeAddress(JORGE) },
+  { id: ANA, email: 'ana@example.com', provider: 'password', password: SEED_PASSWORD, fullName: 'Ana Rivera', city: 'Cochabamba', zone: 'Queru Queru', walletStatus: 'ready', address: fakeAddress(ANA) },
+  { id: MARCO, email: 'marco@example.com', provider: 'password', password: SEED_PASSWORD, fullName: 'Marco Vargas', city: 'Cochabamba', zone: 'Centro', walletStatus: 'ready', address: fakeAddress(MARCO) },
+  { id: ROSA, email: 'rosa@example.com', provider: 'password', password: SEED_PASSWORD, fullName: 'Rosa Quispe', city: 'La Paz', zone: 'Sopocachi', walletStatus: 'ready', address: fakeAddress(ROSA) },
 ];
 
 const SIGN_TEMPLATES: { title: string; price: string | null; zone: string; tags: Tag[] }[] = [

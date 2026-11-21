@@ -16,7 +16,11 @@ type Counter = 'user' | 'sign' | 'question' | 'answer' | 'movement';
 
 export type MockStore = {
   /** null = guest. */
-  session: { userId: Id | null };
+  session: {
+    userId: Id | null;
+    /** Set by requestPasswordReset, as if the neighbor had opened the e-mail link (SPEC 07). */
+    recoveryUserId: Id | null;
+  };
   users: UserRec[];
   signs: SignRec[];
   signVotes: SignVoteRec[];
@@ -34,7 +38,7 @@ const maxId = (rows: { id: Id }[]) => rows.reduce((max, row) => Math.max(max, ro
 
 function createStore(): MockStore {
   return {
-    session: { userId: null },
+    session: { userId: null, recoveryUserId: null },
     users: copy(seed.users),
     signs: copy(seed.signs),
     signVotes: copy(seed.signVotes),

@@ -52,7 +52,18 @@ export interface DataApi {
   auth: {
     getSession(): Promise<Session>;
     signInWithGoogle(): Promise<Session>;
+    /**
+     * One «Entrar» for both cases: a new e-mail creates the account, a known one signs in.
+     * Rejects with `wrong_password` (known e-mail, other password) or `google_account` (the e-mail
+     * enters with Google).
+     */
     signInWithEmail(email: string, password: string): Promise<Session>;
+    /** Sends the recovery e-mail. Resolves the same for any address, so it reveals nothing. */
+    requestPasswordReset(email: string): Promise<void>;
+    /** True when this page was opened from a recovery link (the mock: after a reset request). */
+    recoveryReady(): Promise<boolean>;
+    /** Sets the new password of the recovery session and returns the signed-in session. */
+    updatePassword(password: string): Promise<Session>;
     signOut(): Promise<Session>;
     saveProfile(input: ProfileInput): Promise<Session>;
   };

@@ -7,6 +7,7 @@ type ListFilters = Omit<ListQuery, 'cursor'>;
 export const keys = {
   all: ['data'] as const,
   session: () => ['data', 'session'] as const,
+  recovery: () => ['data', 'session', 'recovery'] as const,
   signs: () => ['data', 'signs'] as const,
   signList: (filters: ListFilters) => ['data', 'signs', 'list', filters] as const,
   sign: (id: Id) => ['data', 'signs', 'detail', id] as const,

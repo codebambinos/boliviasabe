@@ -26,6 +26,19 @@ export const useSignInWithGoogle = () => useSessionMutation<void>(() => api.auth
 export const useSignInWithEmail = () =>
   useSessionMutation<{ email: string; password: string }>(({ email, password }) => api.auth.signInWithEmail(email, password));
 
+/** «¿La olvidaste?»: sends the recovery e-mail. */
+export function useRequestPasswordReset() {
+  return useMutation({ mutationFn: (email: string) => api.auth.requestPasswordReset(email) });
+}
+
+/** /nueva-contrasena: is there a valid recovery to show the form for? */
+export function useRecoveryReady() {
+  return useQuery({ queryKey: keys.recovery(), queryFn: () => api.auth.recoveryReady(), retry: false, staleTime: 0 });
+}
+
+/** The new password of the recovery session; also signs the person in. */
+export const useUpdatePassword = () => useSessionMutation<string>((password) => api.auth.updatePassword(password));
+
 export const useSignOut = () => useSessionMutation<void>(() => api.auth.signOut());
 
 /** «Tu barrio»: saves name, city and zone. The first time it also prepares the wallet. */
