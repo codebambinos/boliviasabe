@@ -1,6 +1,6 @@
 # SPEC 18 — 24 h reminder «¿Alguna respuesta te sirvió?»
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 15 (T27: `notifications.actor_id` / `pushed_at`, `dispatch_push`, `push_details`, `/api/push`, `lib/push/message.ts`), SPEC 13 (question states `open` / `solved` / `closed`). Board card: T28 (issue #21).
 > **Date:** 2026-11-21
 > **Objective:** Once an hour, the database sends a single push «¿Alguna respuesta te sirvió?» to the author of every question that is still open 24 h after its first answer, and resends any push from the last hour that never left.
