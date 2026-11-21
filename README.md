@@ -67,3 +67,16 @@ npm run seed             # 5 vecinos de ejemplo con letreros y preguntas (contra
 ```
 
 Las funciones `/api` solo corren en Vercel (o con `vercel dev`).
+
+### Si Stellar reinicia testnet
+
+Stellar borra testnet cada cierto tiempo. La base sigue intacta, pero en la red desaparecen la emisora, la distribuidora y las cuentas de los vecinos. Para recuperarlo todo:
+
+```bash
+npm run stellar:reset -- --dry-run   # muestra qué falta, sin escribir nada
+npm run stellar:reset                # recrea emisora, distribuidora y cuentas con las mismas direcciones
+                                     # y vuelve a pagar en orden cada yapita confirmada (mismo memo)
+npm run stellar:e2e                  # comprueba el flujo completo
+```
+
+Las direcciones no cambian, así que Vercel no se toca. Si se corta, se corre de nuevo: termina lo que falta sin pagar nada dos veces. `--force` crea otra emisora aunque la actual exista. Es solo para probar con una copia del entorno (`--env-file .env.prueba` apuntando a la base local); en ese caso el script imprime los comandos para actualizar Vercel.
