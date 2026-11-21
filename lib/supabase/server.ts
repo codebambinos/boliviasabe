@@ -69,6 +69,12 @@ export function supabaseWalletStore(db: SupabaseClient): WalletStore {
       fail('profiles', error);
     },
 
+    async getStellar(profileId) {
+      const { data, error } = await db.from('profiles').select('stellar_pk, stellar_status').eq('id', profileId).maybeSingle();
+      fail('profiles', error);
+      return { publicKey: data?.stellar_pk ?? null, status: data?.stellar_status ?? 'preparing' };
+    },
+
     async ensureReward({ profileId, memoKey, amount, reason }) {
       const { error } = await db
         .from('rewards')
