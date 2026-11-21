@@ -1,5 +1,5 @@
 // Picks the adapter behind the hooks. VITE_DATA_SOURCE=mock|supabase (default: mock).
-// With `supabase` only `auth` is real (SPEC 07, T15); the rest still runs on the mock until its
+// With `supabase` only `auth` (SPEC 07, T15) and the wallet balance (SPEC 08, T16) are real; the rest still runs on the mock until its
 // own task lands. The Supabase code loads on first use, so the mock build never ships it.
 import type { DataApi } from './api';
 import type { Session } from './types';
@@ -26,9 +26,15 @@ function lazyAuth(): DataApi['auth'] {
   };
 }
 
+function lazyWallet(): DataApi['wallet'] {
+  // Balance and status come from the chain; Movimientos stay on the mock until T17
+  const load = () => import('./supabase/wallet').then((module) => module.supabaseWallet);
+  return { ...mockAdapter.wallet, get: () => load().then((wallet) => wallet.get()) };
+}
+
 function pickAdapter(): DataApi {
   const source = import.meta.env.VITE_DATA_SOURCE as string | undefined;
-  if (source === 'supabase') return { ...mockAdapter, auth: lazyAuth() };
+  if (source === 'supabase') return { ...mockAdapter, auth: lazyAuth(), wallet: lazyWallet() };
   if (source && source !== 'mock') console.warn(`VITE_DATA_SOURCE="${source}" is unknown. Using the mock adapter.`);
   return mockAdapter;
 }

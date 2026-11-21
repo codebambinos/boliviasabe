@@ -2,8 +2,10 @@
 // The rest of the adapter (signs, questions, wallet…) arrives with the tasks that need it.
 import type { DataApi, ProfileInput } from '../api';
 import { DataError } from '../errors';
+import { CITIES } from '../catalog';
 import type { Badge, City, Session } from '../types';
 import { recovery, supabase } from './client';
+import { ensureWallet } from './wallet';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 6;
@@ -34,6 +36,13 @@ function checkPassword(password: string): void {
 type ProfileRow = { id: number; display_name: string; full_name: string; city: string; zone: string };
 type TrustRow = { stars: number | string | null; badge: Badge };
 
+/** «Lucía Mamani Rojas» → «Lucía M.»: first name plus the initial of the last word. One word stays as is. */
+export function displayNameOf(fullName: string): string {
+  const words = fullName.split(' ');
+  const last = words.length > 1 ? words[words.length - 1] : '';
+  return last ? `${words[0]} ${last[0].toUpperCase()}.` : words[0];
+}
+
 async function readSession(): Promise<Session> {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw mapError(error);
@@ -47,7 +56,11 @@ async function readSession(): Promise<Session> {
     .eq('auth_id', user.id)
     .maybeSingle<ProfileRow>();
   if (profileError) throw mapError(profileError);
-  if (!row) return { status: 'signed-in', userId: 0, email: user.email ?? '', profile: null };
+  if (!row) {
+    const meta = user.user_metadata as { full_name?: unknown; name?: unknown } | null;
+    const known = [meta?.full_name, meta?.name].find((v): v is string => typeof v === 'string' && v.trim() !== '');
+    return { status: 'signed-in', userId: 0, email: user.email ?? '', profile: null, suggestedName: known?.trim() };
+  }
 
   const { data: trust } = await supabase
     .from('author_trust')
@@ -138,8 +151,33 @@ export const supabaseAuth: DataApi['auth'] = {
     return { status: 'guest' } as const;
   },
 
-  /** «Tu barrio» against Supabase is T16. */
-  saveProfile(_input: ProfileInput): Promise<Session> {
-    return Promise.reject(new DataError('server', 'Saving the profile on Supabase arrives with T16'));
+  /**
+   * «Tu barrio». Saves the profile with RLS (the person writes their own row), then asks the server
+   * to prepare the Stellar account in the background: «Listo» never waits for Friendbot.
+   */
+  async saveProfile(input: ProfileInput): Promise<Session> {
+    try {
+      const fullName = input.fullName.trim().replace(/\s+/g, ' ');
+      const zone = input.zone.trim().replace(/\s+/g, ' ');
+      if (fullName.length < 2 || fullName.length > 60) throw new DataError('validation', 'Invalid name', { field: 'fullName' });
+      if (!CITIES.includes(input.city)) throw new DataError('validation', 'Unknown city', { field: 'city' });
+      if (zone.length < 1 || zone.length > 60) throw new DataError('validation', 'Invalid zone', { field: 'zone' });
+
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) throw new DataError('unauthenticated', 'Sign in first');
+      const fields = { display_name: displayNameOf(fullName), full_name: fullName, city: input.city, zone };
+
+      const { data: existing, error: lookupError } = await supabase.from('profiles').select('id').eq('auth_id', data.user.id).maybeSingle();
+      if (lookupError) throw mapError(lookupError);
+      const { error: saveError } = existing
+        ? await supabase.from('profiles').update(fields).eq('id', existing.id)
+        : await supabase.from('profiles').insert({ auth_id: data.user.id, ...fields });
+      if (saveError) throw mapError(saveError);
+
+      ensureWallet(); // not awaited on purpose: the screen shows «Preparando tu cuenta» meanwhile
+      return await readSession();
+    } catch (error) {
+      throw mapError(error);
+    }
   },
 };
