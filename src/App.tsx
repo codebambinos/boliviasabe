@@ -22,7 +22,7 @@ import { Sheet } from './components/Sheet';
 import { SignSheet } from './components/SignSheet';
 import { SignTile, SignTileSkeleton } from './components/SignTile';
 import { feedSection, timeAgo, type FeedSection } from './components/time';
-import { navigateWithTransition } from './components/transition';
+import { goWithTransition, navigateWithTransition } from './components/transition';
 import { Yapita } from './components/Yapita';
 import {
   DEFAULT_CITY,
@@ -90,7 +90,7 @@ function Screens() {
   const openPrivacy = () => {
     const current = (window.history.state ?? {}) as { usr?: HomeState };
     window.history.replaceState({ ...current, usr: { ...current.usr, tab } }, '');
-    navigate('/privacidad');
+    goWithTransition((viewTransition) => navigate('/privacidad', { viewTransition }), 'forward');
   };
 
   const goToSearch = () => {

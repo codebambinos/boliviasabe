@@ -1,15 +1,30 @@
 // /privacidad (SPEC 02, wiki › Cuenta y acceso): public, no account, outside the app shell.
 // Google opens this URL before the login leaves «Testing» mode (wiki #56).
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { ArrowLeftIcon } from '../components/icons';
-import { CONTACT_EMAIL, PRIVACY } from '../content/legal';
+import { ArrowLeftIcon, EyeIcon, MailIcon, TrashIcon } from '../components/icons';
+import { goWithTransition } from '../components/transition';
+import { Yapita } from '../components/Yapita';
+import { CONTACT_EMAIL, PRIVACY, type Highlight } from '../content/legal';
 import './privacy-page.css';
+
+const HIGHLIGHT_ICON: Record<Highlight['icon'], React.ReactNode> = {
+  eye: <EyeIcon size={22} />,
+  yapita: <Yapita size="lg" />,
+  trash: <TrashIcon size={22} />,
+};
+
+const READING = PRIVACY.sections.filter((s) => s.id !== 'contacto');
+const CONTACT = PRIVACY.sections.find((s) => s.id === 'contacto');
+
+/** Staggered entrance order (privacy-page.css › legal-rise). */
+const order = (i: number) => ({ '--i': i }) as CSSProperties;
 
 export function PrivacyPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const [active, setActive] = useState(READING[0]?.id);
 
   useEffect(() => {
     const previous = document.title;
@@ -21,39 +36,114 @@ export function PrivacyPage() {
     };
   }, []);
 
+  // «En esta página» marks the section being read
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.find((entry) => entry.isIntersecting);
+        if (visible) setActive(visible.target.id);
+      },
+      { rootMargin: '-20% 0px -70% 0px' },
+    );
+    READING.forEach((s) => {
+      const el = document.getElementById(s.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+
   // Back to where the person was; from a direct link (no in-app entry) to Hoy
   const goBack = () => {
     if (location.key !== 'default') navigate(-1);
-    else navigate('/', { replace: true });
+    else goWithTransition((viewTransition) => navigate('/', { replace: true, viewTransition }), 'back');
+  };
+
+  // Scroll without touching the URL: a #hash entry would make Volver stop on this page
+  const jump = (id: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    const target = document.getElementById(id);
+    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+    target?.querySelector('h2')?.focus({ preventScroll: true });
   };
 
   return (
     <div className="legal">
-      <div className="aguayo" />
+      <div className="aguayo legal__stripe" />
       <header className="legal__bar">
-        <button type="button" className="legal__back" onClick={goBack}>
-          <ArrowLeftIcon size={20} /> Volver
-        </button>
-        <img className="legal__logo" src="/logo.svg" alt="BoliviaSabe" width={32} height={32} />
+        <div className="legal__bar-in">
+          <button type="button" className="legal__back" onClick={goBack}>
+            <ArrowLeftIcon size={20} /> Volver
+          </button>
+          <img className="legal__logo" src="/logo.svg" alt="BoliviaSabe" width={32} height={32} />
+        </div>
       </header>
 
-      <main className="legal__body">
-        <h1 ref={titleRef} tabIndex={-1} className="legal__title">{PRIVACY.title}</h1>
-        <p className="meta legal__updated">{PRIVACY.updated}</p>
-        <p className="legal__intro">{PRIVACY.intro}</p>
-        <p className="notice">Red de pruebas, sin dinero real</p>
+      <main className="legal__main">
+        <header className="legal__hero">
+          <p className="legal__eyebrow legal__rise" style={order(0)}>{PRIVACY.eyebrow}</p>
+          <h1 ref={titleRef} tabIndex={-1} className="legal__title legal__rise" style={order(1)}>
+            {PRIVACY.title}
+          </h1>
+          <p className="legal__intro legal__rise" style={order(2)}>{PRIVACY.intro}</p>
+          <p className="meta legal__rise" style={order(3)}>{PRIVACY.updated}</p>
+        </header>
 
-        {PRIVACY.sections.map((section) => (
-          <section key={section.title} className="legal__section">
-            <h2>{section.title}</h2>
-            {section.paragraphs.map((text) => (
-              <p key={text}>{text}</p>
+        <section className="legal__highlights" aria-labelledby="legal-highlights">
+          <h2 id="legal-highlights" className="sr-only">{PRIVACY.highlightsTitle}</h2>
+          <ul className="legal__cards">
+            {PRIVACY.highlights.map((item, i) => (
+              <li key={item.title} className="legal__card legal__rise" style={order(4 + i)}>
+                <span className={`legal__glyph legal__glyph--${item.icon}`}>{HIGHLIGHT_ICON[item.icon]}</span>
+                <h3 className="legal__card-title">{item.title}</h3>
+                <p className="legal__card-text">{item.text}</p>
+              </li>
             ))}
-          </section>
-        ))}
-        <p>
-          <a className="legal__mail" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-        </p>
+          </ul>
+        </section>
+
+        <div className="legal__layout">
+          <nav className="legal__toc" aria-labelledby="legal-toc">
+            <p id="legal-toc" className="legal__toc-title">{PRIVACY.tocTitle}</p>
+            <ol>
+              {READING.map((s, i) => (
+                <li key={s.id}>
+                  <a href={`#${s.id}`} aria-current={active === s.id ? 'true' : undefined} onClick={jump(s.id)}>
+                    <span className="num">{String(i + 1).padStart(2, '0')}</span> {s.title}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+
+          <div className="legal__sections">
+            {READING.map((s, i) => (
+              <section key={s.id} id={s.id} className="legal__section" aria-labelledby={`${s.id}-title`}>
+                <span className="legal__num num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                <div className="legal__section-body">
+                  <h2 id={`${s.id}-title`} tabIndex={-1}>{s.title}</h2>
+                  {s.paragraphs.map((text) => (
+                    <p key={text}>{text}</p>
+                  ))}
+                  {s.id === 'tus-yapitas' && <p className="notice">Red de pruebas, sin dinero real</p>}
+                </div>
+              </section>
+            ))}
+
+            {CONTACT && (
+              <section id={CONTACT.id} className="legal__contact" aria-labelledby="contacto-title">
+                <h2 id="contacto-title" tabIndex={-1}>{CONTACT.title}</h2>
+                {CONTACT.paragraphs.map((text) => (
+                  <p key={text}>{text}</p>
+                ))}
+                <a className="btn" href={`mailto:${CONTACT_EMAIL}`}>
+                  <MailIcon size={20} /> Escríbenos
+                </a>
+                <p className="meta legal__mail">{CONTACT_EMAIL}</p>
+              </section>
+            )}
+          </div>
+        </div>
       </main>
     </div>
   );
