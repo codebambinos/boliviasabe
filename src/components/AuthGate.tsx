@@ -106,7 +106,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (restore.path !== location.pathname) navigate(restore.path, { replace: true, state: { entry: true } });
     const action = restore.resume;
     const run = action ? (handlers.current[action.kind] as ((a: PendingAction) => void | Promise<void>) | undefined) : undefined;
-    // Also with no saved action («Entrar» in the bar): a person without profile still goes through «Tu barrio»
+    // Also with no saved action («Iniciar sesión» in the bar): a person without profile still goes through «Tu barrio»
     afterProfile(() => {
       if (action && run) void Promise.resolve(run(action)).catch(() => undefined);
     });
@@ -181,7 +181,7 @@ export const useRequireAccount = () => useContext(RequireContext);
 /** Opens «Crea tu cuenta» straight on «¿La olvidaste?». */
 export const useOpenPasswordRecovery = () => useContext(RecoveryContext);
 
-/** Opens «Entra a BoliviaSabe» straight on the e-mail form (signed out only). */
+/** Opens «Inicia sesión en BoliviaSabe» straight on the e-mail form (signed out only). */
 export const useOpenEmailSignIn = () => useContext(EmailSignInContext);
 
 /** ShellLayout registers what each pending `kind` does once the person is back from Google. */

@@ -238,7 +238,7 @@ function EmailForm({ email, onEmailChange, pending, error, googlePending, onEdit
           </div>
           {general && <p className="auth__error" role="alert">{general}</p>}
           <button type="submit" className="btn btn--full" disabled={pending}>
-            {pending ? 'Entrando…' : 'Entrar'}
+            {pending ? 'Entrando…' : 'Continuar'}
           </button>
         </>
       )}

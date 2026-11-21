@@ -218,7 +218,7 @@ function Shell() {
               }
             : undefined
         }
-        onSignIn={() => requireAccount('Entra para dar «Me sirvió», guardar y ganar yapitas.', () => undefined, 'Entra a BoliviaSabe')}
+        onSignIn={() => requireAccount('Inicia sesión para dar «Me sirvió», guardar y ganar yapitas.', () => undefined, 'Inicia sesión en BoliviaSabe')}
         onFab={() =>
           requireAccount(
             tab === 'hoy' ? 'Así tu letrero aparece en Hoy y ganas una yapita.' : 'Así tus vecinos pueden responderte.',

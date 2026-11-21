@@ -69,7 +69,7 @@ type AppShellProps = {
   onCityChange: (city: City) => void;
   /** Signed-in only: unread notifications (bell) and confirmed balance (null while «★ …»). */
   account?: { unread: number; balance: number | null; onBell: () => void; onBalance: () => void };
-  /** Signed out: «Entrar» in the top bar. */
+  /** Signed out: «Iniciar sesión» in the top bar. */
   onSignIn?: () => void;
   onFab?: () => void;
   /** Lupa in the top bar (wiki #140): shown while the screen's own search is out of view. */
@@ -134,7 +134,19 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
           <div className="shell__bar">
             <img className="shell__logo" src="/logo.svg" alt="BoliviaSabe" width={32} height={32} />
             {/* Visible name + transparent native select on top: the phone's own picker, sized to the text */}
-            <label className="shell__city">
+            {/* data-pointer: picked with the mouse or a finger, so no focus ring stays after it (keyboard keeps it) */}
+            <label
+              className="shell__city"
+              onPointerDown={(e) => {
+                e.currentTarget.dataset.pointer = 'true';
+              }}
+              onKeyDown={(e) => {
+                delete e.currentTarget.dataset.pointer;
+              }}
+              onBlur={(e) => {
+                delete e.currentTarget.dataset.pointer;
+              }}
+            >
               <span className="shell__city-name" aria-hidden="true">{city}</span>
               <ChevronDownIcon size={16} />
               <select aria-label={`Ciudad: ${city}`} value={city} onChange={(e) => onCityChange(e.target.value as City)}>
@@ -172,7 +184,7 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
               {!account && onSignIn && tab !== 'yo' && (
                 <button type="button" className="btn btn--secondary btn--small shell__signin" onClick={onSignIn}>
                   <UserIcon className="shell__signin-icon" size={20} />
-                  <span className="shell__signin-text">Entrar</span>
+                  <span className="shell__signin-text">Iniciar sesión</span>
                 </button>
               )}
             </div>
