@@ -25,6 +25,7 @@ import {
   hasTrustline,
   payPoints,
   pointsBalance,
+  pointsMovements,
   server,
 } from '../../lib/stellar/points.ts';
 import { decryptSecret, WELCOME_MEMO } from '../../lib/stellar/wallet.ts';
@@ -147,12 +148,15 @@ async function loadNeighbors(db: SupabaseClient): Promise<Neighbor[]> {
   });
 }
 
-async function restoreAccounts(db: SupabaseClient, neighbors: Neighbor[], issuerPublic: string) {
+async function restoreAccounts(db: SupabaseClient, neighbors: Neighbor[], issuer: Issuer) {
+  const issuerPublic = issuer.issuerPublic;
+  // A dry run of --force has no new issuer yet: every account would need the trustline to it
+  const newIssuerPending = args.dryRun && issuer.changed;
   let recreated = 0;
   let trustlines = 0;
   for (const n of neighbors) {
     const exists = await accountExists(n.keypair.publicKey());
-    const trusted = exists && hasTrustline((await server.loadAccount(n.keypair.publicKey())).balances, issuerPublic);
+    const trusted = !newIssuerPending && exists && hasTrustline((await server.loadAccount(n.keypair.publicKey())).balances, issuerPublic);
     if (!exists) recreated += 1;
     if (!trusted) trustlines += 1;
     if (args.dryRun || (exists && trusted)) continue;
@@ -185,6 +189,18 @@ async function paidOnCurrentNetwork(hash: string | null, issuerPublic: string): 
   }
 }
 
+/**
+ * The YAPITA payments of an account on the current network, by direction and memo. A cut between Stellar accepting
+ * a payment and saving its hash leaves the row looking unpaid: this finds that payment so it is never sent twice.
+ * Every memo of a neighbor is unique (the `memo_key`, or `bienvenida` once per account).
+ */
+async function paymentsByMemo(publicKey: string, issuerPublic: string): Promise<Map<string, string>> {
+  const found = new Map<string, string>();
+  if (!(await accountExists(publicKey))) return found;
+  for (const m of await pointsMovements(publicKey, issuerPublic, 200)) if (m.memo) found.set(`${m.direction}:${m.memo}`, m.hash);
+  return found;
+}
+
 async function replayRewards(db: SupabaseClient, neighbors: Neighbor[], issuer: Issuer) {
   const { data, error } = await db
     .from('rewards')
@@ -195,6 +211,7 @@ async function replayRewards(db: SupabaseClient, neighbors: Neighbor[], issuer: 
   if (error) throw new Error(`rewards: ${error.message}`);
   const rows = data as Reward[];
   const byProfile = new Map(neighbors.map((n) => [n.profileId, n]));
+  const onChain = new Map<number, Map<string, string>>();
   let replayed = 0;
   let done = 0;
 
@@ -205,11 +222,23 @@ async function replayRewards(db: SupabaseClient, neighbors: Neighbor[], issuer: 
         continue;
       }
     }
-    replayed += 1;
-    if (args.dryRun) continue;
     const neighbor = byProfile.get(row.profile_id);
     if (!neighbor) throw new Error(`reward ${row.id}: profile ${row.profile_id} has no stored key`);
     const memo = row.reason === 'bienvenida' ? WELCOME_MEMO : row.memo_key;
+    if (!args.dryRun || !issuer.changed) {
+      if (!onChain.has(neighbor.profileId)) onChain.set(neighbor.profileId, await paymentsByMemo(neighbor.keypair.publicKey(), issuer.issuerPublic));
+      const hash = onChain.get(neighbor.profileId)?.get(`${row.amount > 0 ? 'in' : 'out'}:${memo}`);
+      if (hash) {
+        done += 1;
+        if (!args.dryRun && hash !== row.tx_hash) {
+          const saved = await db.from('rewards').update({ tx_hash: hash, updated_at: new Date().toISOString() }).eq('id', row.id);
+          if (saved.error) throw new Error(`rewards ${row.id}: ${saved.error.message}`);
+        }
+        continue;
+      }
+    }
+    replayed += 1;
+    if (args.dryRun) continue;
     const result =
       row.amount > 0
         ? await payPoints({ from: issuer.distributor, to: neighbor.keypair.publicKey(), amount: String(row.amount), issuerPublicKey: issuer.issuerPublic, memo })
@@ -240,7 +269,7 @@ async function report(neighbors: Neighbor[], rows: Reward[], issuer: Issuer) {
     log('\nThe issuer changed (--force). To use it in production, run (values are read from the file, never shown):');
     for (const key of VERCEL_KEYS) {
       log(`  vercel env rm ${key} production --yes`);
-      log(`  grep '^${key}=' ${args.envFile} | cut -d= -f2- | vercel env add ${key} production${key.startsWith('VITE_') ? '' : ' --sensitive'} --yes`);
+      log(`  grep '^${key}=' ${args.envFile} | cut -d= -f2- | vercel env add ${key} production${key.endsWith('_SECRET') ? ' --sensitive' : ''} --yes`);
     }
     log('  vercel --prod');
   }
@@ -252,7 +281,7 @@ async function main() {
   const issuer = await ensureIssuer();
   const db = adminClient();
   const neighbors = await loadNeighbors(db);
-  await restoreAccounts(db, neighbors, issuer.issuerPublic);
+  await restoreAccounts(db, neighbors, issuer);
   const rows = await replayRewards(db, neighbors, issuer);
   await report(neighbors, rows, issuer);
   for (const key of ENV_KEYS) if (!process.env[key]) log(`! ${key} is missing in ${args.envFile}`);
