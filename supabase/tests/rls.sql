@@ -47,11 +47,6 @@ values
 insert into public.answer_comments (answer_id, author_id, text)
 values ((select id from public.answers where text = 'En el mercado de Sarco'), (select id from test_ids where name = 'b'), 'Gracias por el dato');
 
-insert into public.notifications (user_id, kind, ref_kind, ref_id)
-values
-  ((select id from test_ids where name = 'a'), 'answer', 'question', (select id from public.questions where text = 'Dónde hay gas hoy?')),
-  ((select id from test_ids where name = 'b'), 'answer', 'question', (select id from public.questions where text = 'Alguien conoce un doctor?'));
-
 insert into public.wallet_keys (profile_id, secret_enc, secret_iv)
 values ((select id from test_ids where name = 'a'), 'cifrado', 'iv');
 
@@ -66,8 +61,6 @@ union all select 'q_b', id from public.questions where text = 'Alguien conoce un
 union all select 'ans_b', id from public.answers where text = 'En el mercado de Sarco'
 union all select 'ans_a', id from public.answers where text = 'Dr. Mamani, Cala Cala'
 union all select 'comment_b', id from public.answer_comments where text = 'Gracias por el dato'
-union all select 'notif_a', id from public.notifications where user_id = (select id from test_ids where name = 'a')
-union all select 'notif_b', id from public.notifications where user_id = (select id from test_ids where name = 'b')
 union all select 'reward_a', id from public.rewards where memo_key = 'bienvenida:ana';
 
 -- ---------------------------------------------------------------------------
@@ -406,17 +399,18 @@ select pg_temp.as_user('a');
 select pg_temp.expect_write('Ana cannot insert a notification',
   format('insert into public.notifications (user_id, kind, ref_kind, ref_id) values (%s, ''fake'', ''question'', 1)',
     pg_temp.id_of('a')), 0);
-select pg_temp.expect_select('Ana reads only her notifications', 'select id from public.notifications', 1);
-select pg_temp.expect_write('Ana marks her notification as read',
-  'update public.notifications set read_at = now()', 1);
+-- Two rows: the answer from Beto (fixture) and the helpful mark from Beto (ratings), both written by triggers.
+select pg_temp.expect_select('Ana reads only her notifications (answer and helpful from triggers)', 'select id from public.notifications', 2);
+select pg_temp.expect_write('Ana marks her notifications as read',
+  'update public.notifications set read_at = now()', 2);
 select pg_temp.expect_write('Ana cannot change a notification kind',
   'update public.notifications set kind = ''fake''', 0);
-select pg_temp.expect_write('Ana cannot delete Beto''s notification',
-  format('delete from public.notifications where id = %s', pg_temp.r('notif_b')), 0);
-select pg_temp.expect_write('Ana deletes her notification', 'delete from public.notifications', 1);
+select pg_temp.expect_write('Ana cannot delete Beto''s notifications',
+  format('delete from public.notifications where user_id = %s', pg_temp.id_of('b')), 0);
+select pg_temp.expect_write('Ana deletes her notifications', 'delete from public.notifications', 2);
 
 select pg_temp.as_user('b');
-select pg_temp.expect_select('Beto reads his notification', 'select id from public.notifications', 1);
+select pg_temp.expect_select('Beto reads his notifications (answer and helpful from triggers)', 'select id from public.notifications', 2);
 
 -- ---------------------------------------------------------------------------
 -- rewards and wallet_keys: the owner reads rewards; wallet keys are never readable
@@ -450,6 +444,135 @@ update public.profiles set zone = 'Sopocachí' where id = pg_temp.id_of('a');
 select pg_temp.expect_select('zone_norm drops accents and case',
   format('select id from public.profiles where id = %s and zone_norm = ''sopocachi''', pg_temp.id_of('a')), 1);
 
+-- ---------------------------------------------------------------------------
+-- author_trust and profiles_public (0003)
+-- ---------------------------------------------------------------------------
+create or replace function pg_temp.expect_text(p_label text, p_sql text, p_expected text)
+returns void language plpgsql as $$
+declare v text;
+begin
+  execute p_sql into v;
+  if v is distinct from p_expected then
+    raise exception 'FAILED: % (expected %, got %)', p_label, p_expected, v;
+  end if;
+  raise notice 'ok: %', p_label;
+end;
+$$;
+
+-- A question by Ana, answered by p_author, and rated by Ana (she is the asker).
+create or replace function pg_temp.rate_answer(p_author text, p_helpful boolean) returns void
+language plpgsql as $$
+declare q bigint; ans bigint;
+begin
+  insert into public.questions (author_id, text, city, zone)
+  values (pg_temp.id_of('a'), 'Pregunta de prueba', 'Cochabamba', 'Centro') returning id into q;
+  insert into public.answers (question_id, author_id, text)
+  values (q, pg_temp.id_of(p_author), 'Respuesta de prueba') returning id into ans;
+  insert into public.ratings (answer_id, rater_id, helpful)
+  values (ans, pg_temp.id_of('a'), p_helpful);
+end;
+$$;
+
+select pg_temp.as_postgres();
+insert into auth.users (id, aud, role, email)
+values
+  ('d0000000-0000-0000-0000-000000000004', 'authenticated', 'authenticated', 'dani@test.local'),
+  ('e0000000-0000-0000-0000-000000000005', 'authenticated', 'authenticated', 'eva@test.local'),
+  ('f0000000-0000-0000-0000-000000000006', 'authenticated', 'authenticated', 'fran@test.local');
+insert into public.profiles (auth_id, display_name, full_name, city, zone)
+values
+  ('d0000000-0000-0000-0000-000000000004', 'Dani P.', 'Dani Pérez', 'Cochabamba', 'Centro'),
+  ('e0000000-0000-0000-0000-000000000005', 'Eva L.', 'Eva López', 'Cochabamba', 'Centro'),
+  ('f0000000-0000-0000-0000-000000000006', 'Fran G.', 'Fran Gómez', 'Cochabamba', 'Centro');
+insert into test_ids (name, id, auth_id)
+select 'd', id, auth_id from public.profiles where display_name = 'Dani P.'
+union all select 'e', id, auth_id from public.profiles where display_name = 'Eva L.'
+union all select 'f', id, auth_id from public.profiles where display_name = 'Fran G.';
+
+-- Beto has one rating from Ana: below 3 ratings, so stars are null.
+select pg_temp.expect_text('Beto (1 rating) has null stars',
+  format('select (stars is null)::text from public.author_trust where profile_id = %s', pg_temp.id_of('b')), 'true');
+select pg_temp.expect_text('Beto (1 rating) is Vecino nuevo',
+  format('select badge from public.author_trust where profile_id = %s', pg_temp.id_of('b')), 'Vecino nuevo');
+
+-- Dani: two helpful ratings, then three, then five.
+select pg_temp.rate_answer('d', true);
+select pg_temp.rate_answer('d', true);
+select pg_temp.expect_text('Dani with 2 ratings has null stars',
+  format('select (stars is null)::text from public.author_trust where profile_id = %s', pg_temp.id_of('d')), 'true');
+select pg_temp.expect_text('Dani with 2 ratings is Vecino nuevo',
+  format('select badge from public.author_trust where profile_id = %s', pg_temp.id_of('d')), 'Vecino nuevo');
+select pg_temp.rate_answer('d', true);
+select pg_temp.expect_text('Dani with 3 helpful ratings has 5.0 stars',
+  format('select (stars = 5.0)::text from public.author_trust where profile_id = %s', pg_temp.id_of('d')), 'true');
+select pg_temp.expect_text('Dani with 3 ratings is Buen vecino (not 5 yet)',
+  format('select badge from public.author_trust where profile_id = %s', pg_temp.id_of('d')), 'Buen vecino');
+select pg_temp.rate_answer('d', true);
+select pg_temp.rate_answer('d', true);
+select pg_temp.expect_text('Dani with 5 helpful ratings is De confianza',
+  format('select badge from public.author_trust where profile_id = %s', pg_temp.id_of('d')), 'De confianza');
+
+-- Eva: 2 helpful and 1 not helpful gives 1 + 4 × 2/3 = 3.7 stars, Buen vecino.
+select pg_temp.rate_answer('e', true);
+select pg_temp.rate_answer('e', true);
+select pg_temp.rate_answer('e', false);
+select pg_temp.expect_text('Eva with 2 helpful and 1 not helpful has 3.7 stars',
+  format('select (stars = 3.7)::text from public.author_trust where profile_id = %s', pg_temp.id_of('e')), 'true');
+select pg_temp.expect_text('Eva with 3 ratings is Buen vecino',
+  format('select badge from public.author_trust where profile_id = %s', pg_temp.id_of('e')), 'Buen vecino');
+
+-- Fran has no ratings: no trust row, and profiles_public fills in null stars and Vecino nuevo.
+select pg_temp.expect_text('Fran has no author_trust row',
+  format('select count(*)::text from public.author_trust where profile_id = %s', pg_temp.id_of('f')), '0');
+select pg_temp.expect_text('profiles_public gives Fran null stars',
+  format('select (stars is null)::text from public.profiles_public where id = %s', pg_temp.id_of('f')), 'true');
+select pg_temp.expect_text('profiles_public gives Fran Vecino nuevo',
+  format('select badge from public.profiles_public where id = %s', pg_temp.id_of('f')), 'Vecino nuevo');
+
+-- author_trust exposes only aggregates, and anon can read it.
+select pg_temp.expect_text('author_trust has no raw rating columns',
+  'select count(*)::text from information_schema.columns
+     where table_schema = ''public'' and table_name = ''author_trust''
+       and column_name in (''rater_id'', ''answer_id'', ''created_at'')', '0');
+select pg_temp.as_anon();
+select pg_temp.expect_select('anon reads author_trust', 'select profile_id from public.author_trust', 4);
+
+-- Notifications from the two triggers.
+select pg_temp.as_user('a');
+select pg_temp.expect_write('Ana asks a question to be answered',
+  format('insert into public.questions (author_id, text, city, zone) values (%s, ''Pregunta para notificar'', ''Cochabamba'', ''Sarco'')',
+    pg_temp.id_of('a')), 1);
+select pg_temp.expect_write('Ana asks a second question',
+  format('insert into public.questions (author_id, text, city, zone) values (%s, ''Pregunta para no sirvió'', ''Cochabamba'', ''Sarco'')',
+    pg_temp.id_of('a')), 1);
+
+select pg_temp.as_user('b');
+select pg_temp.expect_write('Beto answers Ana''s first question',
+  format('insert into public.answers (question_id, author_id, text) values ((select id from public.questions where text = ''Pregunta para notificar''), %s, ''Respuesta notificada'')',
+    pg_temp.id_of('b')), 1);
+select pg_temp.expect_write('Beto answers Ana''s second question',
+  format('insert into public.answers (question_id, author_id, text) values ((select id from public.questions where text = ''Pregunta para no sirvió''), %s, ''Respuesta no sirvió'')',
+    pg_temp.id_of('b')), 1);
+
+select pg_temp.as_user('a');
+select pg_temp.expect_select('Ana gets one answer notification per new answer',
+  'select n.id from public.notifications n join public.questions q on q.id = n.ref_id
+   where n.kind = ''answer'' and q.text in (''Pregunta para notificar'', ''Pregunta para no sirvió'')', 2);
+
+select pg_temp.expect_write('Ana marks Beto''s first answer helpful',
+  'insert into public.ratings (answer_id, rater_id, helpful) values ((select id from public.answers where text = ''Respuesta notificada''), ' || pg_temp.id_of('a') || ', true)', 1);
+select pg_temp.expect_write('Ana marks Beto''s second answer not helpful',
+  'insert into public.ratings (answer_id, rater_id, helpful) values ((select id from public.answers where text = ''Respuesta no sirvió''), ' || pg_temp.id_of('a') || ', false)', 1);
+
+select pg_temp.as_user('b');
+select pg_temp.expect_select('Beto gets a helpful notification for the helpful mark',
+  'select n.id from public.notifications n
+   where n.kind = ''helpful'' and n.ref_id = (select id from public.answers where text = ''Respuesta notificada'')', 1);
+select pg_temp.expect_select('Beto gets no notification for the not-helpful mark',
+  'select n.id from public.notifications n
+   where n.kind = ''helpful'' and n.ref_id = (select id from public.answers where text = ''Respuesta no sirvió'')', 0);
+
+select pg_temp.as_postgres();
 do $$ begin raise notice 'rls ok'; end $$;
 
 rollback;
