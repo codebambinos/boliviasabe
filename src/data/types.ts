@@ -22,10 +22,13 @@ export type Profile = Author & {
   zone: string;
 };
 
-/** `profile === null` means «Tu barrio» is still pending. */
+/**
+ * `profile === null` means «Tu barrio» is still pending; `suggestedName` is then the name Google
+ * already knows, to prefill the form.
+ */
 export type Session =
   | { status: 'guest' }
-  | { status: 'signed-in'; userId: Id; email: string; profile: Profile | null };
+  | { status: 'signed-in'; userId: Id; email: string; profile: Profile | null; suggestedName?: string };
 
 export type Sign = {
   id: Id;

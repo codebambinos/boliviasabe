@@ -135,7 +135,7 @@ function prepareWallet(userId: Id): void {
  * Development bridge (VITE_DATA_SOURCE=supabase, SPEC 07). Sign-in is real, but letreros, saved items and
  * votes still run on this mock, which keeps its own idea of who is signed in. This makes the mock follow
  * the real session: a mock neighbor with the same e-mail, and a made-up profile while the real one is
- * pending («Tu barrio» is T16). It goes away as each part of the data layer moves to Supabase.
+ * pending («Tu barrio», T16), replaced by the real one as soon as it is saved. It goes away as each part of the data layer moves to Supabase.
  */
 export function followRealSession(session: Session): void {
   if (session.status === 'guest') {
@@ -158,6 +158,12 @@ export function followRealSession(session: Session): void {
       address: fakeAddress(id),
     };
     store.users.push(user);
+  }
+  // «Tu barrio» saved (T16): the mock neighbor takes the real name, city and zone instead of the made-up ones
+  if (session.profile) {
+    user.fullName = session.profile.fullName;
+    user.city = session.profile.city;
+    user.zone = session.profile.zone;
   }
   store.session.userId = user.id;
 }

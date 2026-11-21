@@ -1,0 +1,33 @@
+/* «Tu barrio» (TuBarrioSheet.tsx): three fields at the reading measure, Listo at the thumb. */
+/* The form wraps body and actions: it keeps the sheet's column layout so Listo stays pinned */
+.barrio__layout {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.barrio__form {
+  display: grid;
+  gap: var(--s-5);
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+}
+
+/* A native select with the app's own arrow, so it looks the same on Android and iPhone */
+.barrio__select {
+  appearance: none;
+  padding-right: 2.75rem;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right var(--s-3) center;
+}
+
+/* Suggested zones wrap, so all of them are visible while choosing */
+.barrio__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
