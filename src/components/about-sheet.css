@@ -1,0 +1,23 @@
+/* «Acerca de» (AboutSheet.tsx): three short blocks, no main action, so no filled button */
+.about__what {
+  margin: 0 0 var(--s-5);
+}
+
+.about__block + .about__block {
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: var(--hairline);
+}
+
+.about__block p {
+  margin: 0 0 var(--s-2);
+}
+
+.about__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+  color: var(--color-brand-text);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}

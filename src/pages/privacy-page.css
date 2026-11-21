@@ -1,0 +1,92 @@
+/* /privacidad (PrivacyPage.tsx): a reading page outside the shell. Aguayo stripe, a bar with
+   Volver and the logo, one column of 40 rem. */
+.legal {
+  min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.legal__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  max-width: calc(40rem + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--s-2) var(--gutter);
+  border-bottom: var(--hairline);
+}
+
+.legal__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--touch);
+  padding: 0 var(--s-3) 0 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font: 500 var(--t-body) var(--font-body);
+  cursor: pointer;
+  transition: transform var(--m-press) var(--ease);
+}
+
+.legal__back:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+.legal__logo {
+  flex: none;
+}
+
+/* Same light tile as the top bar: the F5 logo is dark ink (DESIGN.md › Open items) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .legal__logo {
+    padding: 0.1875rem;
+    border-radius: var(--r-sm);
+    background: #f5f2ef;
+  }
+}
+
+:root[data-theme='dark'] .legal__logo {
+  padding: 0.1875rem;
+  border-radius: var(--r-sm);
+  background: #f5f2ef;
+}
+
+.legal__body {
+  max-width: calc(40rem + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--s-5) var(--gutter) var(--s-8);
+}
+
+.legal__title {
+  margin: 0;
+  outline: none;
+}
+
+.legal__updated {
+  margin: var(--s-1) 0 var(--s-4);
+}
+
+.legal__intro {
+  margin: 0 0 var(--s-4);
+}
+
+.legal__section {
+  margin-top: var(--s-6);
+}
+
+.legal__section h2 {
+  margin: 0 0 var(--s-2);
+}
+
+.legal__section p {
+  margin: 0 0 var(--s-3);
+}
+
+.legal__mail {
+  color: var(--color-brand-text);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
