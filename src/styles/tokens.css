@@ -90,6 +90,7 @@
   --m-press: 90ms;
   --m-panel: 200ms;
   --m-image: 600ms;
+  --m-theme: 260ms; /* light ↔ dark: the colors cross-fade (themeFade.ts) */
 
   /* Layout */
   --touch: 2.75rem; /* 44 px minimum touch target */
