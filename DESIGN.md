@@ -35,8 +35,10 @@ Familiar patterns win over novelty; craft is in spacing, type and the states.
 - Selected filter chips are ink, not fuchsia, so fuchsia always means «do this».
 - Orange, green and coral fail 4.5:1 as text on light grounds: fills and glyphs only, with ink on
   top. Reading text is `--color-ink`; `--color-muted` (5.3:1) only for meta, dates and labels.
-- **Dark is the default theme** (wiki #143): `index.html` sets `data-theme` before the first paint
-  from `localStorage["bs-theme"]` (`dark` by default, `light`, or `system` to follow the phone).
+- **The phone's theme is the default** (wiki #201, replaces #143): `index.html` sets `data-theme` before the
+  first paint from `localStorage["bs-theme"]` (`system` by default, or `light` / `dark` fixed). Dark styles
+  always come in pairs: `:root[data-theme='dark']` and `@media (prefers-color-scheme: dark)` with
+  `:root:not([data-theme='light'])`.
   Ajustes › Tema writes that key. Dark is a warm night (`#151110` ground), never violet. Fuchsia text becomes
   `--color-brand-text` `#F6A3C3` there; the focus ring follows.
 - Neutrals moved from the prototype's violet-tinted ink and lines to warm ones on 20 Nov; the

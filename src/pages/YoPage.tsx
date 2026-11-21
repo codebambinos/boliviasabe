@@ -1,6 +1,7 @@
 // TEMPORARY smoke screen of Yo (SPEC 01 + T11 + SPEC 02 links). T21 and T29 build the real one.
 import { useState, type MouseEvent } from 'react';
 import { useRequireAccount } from '../components/AuthGate';
+import { InstallRow } from '../components/InstallRow';
 import { ChevronRightIcon, ExternalIcon, EyeIcon, GoogleIcon, MailIcon, QuestionIcon } from '../components/icons';
 import { timeAgo } from '../components/time';
 import { withThemeFade } from '../components/themeFade';
@@ -31,9 +32,9 @@ type Theme = 'dark' | 'light' | 'system';
 function readTheme(): Theme {
   try {
     const value = localStorage.getItem('bs-theme');
-    return value === 'light' || value === 'system' ? value : 'dark';
+    return value === 'light' || value === 'dark' ? value : 'system';
   } catch {
-    return 'dark';
+    return 'system';
   }
 }
 
@@ -148,6 +149,11 @@ function YoSample({
             </button>
           </div>
         </div>
+        <div className="card">
+          <ul className="rows rows--links rows--flush">
+            <InstallRow />
+          </ul>
+        </div>
         <LegalLinks onAbout={onAbout} onPrivacy={onPrivacy} />
       </>
     );
@@ -251,14 +257,17 @@ function YoSample({
 
         <div className="card yo-grid__settings">
           <h2 className="card__title">Ajustes</h2>
+          <ul className="rows rows--links rows--flush">
+            <InstallRow />
+          </ul>
           <fieldset className="setting">
             <legend className="setting__label">Tema</legend>
             <div className="segmented">
               {(
                 [
-                  ['dark', 'Oscuro'],
-                  ['light', 'Claro'],
                   ['system', 'Sistema'],
+                  ['light', 'Claro'],
+                  ['dark', 'Oscuro'],
                 ] as const
               ).map(([value, label]) => (
                 <label key={value}>

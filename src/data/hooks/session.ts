@@ -4,6 +4,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ProfileInput } from '../api';
 import { keys } from '../keys';
+import { persister } from '../persist';
+import { isPersonalKey, PERSONAL_KEYS } from '../query';
 import { api } from '../source';
 import type { Session } from '../types';
 
@@ -11,17 +13,15 @@ export function useSession() {
   return useQuery({ queryKey: keys.session(), queryFn: () => api.auth.getSession() });
 }
 
-const PERSONAL = [keys.wallet(), keys.activity(), keys.saved(), keys.myPhone()];
-const isPersonal = (key: readonly unknown[]) => PERSONAL.some((p) => p.every((part, i) => key[i] === part));
-
-function useSessionMutation<TInput>(run: (input: TInput) => Promise<Session>) {
+function useSessionMutation<TInput>(run: (input: TInput) => Promise<Session>, after?: () => void) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: run,
     onSuccess: (session) => {
       client.setQueryData(keys.session(), session);
-      for (const key of PERSONAL) void client.resetQueries({ queryKey: key });
-      void client.invalidateQueries({ queryKey: keys.all, predicate: (q) => !isPersonal(q.queryKey) && q.queryKey[1] !== 'session' });
+      for (const key of PERSONAL_KEYS) void client.resetQueries({ queryKey: key });
+      void client.invalidateQueries({ queryKey: keys.all, predicate: (q) => !isPersonalKey(q.queryKey) && q.queryKey[1] !== 'session' });
+      after?.();
     },
   });
 }
@@ -44,7 +44,8 @@ export function useRecoveryReady() {
 /** The new password of the recovery session; also signs the person in. */
 export const useUpdatePassword = () => useSessionMutation<string>((password) => api.auth.updatePassword(password));
 
-export const useSignOut = () => useSessionMutation<void>(() => api.auth.signOut());
+// Signing out also drops the copy kept on the device for offline use (#197).
+export const useSignOut = () => useSessionMutation<void>(() => api.auth.signOut(), () => void persister.removeClient());
 
 /** «Tu barrio»: saves name, city and zone. The first time it also prepares the wallet. */
 export const useSaveProfile = () => useSessionMutation<ProfileInput>((input) => api.auth.saveProfile(input));

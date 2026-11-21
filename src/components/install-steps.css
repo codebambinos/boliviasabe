@@ -1,0 +1,47 @@
+/* «Agrega BoliviaSabe a tu pantalla de inicio» (InstallSteps, wiki #199) */
+.install__steps {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0 0 var(--s-4);
+  padding: 0;
+  list-style: none;
+  counter-reset: install;
+}
+
+.install__steps li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--t-body);
+}
+
+/* The number and the glyph the person will look for on the phone */
+.install__steps li::before {
+  counter-increment: install;
+  content: counter(install);
+  flex: none;
+  width: 1.5rem;
+  color: var(--color-muted);
+  font: var(--w-title) var(--t-small) / 1 var(--font-title);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.install__glyph {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--r-md);
+  background: var(--color-sunken);
+  color: var(--color-info);
+}
+
+.install__glyph img {
+  border-radius: 0.4rem;
+}
+
+.install__note {
+  margin: 0 0 var(--s-4);
+}

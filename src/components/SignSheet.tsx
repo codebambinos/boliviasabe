@@ -248,7 +248,7 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
                 {/* The frame pulses while the full photo loads, then the photo fades in (wiki #196). The hidden
                     thumbnail, usually cached from the grid, only gives the frame its final size */}
                 <span className="sheet__photo-frame">
-                  <img className="sheet__photo-thumb" src={sign.thumbUrl} alt="" aria-hidden="true" />
+                  <img className="sheet__photo-thumb" src={sign.thumbUrl} alt="" aria-hidden="true" crossOrigin="anonymous" />
                   <FadeImage key={sign.photoUrl} className="sheet__photo-full" src={sign.photoUrl} alt={sign.title} />
                 </span>
               </button>

@@ -16,6 +16,8 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  /* The installed app draws under the iPhone status bar (black-translucent): keep Volver below the notch */
+  padding-top: env(safe-area-inset-top, 0px);
   background: var(--color-bg);
   border-bottom: var(--hairline);
 }

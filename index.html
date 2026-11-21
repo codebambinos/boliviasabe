@@ -4,7 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Lo que pasa hoy en tu ciudad, lo sabemos entre todos." />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="BoliviaSabe" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,15 +18,23 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..600&family=Figtree:wght@400..600&display=swap"
     />
     <meta name="theme-color" content="#151110" />
-    <!-- Theme before the first paint: dark by default (wiki #143); Ajustes can pick light or system.
-         Stored under "bs-theme" as "dark" | "light" | "system". -->
+    <!-- Theme before the first paint: the phone's by default (wiki #201); Ajustes can fix light or dark.
+         Stored under "bs-theme" as "system" | "light" | "dark". While it follows the phone, the status bar
+         color follows it too. -->
     <script>
       (function () {
-        var choice = 'dark';
-        try { choice = localStorage.getItem('bs-theme') || 'dark'; } catch (e) {}
+        var choice = 'system';
+        try { choice = localStorage.getItem('bs-theme') || 'system'; } catch (e) {}
         if (choice === 'dark' || choice === 'light') document.documentElement.dataset.theme = choice;
-        var dark = choice === 'dark' || (choice === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-        if (!dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f5f2ef');
+        var meta = document.querySelector('meta[name="theme-color"]');
+        var query = matchMedia('(prefers-color-scheme: dark)');
+        function paint() {
+          var fixed = document.documentElement.dataset.theme;
+          var dark = fixed ? fixed === 'dark' : query.matches;
+          meta.setAttribute('content', dark ? '#151110' : '#f5f2ef');
+        }
+        paint();
+        query.addEventListener('change', paint);
       })();
     </script>
     <title>BoliviaSabe</title>
