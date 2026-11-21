@@ -5,6 +5,7 @@ import { isDataError, useCreateAnswer, type Id } from '../data';
 import { useDraftSaver, useRequireAccount } from './AuthGate';
 import { clearDraft, loadDraft } from './draftStore';
 import { errorMessage } from './messages';
+import { askAfterPublish } from '../push/prompt';
 
 const MAX = 1000;
 
@@ -56,6 +57,7 @@ export function AnswerBox({ questionId, onSent }: { questionId: Id; onSent: () =
           void clearDraft(key);
           setText('');
           onSent();
+          askAfterPublish('answer');
         },
       },
     );

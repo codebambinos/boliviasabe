@@ -1,6 +1,7 @@
 // This device and Web Push (SPEC 15). What the phone allows, turning push on, and forgetting the device when the
 // person signs out (wiki #205, #207). The subscription is saved for the account through src/data.
 import { useCallback, useEffect, useState } from 'react';
+import { DataError } from '../data/errors';
 import { api } from '../data/source';
 import { isIos, isStandalone } from '../pwa/install';
 
@@ -41,6 +42,17 @@ function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
+/** A browser whose push service never answers must not leave «Activando…» on screen forever. */
+const SUBSCRIBE_TIMEOUT_MS = 20_000;
+
+function withTimeout<T>(work: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new DataError('server', 'The push service did not answer')), SUBSCRIBE_TIMEOUT_MS);
+  });
+  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
+}
+
 export async function pushStatus(): Promise<PushStatus> {
   const support = pushSupport();
   if (support !== 'ok') return support;
@@ -58,9 +70,11 @@ export async function enablePush(): Promise<PushStatus> {
   if (permission !== 'granted') return pushStatus();
   const reg = await registration();
   if (!reg || !VAPID_PUBLIC_KEY) return 'unsupported';
-  const subscription =
-    (await reg.pushManager.getSubscription()) ??
-    (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC_KEY) }));
+  const subscription = await withTimeout(
+    reg.pushManager
+      .getSubscription()
+      .then((existing) => existing ?? reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC_KEY) })),
+  );
   const json = subscription.toJSON();
   await api.push.saveSubscription({ endpoint: subscription.endpoint, p256dh: json.keys?.p256dh ?? '', auth: json.keys?.auth ?? '' });
   return 'on';
