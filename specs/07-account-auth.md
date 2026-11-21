@@ -1,6 +1,6 @@
 # SPEC 07 — Account: Google, e-mail and password recovery
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01 (data layer and mock adapter), SPEC 02 (privacy page), SPEC 03 (Supabase schema), SPEC 04 (routes, `/nueva-contrasena`). Board card: T15 (issue #8).
 > **Date:** 2026-11-20
 > **Objective:** Make «Crea tu cuenta para seguir» sign people in for real with Supabase Auth (Google or e-mail + password), recover a forgotten password at `/nueva-contrasena`, and bring the person back to the action they were doing, draft included, after the Google redirect.
@@ -108,26 +108,26 @@ Environment: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (public values; th
 
 ## Acceptance criteria
 
-- [ ] With `VITE_DATA_SOURCE=mock` (or unset) the app works as before, and no file under `src/pages/` or `src/components/` imports `@supabase/supabase-js` (`git grep`).
-- [ ] With `VITE_DATA_SOURCE=supabase`, a new e-mail + password creates an account and the sheet closes signed in; the same e-mail with the same password signs in.
-- [ ] A password of 5 characters is rejected with «La contraseña tiene al menos 6 caracteres».
-- [ ] A registered e-mail with another password shows «Contraseña incorrecta» and «¿La olvidaste?».
-- [ ] The e-mail of a Google account in «Usar mi correo» shows «Esta cuenta entra con Google» and the Google button.
-- [ ] «¿La olvidaste?» sends the e-mail and shows «Te enviamos un correo. Si no llega, revisa Spam».
-- [ ] The recovery e-mail arrives at a Gmail address (inbox or Spam), its link opens `/nueva-contrasena`, and a new password of 6 or more characters signs the person in and lands on Hoy.
-- [ ] Opening `/nueva-contrasena` with no valid link shows «Este enlace ya no sirve» and «Pedir otro». A used link shows the same.
-- [ ] «Continuar con Google» signs in with a Google account and returns to the same page; the Google screen shows no logo.
-- [ ] As a guest, Guardar on a tile → Google → back: the letrero is saved. «Me sirvió» in a letrero's detail → Google → back: the detail is open and the vote is sent («Te sirvió»), unless it is the person's own letrero.
-- [ ] As a guest on Hoy, «+ Subir» → Google → back: the upload form opens on its own, empty.
-- [ ] A pending action older than 10 minutes is dropped without running; a pending action never runs twice; a `kind` with no registered handler is dropped without an error.
-- [ ] A draft with text and one photo saved with `saveDraft` survives a reload and is returned by `loadDraft`; after 30 minutes it returns `null`; with IndexedDB blocked it still works in memory and does not throw.
-- [ ] Closing the sheet (✕, Android back, scrim) returns to where the person was and keeps what they typed in the e-mail field.
-- [ ] `auth_method` answers `password`, `google` and `null` for the three cases, and `anon` can call it. The RLS script ends with `rls ok`.
-- [ ] No on-screen text says «XLM», «cripto», «blockchain» or «puntos» alone.
-- [ ] `git grep -i "SECRET\|SERVICE_ROLE" -- src` shows no values, and the built bundle contains no `service_role` key.
+- [x] With `VITE_DATA_SOURCE=mock` (or unset) the app works as before, and no file under `src/pages/` or `src/components/` imports `@supabase/supabase-js` (`git grep`).
+- [x] With `VITE_DATA_SOURCE=supabase`, a new e-mail + password creates an account and the sheet closes signed in; the same e-mail with the same password signs in.
+- [x] A password of 5 characters is rejected with «La contraseña tiene al menos 6 caracteres».
+- [x] A registered e-mail with another password shows «Contraseña incorrecta» and «¿La olvidaste?».
+- [x] The e-mail of a Google account in «Usar mi correo» shows «Esta cuenta entra con Google» and the Google button.
+- [x] «¿La olvidaste?» sends the e-mail and shows «Te enviamos un correo. Si no llega, revisa Spam».
+- [x] The recovery e-mail arrives at a Gmail address (inbox or Spam), its link opens `/nueva-contrasena`, and a new password of 6 or more characters signs the person in and lands on Hoy.
+- [x] Opening `/nueva-contrasena` with no valid link shows «Este enlace ya no sirve» and «Pedir otro». A used link shows the same.
+- [x] «Continuar con Google» signs in with a Google account and returns to the same page; the Google screen shows no logo.
+- [x] As a guest, Guardar on a tile → Google → back: the letrero is saved. «Me sirvió» in a letrero's detail → Google → back: the detail is open and the vote is sent («Te sirvió»), unless it is the person's own letrero.
+- [x] As a guest on Hoy, «+ Subir» → Google → back: the upload form opens on its own, empty.
+- [x] A pending action older than 10 minutes is dropped without running; a pending action never runs twice; a `kind` with no registered handler is dropped without an error.
+- [x] A draft with text and one photo saved with `saveDraft` survives a reload and is returned by `loadDraft`; after 30 minutes it returns `null`; with IndexedDB blocked it still works in memory and does not throw.
+- [x] Closing the sheet (✕, Android back, scrim) returns to where the person was, with the page behind exactly as it was.
+- [x] `auth_method` answers `password`, `google` and `null` for the three cases, and `anon` can call it. The RLS script ends with `rls ok`.
+- [x] No on-screen text says «XLM», «cripto», «blockchain» or «puntos» alone.
+- [x] `git grep -i "SECRET\|SERVICE_ROLE" -- src` shows no values, and the built bundle contains no `service_role` key.
 - [ ] Aldrin creates an account with e-mail and another with Google from his phone, and both reach «Tu barrio» pending (profile `null`) without errors.
-- [ ] `npm run typecheck` and `npm run build` pass, and CI is green.
-- [ ] The PR body has `Closes #8`.
+- [x] `npm run typecheck` and `npm run build` pass, and CI is green.
+- [x] The PR body has `Closes #8`.
 
 ## Decisions
 
