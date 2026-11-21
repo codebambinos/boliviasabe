@@ -1,6 +1,6 @@
 # SPEC 12 — Threads, «Pedir contacto» and live answers in ¿Alguien sabe?
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 03 (tables `answer_comments` and `contact_requests`, RLS), SPEC 07 (`AuthGate`, pending actions, `draftStore`), SPEC 10 (`QuestionDetail`, the report and ⋯ patterns), SPEC 11 (Supabase adapter, `rpc.ts`, migration `0005`, the refresh rule #181). Board card: T22 (issue #15).
 > **Date:** 2026-11-21
 > **Objective:** Add the public thread under each answer («Comentar», 500 characters, report and delete), «Pedir contacto» with Aceptar / Ahora no and a box with the other person's details visible only to the two, and live updates (Supabase Realtime) of comments, answers and contact requests on the open question.
@@ -133,8 +133,8 @@ reports: { report(kind: ReportKind, …); hideForMe(kind: ReportKind, …) };
 - [x] Under each answer the 2 most recent comments show, «Ver los N comentarios» unfolds the rest, and «Comentar» publishes up to 500 characters (the counter stops at 500).
 - [x] A guest can read threads; «Comentar» asks for the account at Enviar and, after Google, the comment written is still there and is sent.
 - [x] A comment can be written on Abierta, Solucionada and Cerrada questions, and deleted only by its author; nobody can edit it.
-- [ ] A comment written on one phone shows up on another phone that has that question open in under 3 seconds, without touching anything.
-- [ ] A new answer and a «Me sirvió» also show up live on the other phone; with Realtime down the detail still refreshes every 15 s.
+- [x] A comment written on one phone shows up on another phone that has that question open in under 3 seconds, without touching anything.
+- [x] A new answer and a «Me sirvió» also show up live on the other phone; with Realtime down the detail still refreshes every 15 s.
 - [x] «Pedir contacto» appears only to the asker, only on others' answers to their question; after asking, the answer says «Esperando que acepte» and the button does not show again.
 - [x] The answerer sees the request inside their answer with Aceptar / Ahora no; after «Ahora no» the asker sees «Prefirió no compartir su contacto» and cannot ask again for that answer.
 - [x] After «Aceptar», both see the other's e-mail and, if given, phone, with Copiar, Llamar and Escribir correo; a third account never sees them (checked in `rls.sql` and on screen).
@@ -142,10 +142,10 @@ reports: { report(kind: ReportKind, …); hideForMe(kind: ReportKind, …) };
 - [x] A comment can be reported with the 6 reasons, disappears for the reporter at once, and the third report from different people hides it for everyone but its author («En revisión»).
 - [x] Deleting an answer without «Me sirvió» deletes its thread and its contact request.
 - [x] «Me sirvió» on a Cerrada question turns it Solucionada without a second +1.
-- [ ] Mock mode works for everything above except the live channel (it falls back to the 15 s refresh).
-- [ ] `npm run typecheck`, `npm run build` and `rls.sql` pass; screens checked at 360 px, light and dark, text at 130 %; texts match the wiki.
+- [x] Mock mode works for everything above except the live channel (it falls back to the 15 s refresh).
+- [x] `npm run typecheck`, `npm run build` and `rls.sql` pass; screens checked at 360 px, light and dark, text at 130 %; texts match the wiki.
 
-> Verified 2026-11-21. `rls.sql` (local) covers the contact rules (only the asker asks, only the answerer answers, «Ahora no» is final, a third person and a guest never see the details, the phone is validated and saved in the profile), the thread (comments on a solved question, 3 reports hide a comment, «En revisión» for its author), the cascade when an answer is deleted and «Me sirvió» on a Cerrada question → Solucionada. In a 360 px browser against the real project (`0006` applied): three comments fold into «Ver 1 comentario más» / «Ocultar comentarios», delete with «¿Borrar tu comentario?», report with «Reportar el comentario» and it disappears for the reporter; «Pedir contacto» → bad phone refused → «Esperando que acepte» → the answerer accepts in their answer → both boxes show the right e-mail and phone with Copiar / Llamar / Escribir correo; with the channel connected the detail stops polling and a comment from another account shows up about 1.4 s after it is saved. Light and dark, text at 130 %, no horizontal overflow. Pending: the two-phone checks on the preview.
+> Verified 2026-11-21. `rls.sql` (local) covers the contact rules (only the asker asks, only the answerer answers, «Ahora no» is final, a third person and a guest never see the details, the phone is validated and saved in the profile), the thread (comments on a solved question, 3 reports hide a comment, «En revisión» for its author), the cascade when an answer is deleted and «Me sirvió» on a Cerrada question → Solucionada. In a 360 px browser against the real project (`0006` applied): three comments fold into «Ver 1 comentario más» / «Ocultar comentarios», delete with «¿Borrar tu comentario?», report with «Reportar el comentario» and it disappears for the reporter; «Pedir contacto» → bad phone refused → «Esperando que acepte» → the answerer accepts in their answer → both boxes show the right e-mail and phone with Copiar / Llamar / Escribir correo; with the channel connected the detail stops polling and a comment from another account shows up about 1.4 s after it is saved. Light and dark, text at 130 %, no horizontal overflow. Diego checked on the preview with a phone and a computer: a comment and an answer show up live on the other device, commenting as a guest asks for the account and sends after Google (the box empties, «Volver» stays in the app), «Pedir contacto» → Aceptar with the phone and «Llamar», «Ahora no» is final, «Me sirvió» on a Cerrada question → Solucionada, and tapping the current tab refreshes the list on the computer. Mock mode: the thread works with the wall and the mock Google sign-in; the live channel never connects there, so the detail keeps the 15 s refresh.
 
 ## Changes after the phone test
 
