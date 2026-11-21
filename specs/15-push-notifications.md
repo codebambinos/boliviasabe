@@ -1,6 +1,6 @@
 # SPEC 15 — Push notifications
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 03 (tables `notifications`, `push_subscriptions`, `profiles.notif_prefs`, triggers of `0003`), SPEC 11 (Supabase adapter), SPEC 12 (comments and «Pedir contacto»), SPEC 13 (`markUrgent` and the urgent flow). **SPEC 16 (T26, #19, the PWA) must be merged first:** it uses `vite-plugin-pwa` with `injectManifest` and a `src/sw.ts`, which this spec extends, and it builds the iPhone steps sheet (`InstallSteps`), which this spec reuses. Board card: T27 (issue #20).
 > **Date:** 2026-11-21
 > **Objective:** Send a Web Push to every device of a person when something of theirs happens: a new answer, a comment in their threads, a «Me sirvió», a contact request or acceptance, or an urgent question in their zone. Ask for permission after their first publication, and let them turn each type off in Ajustes.
@@ -183,6 +183,15 @@ Device storage: `localStorage['bs.pushAsked'] = '1'` after the prompt has been s
 - [ ] A subscription that answers 410 is deleted.
 - [ ] Mock mode: Ajustes and the prompt work without errors, and the switches are kept during the session.
 - [ ] `git grep -i "SECRET\|SERVICE_ROLE"` shows no values. The private VAPID key and the push secret do not appear in `dist/`.
+
+## Changes during implementation
+
+- **`push_details(id)`** (service role only, in 0008) gives `/api/push` everything for one push in one call: the recipient, their preferences, who caused it, the quoted text, where a tap opens, whether the item is still visible to them, and whether that letrero already pushed in the last hour. `/api/push` claims the row (`pushed_at`) before sending.
+- **Subscribing has a 20 s limit.** A browser whose push service never answers (seen in automated Chromium) shows «Algo falló, intenta de nuevo» instead of «Activando…» forever.
+- **On a computer the status says «Activadas en este navegador»** instead of «…en este celular» (wiki #205).
+- **A tapped notice in an open app navigates without reloading:** the service worker sends `bs-open` to the window, and `main.tsx` routes it.
+- **The switch styles moved to `app.css`** (`input[role='switch']`), shared by Urgente and Ajustes.
+- **Production check (21 Nov):** the answer, «Me sirvió», hourly limit, switch and Cerrar sesión pushes arrived on Diego's iPhone. 5 calls from pg_net answered 200. One call failed in the network (`Error in the HTTP2 framing layer`) and that push was lost, the risk listed below. T28's hourly cron could resend notifications from the last hour that have no `pushed_at`.
 
 ## Decisions
 
