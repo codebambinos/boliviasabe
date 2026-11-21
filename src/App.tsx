@@ -1,14 +1,10 @@
-// TEMPORARY smoke view (SPEC 01 + T11): the real shell and components on mock data.
-// T12 replaces it with real routes; T18–T21 build the real screens from these parts.
-import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router';
-import { AboutSheet } from './components/AboutSheet';
-import { AppShell, type Tab } from './components/AppShell';
-import { AuthGate, useRequireAccount } from './components/AuthGate';
+// TEMPORARY smoke screens (SPEC 01 + T11) of the three tab routes, on mock data (SPEC 04).
+// T18–T21 build the real screens from these parts.
+import { useState, type MouseEvent } from 'react';
+import { useRequireAccount } from './components/AuthGate';
 import { ChipRow } from './components/ChipRow';
 import {
   ChevronRightIcon,
-  CloseIcon,
   ExternalIcon,
   EyeIcon,
   GoogleIcon,
@@ -18,21 +14,17 @@ import {
 } from './components/icons';
 import { Hint } from './components/Hint';
 import { errorMessage } from './components/messages';
-import { Sheet } from './components/Sheet';
-import { SignSheet } from './components/SignSheet';
 import { SignTile, SignTileSkeleton } from './components/SignTile';
 import { feedSection, timeAgo, type FeedSection } from './components/time';
-import { goWithTransition, navigateWithTransition } from './components/transition';
+import { useShell } from './components/useShell';
 import { Yapita } from './components/Yapita';
 import {
   DEFAULT_CITY,
   TAGS,
   useMovements,
   useSession,
-  useSignInWithGoogle,
   useSignOut,
   useSigns,
-  useToggleSaved,
   useWallet,
   type City,
   type Movement,
@@ -40,116 +32,18 @@ import {
   type Tag,
 } from './data';
 
-export function App() {
-  return (
-    <AuthGate>
-      <Screens />
-    </AuthGate>
-  );
+export function HoyRoute() {
+  const shell = useShell();
+  return <HoySample city={shell.city} searchRef={shell.searchRef} onCity={shell.setCity} onOpen={shell.openSign} onToggleSave={shell.onToggleSave} />;
 }
 
-/** State kept on the '/' history entry. Interim until T12 gives each tab its own route. */
-type HomeState = { tab?: Tab };
+export function PreguntasRoute() {
+  return <PreguntasSample city={useShell().city} />;
+}
 
-function Screens() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>(() => (location.state as HomeState | null)?.tab ?? 'hoy');
-  const [about, setAbout] = useState(false);
-  const [city, setCity] = useState<City>(DEFAULT_CITY);
-  const [selected, setSelected] = useState<Sign | null>(null);
-  const [avisos, setAvisos] = useState(false);
-  const [searchHidden, setSearchHidden] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
-  const session = useSession();
-  const signedIn = session.data?.status === 'signed-in';
-  const wallet = useWallet({ enabled: signedIn });
-  const toggleSaved = useToggleSaved();
-  const requireAccount = useRequireAccount();
-  const signIn = useSignInWithGoogle();
-
-  const onToggleSave = (sign: Sign) =>
-    requireAccount('Así guardas este letrero para verlo después.', () => toggleSaved.mutate({ kind: 'sign', id: sign.id }));
-
-  // Lupa (wiki #140): only while Hoy's own search is off screen
-  useEffect(() => {
-    const input = searchRef.current;
-    if (tab !== 'hoy' || !input) {
-      setSearchHidden(false);
-      return;
-    }
-    const observer = new IntersectionObserver(([entry]) => setSearchHidden(!entry.isIntersecting), {
-      rootMargin: '-56px 0px 0px 0px',
-    });
-    observer.observe(input);
-    return () => observer.disconnect();
-  }, [tab]);
-
-  // Remember the tab on this entry (React Router keeps user state under `usr`), so Back from
-  // /privacidad remounts the app on the same tab. T12 replaces this with a real /yo route.
-  const openPrivacy = () => {
-    const current = (window.history.state ?? {}) as { usr?: HomeState };
-    window.history.replaceState({ ...current, usr: { ...current.usr, tab } }, '');
-    goWithTransition((viewTransition) => navigate('/privacidad', { viewTransition }), 'forward');
-  };
-
-  const goToSearch = () => {
-    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
-    window.setTimeout(() => searchRef.current?.focus({ preventScroll: true }), smooth ? 350 : 0);
-  };
-
-  return (
-    <>
-      <AppShell
-        tab={tab}
-        onTabChange={setTab}
-        city={city}
-        onCityChange={setCity}
-        account={
-          signedIn
-            ? {
-                unread: 0,
-                balance: wallet.data?.balance ?? null,
-                onBell: () => setAvisos(true),
-                // The balance opens Movimientos (wiki), not just the top of Yo
-                onBalance: () => {
-                  navigateWithTransition(() => setTab('yo'), 'forward');
-                  window.setTimeout(() => {
-                    const heading = document.getElementById('movimientos-title');
-                    heading?.scrollIntoView({ block: 'start' });
-                    heading?.focus({ preventScroll: true });
-                  }, 60);
-                },
-              }
-            : undefined
-        }
-        onSignIn={() => requireAccount('Entra para dar «Me sirvió», guardar y ganar yapitas.', () => undefined, 'Entra a BoliviaSabe')}
-        onFab={() =>
-          requireAccount(
-            tab === 'hoy' ? 'Así tu letrero aparece en Hoy y ganas una yapita.' : 'Así tus vecinos pueden responderte.',
-            () => undefined,
-          )
-        }
-        onSearch={searchHidden ? goToSearch : undefined}
-        detailEmpty="Cuando haya preguntas, su conversación se abre aquí."
-      >
-        {tab === 'hoy' && <HoySample city={city} searchRef={searchRef} onCity={setCity} onOpen={setSelected} onToggleSave={onToggleSave} />}
-        {tab === 'preguntas' && <PreguntasSample city={city} />}
-        {tab === 'yo' && (
-          <YoSample
-            onSignIn={() => signIn.mutate()}
-            signingIn={signIn.isPending}
-            onAbout={() => setAbout(true)}
-            onPrivacy={openPrivacy}
-          />
-        )}
-      </AppShell>
-      {selected && <SignSheet key={selected.id} sign={selected} onClose={() => setSelected(null)} onToggleSave={onToggleSave} />}
-      {about && <AboutSheet onClose={() => setAbout(false)} onOpenPrivacy={openPrivacy} />}
-      {avisos && <AvisosSheet onClose={() => setAvisos(false)} />}
-    </>
-  );
+export function YoRoute() {
+  const shell = useShell();
+  return <YoSample onSignIn={shell.signInWithGoogle} signingIn={shell.signingIn} onAbout={shell.openAbout} onPrivacy={shell.openPrivacy} />;
 }
 
 const SECTION_TITLE: Record<FeedSection, string> = { hoy: 'Hoy', semana: 'Esta semana', antes: 'Antes' };
@@ -293,30 +187,6 @@ function PreguntasSample({ city }: { city: City }) {
         <p className="empty__text">¿Buscas un plomero, una farmacia de turno o si hay agua en tu zona? Pregunta con el botón «Preguntar».</p>
       </div>
     </>
-  );
-}
-
-function AvisosSheet({ onClose }: { onClose: () => void }) {
-  const titleId = useId();
-  return (
-    <Sheet labelledBy={titleId} variant="bottom" onClose={onClose}>
-      {(close) => (
-        <>
-          <header className="sheet__bar">
-            <h2 id={titleId} className="sheet__bar-title">Avisos</h2>
-            <button type="button" className="icon-btn" aria-label="Cerrar" onClick={close}>
-              <CloseIcon />
-            </button>
-          </header>
-          <div className="sheet__body">
-            <div className="sheet__content empty">
-              <h3 className="empty__title">Sin avisos por ahora</h3>
-              <p className="empty__text">Aquí verás cuando alguien te responda o le sirva tu letrero.</p>
-            </div>
-          </div>
-        </>
-      )}
-    </Sheet>
   );
 }
 
