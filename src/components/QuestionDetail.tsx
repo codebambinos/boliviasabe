@@ -6,7 +6,10 @@ import { Link } from 'react-router';
 import {
   REPORT_REASONS,
   isDataError,
+  useCloseQuestion,
   useHideForMe,
+  useMarkHelpful,
+  useMarkNotHelpful,
   useQuestion,
   useRemoveAnswer,
   useRemoveQuestion,
@@ -20,16 +23,20 @@ import {
 } from '../data';
 import { useRequireAccount } from './AuthGate';
 import { AnswerBox } from './AnswerBox';
-import { BookmarkIcon, CheckIcon, CloseIcon, FlagIcon, MoreIcon, ShareIcon, TrashIcon } from './icons';
-import { errorMessage } from './messages';
+import { BookmarkIcon, CheckIcon, CloseIcon, FlagIcon, MoreIcon, ShareIcon, ThumbDownIcon, ThumbIcon, TrashIcon } from './icons';
+import { errorMessage, firstName } from './messages';
 import { answersText, isUrgentActive } from './QuestionCard';
 import { Sheet } from './Sheet';
 import { timeAgo } from './time';
+import { Yapita } from './Yapita';
 import './sign-sheet.css';
 import './question-detail.css';
 
 type Target = { type: 'question' } | { type: 'answer'; answer: Answer };
-type Dialog = { kind: 'menu' | 'report' | 'delete' | 'reported' | 'hidden' | 'deleted'; target: Target } | { kind: 'photo' };
+type Dialog = { kind: 'menu' | 'report' | 'delete' | 'reported' | 'hidden' | 'deleted' | 'close' | 'closed'; target: Target } | { kind: 'photo' };
+
+/** Only the first 3 «Me sirvió» of a question pay (reglas-finales › Yapitas). */
+const REWARDED_PER_QUESTION = 3;
 
 type QuestionDetailProps = {
   id: Id;
@@ -67,6 +74,8 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
   const toggleSaved = useToggleSaved();
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [sent, setSent] = useState(false);
+  const [notice, setNotice] = useState<{ title: string; text: string } | null>(null);
+  const markHelpful = useMarkHelpful();
   const heading = useRef<HTMLHeadingElement>(null);
   const Heading = variant === 'page' ? 'h1' : 'h2';
 
@@ -122,6 +131,21 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
 
   // Not mine, still Abierta and I have not answered yet (a guest sees the box and meets the wall at «Enviar»)
   const canAnswer = !question.isMine && question.status === 'open' && !answers.some((a) => a.isMine);
+  const sendHelpful = (answer: Answer) => {
+    const firstOne = question.status === 'open';
+    const rewarded = answers.filter((a) => a.helpful).length < REWARDED_PER_QUESTION;
+    setNotice(null);
+    markHelpful.mutate(answer.id, {
+      onSuccess: () =>
+        setNotice({
+          title: '¡Gracias, pues!',
+          text: rewarded
+            ? `${firstName(answer.author.displayName)} recibe +5 yapitas por ayudarte.${firstOne ? ' Tu pregunta quedó Solucionada y ganas +1 yapita.' : ''}`
+            : 'Ya diste 3 «Me sirvió» con premio en esta pregunta: este queda marcado, sin yapitas.',
+        }),
+    });
+  };
+  const canClose = question.isMine && question.status === 'open' && answers.length > 0;
   const canDeleteQuestion = question.isMine && question.answerCount === 0;
   const hasQuestionMenu = !question.isMine || canDeleteQuestion;
   const openMenu = (target: Target) => setDialog({ kind: 'menu', target });
@@ -168,6 +192,16 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
 
       <section className="qd__answers" aria-labelledby={`${variant}-answers`}>
         <h3 id={`${variant}-answers`} className="qd__section">{answersText(answers.length)}</h3>
+        {notice && (
+          <p className="sheet__message sheet__thanks qd__notice" role="status">
+            <Yapita size="lg" />
+            <span>
+              <strong>{notice.title}</strong>
+              <span>{notice.text}</span>
+            </span>
+          </p>
+        )}
+        {markHelpful.error && <p className="field__error" role="alert">{errorMessage(markHelpful.error)}</p>}
         {answers.length === 0 ? (
           <div className="qd__empty">
             <p className="qd__empty-title">Todavía nadie respondió</p>
@@ -187,7 +221,22 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
                       <CheckIcon size={16} /> {question.isMine ? 'Te sirvió' : 'Le sirvió a quien preguntó'}
                     </p>
                   )}
+                  {question.isMine && answer.notHelpful && (
+                    <p className="answer__marked answer__marked--no">
+                      <ThumbDownIcon size={16} /> No te sirvió
+                    </p>
+                  )}
                   <div className="answer__actions">
+                    {question.isMine && !answer.helpful && (
+                      <button
+                        type="button"
+                        className="btn btn--small answer__helpful"
+                        disabled={markHelpful.isPending}
+                        onClick={() => sendHelpful(answer)}
+                      >
+                        <ThumbIcon size={18} /> {markHelpful.isPending && markHelpful.variables === answer.id ? 'Enviando…' : 'Me sirvió'}
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="icon-btn"
@@ -210,6 +259,11 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
         )}
       </section>
 
+      {canClose && (
+        <button type="button" className="btn btn--secondary" onClick={() => setDialog({ kind: 'close', target: { type: 'question' } })}>
+          Ninguna me sirvió
+        </button>
+      )}
       {canAnswer && <AnswerBox questionId={question.id} onSent={() => setSent(true)} />}
       <p className="sr-only" role="status">{sent ? 'Tu respuesta se envió' : ''}</p>
 
@@ -276,6 +330,8 @@ function ActionSheet({
   const hide = useHideForMe();
   const removeQuestion = useRemoveQuestion();
   const removeAnswer = useRemoveAnswer();
+  const closeQuestion = useCloseQuestion();
+  const markNotHelpful = useMarkNotHelpful();
   const kind = isQuestion ? 'question' : 'answer';
   const itemId = isQuestion ? question.id : target.answer.id;
   const mine = isQuestion ? question.isMine : target.answer.isMine;
@@ -287,6 +343,8 @@ function ActionSheet({
     step === 'menu' ? (isQuestion ? 'Más opciones' : 'Más opciones de la respuesta')
     : step === 'report' ? `Reportar la ${noun}`
     : step === 'delete' ? `¿Borrar tu ${noun}?`
+    : step === 'close' ? '¿Cerrar sin solución?'
+    : step === 'closed' ? 'Pregunta cerrada'
     : step === 'reported' ? 'Gracias por avisar'
     : step === 'hidden' ? 'Listo, ya no la verás'
     : `${isQuestion ? 'Pregunta' : 'Respuesta'} borrada`;
@@ -309,6 +367,18 @@ function ActionSheet({
 
           {step === 'menu' && (
             <ul className="menu">
+              {!isQuestion && question.isMine && !target.answer.helpful && !target.answer.notHelpful && (
+                <li>
+                  <button
+                    type="button"
+                    className="menu__item"
+                    disabled={markNotHelpful.isPending}
+                    onClick={() => markNotHelpful.mutate(target.answer.id, { onSuccess: close })}
+                  >
+                    <ThumbDownIcon size={20} /> No me sirvió
+                  </button>
+                </li>
+              )}
               {!mine && (
                 <li>
                   <button
@@ -375,6 +445,26 @@ function ActionSheet({
                   {removing ? 'Borrando…' : 'Sí, borrar'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {step === 'close' && (
+            <div className="sheet__content qd__confirm">
+              <p className="empty__text">Si ninguna respuesta te sirvió, tu pregunta queda Cerrada y ganas 1 yapita.</p>
+              {closeQuestion.error && <p className="field__error" role="alert">{errorMessage(closeQuestion.error)}</p>}
+              <div className="confirm__actions">
+                <button type="button" className="btn btn--secondary" onClick={close}>Seguir esperando</button>
+                <button type="button" className="btn" disabled={closeQuestion.isPending} onClick={() => closeQuestion.mutate(question.id, { onSuccess: () => setStep('closed') })}>
+                  {closeQuestion.isPending ? 'Cerrando…' : 'Sí, cerrar'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'closed' && (
+            <div className="sheet__content qd__confirm" role="status">
+              <p className="empty__text">Tu pregunta quedó Cerrada y ganaste +1 yapita. Si luego una respuesta te sirve, aún puedes marcarla.</p>
+              <button type="button" className="btn btn--secondary" onClick={close}>Listo</button>
             </div>
           )}
 

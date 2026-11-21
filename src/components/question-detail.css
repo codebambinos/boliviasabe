@@ -171,3 +171,20 @@
   resize: vertical;
   line-height: 1.4;
 }
+
+/* «Me sirvió» sits on the answer's action row, next to Guardar and ⋯ */
+.answer__actions {
+  gap: var(--s-2);
+}
+
+.answer__helpful {
+  margin-right: auto;
+}
+
+.answer__marked--no svg {
+  color: var(--color-muted);
+}
+
+.qd__notice {
+  margin-bottom: var(--s-3);
+}
