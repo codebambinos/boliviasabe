@@ -3,7 +3,7 @@
 > **Status:** Approved
 > **Depends on:** SPEC 08 (custodied accounts: `wallet_keys`, `profiles.stellar_pk` / `stellar_status`, `provisionWallet`), SPEC 09 (`rewards` with one memo per movement, `payPoints`), SPEC 14 (the seed, used to build the local test). Board card: T37 (issue #26).
 > **Date:** 2026-11-21
-> **Objective:** One command, `npm run stellar:reset`, brings YAPITA back after Stellar wipes testnet: a new issuer and distributor, the same address for every neighbor, and the whole history of confirmed yapitas paid again, so balances and every «Ver registro» match the database.
+> **Objective:** One command, `npm run stellar:reset`, brings YAPITA back after Stellar wipes testnet: the same issuer, distributor and neighbor addresses, and the whole history of confirmed yapitas paid again, so balances and every «Ver registro» match the database.
 
 ## Why this spec exists
 
@@ -19,9 +19,9 @@
 
 - **`scripts/stellar/reset.ts` and `npm run stellar:reset`.** It runs with the service role from `.env`, like the seed. It runs in three stages, and each stage skips what is already done, so running it again after a cut finishes the job.
   1. **Issuer and distributor.**
-     - If `YAPITA_ISSUER_PUBLIC` does not exist on testnet (or with `--force`), it creates a new issuer and distributor with Friendbot.
-     - It adds the distributor's trustline and issues `1000000` YAPITA, like `setup.ts`.
-     - It **rewrites** the five lines of the env file: `YAPITA_ISSUER_SECRET`, `YAPITA_DISTRIBUTOR_SECRET`, `YAPITA_ISSUER_PUBLIC`, `YAPITA_DISTRIBUTOR_PUBLIC` and `VITE_YAPITA_ISSUER_PUBLIC`. Before that, it copies the file to `<env file>.before-reset-<timestamp>`, which git ignores (`.env.*`).
+     - **After a real wipe (default):** if `YAPITA_ISSUER_PUBLIC` does not exist on testnet, it is recreated **with the same keys** of the env file (`YAPITA_ISSUER_SECRET`, `YAPITA_DISTRIBUTOR_SECRET`). Friendbot can fund any address. Nothing changes in the env file or in Vercel, and no redeploy is needed (decision of Diego during step 1, wiki #211).
+     - **With `--force` (the local test):** it creates a **new** issuer and distributor. Then it **rewrites** the five lines of the env file: `YAPITA_ISSUER_SECRET`, `YAPITA_DISTRIBUTOR_SECRET`, `YAPITA_ISSUER_PUBLIC`, `YAPITA_DISTRIBUTOR_PUBLIC` and `VITE_YAPITA_ISSUER_PUBLIC`. Before that, it copies the file to `<env file>.before-reset-<timestamp>`, which git ignores (`.env.*`). The new keys are written before anything is funded, so a cut never loses them.
+     - In both cases it funds what is missing, adds the distributor's trustline and issues `1000000` YAPITA if the distributor has none, like `setup.ts`.
      - If the issuer exists and there is no `--force`, it keeps it.
   2. **Neighbors' accounts, same address.**
      - For every profile with a row in `wallet_keys`, it decrypts the key with `WALLET_ENC_KEY`.
@@ -42,12 +42,12 @@
 - **Output.**
   - One line per stage, with the counts.
   - At the end:
-    - the explorer links of the new issuer and distributor;
+    - the explorer links of the issuer and distributor;
     - the balance of each neighbor, read from the chain, next to their balance in the database (sum of confirmed `rewards`);
-    - the exact commands to update Vercel (`vercel env rm` + `vercel env add` for the three variables, reading each value from the env file with `grep … | cut … |`, never printed) and the production redeploy.
+    - only when the issuer changed (`--force`): the exact commands to update Vercel (`vercel env rm` + `vercel env add` for the three variables, reading each value from the env file with `grep … | cut … |`, never printed) and the production redeploy.
   - It never prints a secret.
 - **Docs.**
-  - `README.md` › Stellar: when and how to run `stellar:reset`, then the printed Vercel commands, then `stellar:e2e`.
+  - `README.md` › Stellar: when and how to run `stellar:reset`, then `stellar:e2e`, and that only `--force` needs the printed Vercel commands.
   - `stellar-final.md` and `tecnico.md` in the wiki: what the reset keeps (same addresses, same history) and what changes (issuer, distributor, transaction hashes).
   - Wiki case #211, `log.md` and the `index.md` count.
   - Issue #26: same wording.
@@ -55,7 +55,7 @@
 **Out:**
 
 - Updating Vercel automatically (`--vercel`). It is production, so a person runs the printed commands, with permission.
-- Running the reset on production as part of this task. Production only runs it if testnet is really wiped, or if Diego decides to before recording. Either way it needs his permission, because it rewrites the issuer, the Vercel variables and `rewards.tx_hash`.
+- Running the reset on production as part of this task. Production only runs it if testnet is really wiped, or if Diego decides to before recording. Either way it needs his permission, because it recreates accounts and rewrites `rewards.tx_hash`.
 - New keys for the neighbors (`wallet_keys` stays).
 - Replaying `pending` or `error` rewards, or rewards over a cap.
 - Watching for testnet wipes, or detecting them from the app.
@@ -136,7 +136,8 @@ Reused, not rewritten: `fundWithFriendbot`, `accountExists`, `addTrustline`, `ha
 | Replay every confirmed reward, in order, with its memo | One «restore» payment per neighbor; starting from zero | Balances match the database, and every «Ver registro» in Movimientos opens a real transaction with the right memo. The order makes sure there is balance before each −5. |
 | «Already replayed» = the hash is a payment of the current issuer | A new column; resetting rows to `pending` | No migration. Resumable. Works in the local test, where old hashes still exist. `pending` would mix with the normal retry flow. |
 | The script prints the Vercel commands; a person runs them | `--vercel` updating Vercel and redeploying | It is production. One copy-paste is cheap, and the permission stays explicit. |
-| Rewrite the env file in place with a backup | Append like `setup.ts`; only print the new keys | A second line of the same name would be ambiguous. The backup keeps the old keys in case of a mistake. |
+| After a real wipe, recreate the issuer and distributor with the same keys | A new issuer on every reset (the first version of this spec) | The issuer address never changes, so Vercel, the bundle and installed apps keep working with no redeploy. Only `--force` makes a new one. |
+| Rewrite the env file in place with a backup (`--force` only) | Append like `setup.ts`; only print the new keys | A second line of the same name would be ambiguous. The backup keeps the old keys in case of a mistake. |
 | Test on local Supabase + testnet with `--force` and `--env-file` | Run it on production now; only `--dry-run` | Proves the whole path with real Stellar transactions, without touching the issuer, Vercel or `rewards` of production hours before the deadline. |
 | `pending` / `error` rows left alone | Paying them in the replay | They were never paid. The normal retry already handles them, and paying here could break a cap. |
 
@@ -145,6 +146,6 @@ Reused, not rewritten: `fundWithFriendbot`, `accountExists`, `addTrustline`, `ha
 - **Friendbot is slow or rate-limited right after a wipe.** `fundWithFriendbot` already retries three times. Stage 2 is resumable, so you run it again.
 - **The distributor's sequence number on ~94 payments in a row.** The payments go one after another (no parallelism), and each failure is retried by the next run, which skips what is already replayed.
 - **Horizon is slow.** About 94 payments plus one check each take several minutes. The script prints its progress every 10 rows.
-- **After a real wipe, the Vercel variables and the redeploy are forgotten.** The app would read the balance of the old issuer and show 0. The printed steps, the README and the `stellar-final` page say it, and `stellar:e2e` alone does not catch it. The final check is the balance in Yo on production.
-- **Installed apps keep the old bundle until reopened** (wiki #200). Reopen the app after the redeploy.
+- **A `--force` run on production by mistake** would change the issuer, and then the Vercel variables and the redeploy are needed or the app shows 0. Only the local test uses `--force`, and the printed steps and the README say it. The final check is the balance in Yo on production.
+- **The local test cannot wipe testnet,** so the same-keys path (default) is only exercised up to «issuer exists, nothing to create». It reuses the same fund / trustline / issue code as `--force`, and only the keys differ.
 - **The local test spends testnet XLM and YAPITA from Friendbot only.** No real money (testnet).
