@@ -67,6 +67,25 @@ For a read-only look at the remote schema, use `npx supabase db query --remote -
 
 Never put the database password, the service role key or a personal access token in this repo. The browser only gets `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. `SUPABASE_SERVICE_ROLE_KEY` lives in Vercel and in `.env` on the developer machine, and it bypasses RLS.
 
+## Auth setup (T15)
+
+The browser signs people in with Supabase Auth: Google, or e-mail + password. This is settings in the dashboard, not code, so check it before testing the sign-in. Project `boliviasabe`, dashboard › Authentication.
+
+| Where | Setting | Value |
+|---|---|---|
+| URL Configuration | Site URL | `http://localhost:5173` while developing. T13 changes it to the Vercel URL. |
+| URL Configuration | Redirect URLs | `http://localhost:5173`, `http://localhost:5173/nueva-contrasena` and, after T13, the same two on the Vercel URL. The recovery link needs `/nueva-contrasena` here. |
+| Sign In / Providers › Email | Confirm email | **Off** (the demo creates the account and signs in at once). |
+| Sign In / Providers › Email | Minimum password length | 6 |
+| Sign In / Providers › Google | Enabled, Client ID, Client secret | From Google Cloud › APIs and services › Credentials › OAuth client (web). Its authorized redirect URI is the one the Google provider page shows, `https://<project-ref>.supabase.co/auth/v1/callback`. |
+| Project Settings › Auth › SMTP | Custom SMTP | `smtp.gmail.com`, port 587, the app password of the project's Gmail account. Starts at 30 e-mails per hour. |
+
+Google consent screen: publish it in production **without a logo** (a logo triggers a brand verification that takes days), with the link to `/privacidad`.
+
+Put the public values in `.env`: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (dashboard › Project Settings › API; new projects may show a `sb_publishable_` key in its place). Never the service role key.
+
+The local stack (`npx supabase start`) is only for the database and RLS checks. Test Google and the recovery e-mail against the remote project.
+
 ## Security notes
 
 - RLS is the only thing that stops one neighbor from changing another's content, because the anon key is in the browser bundle.

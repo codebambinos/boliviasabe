@@ -7,7 +7,11 @@ export type DataErrorCode =
   | 'forbidden'
   | 'not_found'
   | 'validation'
-  | 'limit';
+  | 'limit'
+  /** Sign-in with e-mail: the e-mail exists with a password, and this one is wrong. */
+  | 'wrong_password'
+  /** Sign-in with e-mail: the e-mail belongs to an account that enters with Google. */
+  | 'google_account';
 
 export type LimitReason = 'questions_per_day' | 'open_questions' | 'urgent_active' | 'insufficient_balance';
 

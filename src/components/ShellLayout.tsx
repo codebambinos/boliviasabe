@@ -2,10 +2,10 @@
 // survive a tab change. The tab comes from the URL; pages render in the <Outlet /> (SPEC 04).
 import { useEffect, useId, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
-import { DEFAULT_CITY, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Sign } from '../data';
+import { DEFAULT_CITY, fetchSign, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
 import { AppShell, type Tab } from './AppShell';
-import { AuthGate, useRequireAccount } from './AuthGate';
+import { AuthGate, useOpenPasswordRecovery, useRegisterPendingHandlers, useRequireAccount } from './AuthGate';
 import { CloseIcon } from './icons';
 import { Sheet } from './Sheet';
 import { SignSheet } from './SignSheet';
@@ -35,6 +35,8 @@ function Shell() {
   const [about, setAbout] = useState(false);
   const [city, setCity] = useState<City>(DEFAULT_CITY);
   const [selected, setSelected] = useState<Sign | null>(null);
+  // «Me sirvió» / «No me sirvió» coming back from Google: the sheet opens and sends the vote itself
+  const [resumeVote, setResumeVote] = useState<'helpful' | 'not_helpful' | null>(null);
   const [avisos, setAvisos] = useState(false);
   const [searchHidden, setSearchHidden] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -46,10 +48,35 @@ function Shell() {
   const wallet = useWallet({ enabled: signedIn });
   const toggleSaved = useToggleSaved();
   const requireAccount = useRequireAccount();
+  const openRecovery = useOpenPasswordRecovery();
   const signIn = useSignInWithGoogle();
 
+  // «Pedir otro» from /nueva-contrasena: open «¿La olvidaste?» once and drop the flag from history
+  useEffect(() => {
+    if ((location.state as { forgotPassword?: boolean } | null)?.forgotPassword) {
+      openRecovery();
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, navigate, openRecovery]);
+
   const onToggleSave = (sign: Sign) =>
-    requireAccount('Así guardas este letrero para verlo después.', () => toggleSaved.mutate({ kind: 'sign', id: sign.id }));
+    requireAccount(
+      'Así guardas este letrero para verlo después.',
+      () => toggleSaved.mutate({ kind: 'sign', id: sign.id }),
+      undefined,
+      { kind: 'save-sign', id: sign.id },
+    );
+
+  // What each saved action does once the person is back from Google (SPEC 07)
+  useRegisterPendingHandlers({
+    'save-sign': ({ id }) => toggleSaved.mutate({ kind: 'sign', id }),
+    'vote-sign': async ({ id, value }) => {
+      const sign = await fetchSign(id);
+      setResumeVote(value);
+      setSelected(sign);
+    },
+    'open-new-sign': () => setUploading(true),
+  });
 
   // Lupa (wiki #140): only while Hoy's own search is off screen
   useEffect(() => {
@@ -140,6 +167,8 @@ function Shell() {
           requireAccount(
             tab === 'hoy' ? 'Así tu letrero aparece en Hoy y ganas una yapita.' : 'Así tus vecinos pueden responderte.',
             tab === 'hoy' ? () => setUploading(true) : () => undefined,
+            undefined,
+            tab === 'hoy' ? { kind: 'open-new-sign' } : undefined,
           )
         }
         onSearch={searchHidden ? goToSearch : undefined}
@@ -147,7 +176,18 @@ function Shell() {
       >
         <Outlet context={context} />
       </AppShell>
-      {selected && <SignSheet key={selected.id} sign={selected} onClose={() => setSelected(null)} onToggleSave={onToggleSave} />}
+      {selected && (
+        <SignSheet
+          key={selected.id}
+          sign={selected}
+          resumeVote={resumeVote ?? undefined}
+          onClose={() => {
+            setSelected(null);
+            setResumeVote(null);
+          }}
+          onToggleSave={onToggleSave}
+        />
+      )}
       {uploading && <UploadSignSheet viewingCity={city} onClose={() => setUploading(false)} onPublished={onPublished} />}
       {notice && (
         <Toast

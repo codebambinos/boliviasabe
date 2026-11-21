@@ -131,6 +131,37 @@ function prepareWallet(userId: Id): void {
   }, SETTLE_MS);
 }
 
+/**
+ * Development bridge (VITE_DATA_SOURCE=supabase, SPEC 07). Sign-in is real, but letreros, saved items and
+ * votes still run on this mock, which keeps its own idea of who is signed in. This makes the mock follow
+ * the real session: a mock neighbor with the same e-mail, and a made-up profile while the real one is
+ * pending («Tu barrio» is T16). It goes away as each part of the data layer moves to Supabase.
+ */
+export function followRealSession(session: Session): void {
+  if (session.status === 'guest') {
+    store.session.userId = null;
+    return;
+  }
+  const email = session.email.toLowerCase();
+  let user = store.users.find((u) => u.email === email);
+  if (!user) {
+    const id = nextId('user');
+    user = {
+      id,
+      email,
+      provider: 'password',
+      password: null,
+      fullName: session.profile?.fullName ?? email.split('@')[0].split('+')[0],
+      city: session.profile?.city ?? DEFAULT_CITY,
+      zone: session.profile?.zone ?? 'Centro',
+      walletStatus: 'ready',
+      address: fakeAddress(id),
+    };
+    store.users.push(user);
+  }
+  store.session.userId = user.id;
+}
+
 export const mockAuth: DataApi['auth'] = {
   getSession: () => simulate(() => sessionOf()),
 
@@ -141,17 +172,45 @@ export const mockAuth: DataApi['auth'] = {
       return sessionOf();
     }),
 
-  /** Known email → that user. New email → new user without profile («Tu barrio» pending). */
+  /**
+   * Known e-mail with its password → that user. Known e-mail, other password → `wrong_password`.
+   * A Google account → `google_account`. New e-mail → new user without profile («Tu barrio» pending).
+   */
   signInWithEmail: (email, password) =>
     simulate(() => {
       const clean = email.trim().toLowerCase();
       if (!EMAIL.test(clean)) throw new DataError('validation', 'Invalid email', { field: 'email' });
       if (password.length < 6) throw new DataError('validation', 'Password needs at least 6 characters', { field: 'password' });
       let user = store.users.find((u) => u.email === clean);
+      if (user?.provider === 'google') throw new DataError('google_account', 'This account enters with Google');
+      if (user && user.password !== password) throw new DataError('wrong_password', 'Wrong password');
       if (!user) {
-        user = { id: nextId('user'), email: clean, fullName: null, city: null, zone: null, walletStatus: 'preparing', address: null };
+        user = { id: nextId('user'), email: clean, provider: 'password', password, fullName: null, city: null, zone: null, walletStatus: 'preparing', address: null };
         store.users.push(user);
       }
+      store.session.userId = user.id;
+      return sessionOf();
+    }),
+
+  /** Resolves for any address. A known password account is marked as «opened the link». */
+  requestPasswordReset: (email) =>
+    simulate(() => {
+      const clean = email.trim().toLowerCase();
+      if (!EMAIL.test(clean)) throw new DataError('validation', 'Invalid email', { field: 'email' });
+      const user = store.users.find((u) => u.email === clean);
+      store.session.recoveryUserId = user?.provider === 'password' ? user.id : null;
+    }),
+
+  recoveryReady: () => simulate(() => store.session.recoveryUserId !== null),
+
+  updatePassword: (password) =>
+    simulate(() => {
+      if (password.length < 6) throw new DataError('validation', 'Password needs at least 6 characters', { field: 'password' });
+      const userId = store.session.recoveryUserId;
+      const user = store.users.find((u) => u.id === userId);
+      if (!user) throw new DataError('unauthenticated', 'The recovery link is not valid');
+      user.password = password;
+      store.session.recoveryUserId = null;
       store.session.userId = user.id;
       return sessionOf();
     }),

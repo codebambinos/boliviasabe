@@ -1,49 +1,148 @@
 // Soft wall (wiki › Entrada y cuenta): acting without an account opens «Crea tu cuenta para seguir»;
 // after signing in, the pending action runs on its own. Looking never needs an account.
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+// Google reloads the page, so before leaving the action is saved as data (`resume`, see
+// pendingAction.ts) and run once when the person is back signed in (SPEC 07).
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { useSession } from '../data';
 import { AuthSheet } from './AuthSheet';
+import { saveDraft, type DraftRecord } from './draftStore';
+import { clearPending, peekPending, savePending, type PendingAction, type PendingHandlers } from './pendingAction';
 
-type Require = (reason: string, action: () => void, title?: string) => void;
+type Require = (reason: string, action: () => void, title?: string, resume?: PendingAction) => void;
+type DraftSaver = () => { key: string; draft: DraftRecord } | null;
+type Registry = {
+  setHandlers: (handlers: PendingHandlers) => void;
+  addDraftSaver: (saver: DraftSaver) => () => void;
+};
+
 const RequireContext = createContext<Require>((_reason, action) => action());
+const RecoveryContext = createContext<() => void>(() => undefined);
+const RegistryContext = createContext<Registry>({ setHandlers: () => undefined, addDraftSaver: () => () => undefined });
+
+type Pending = { reason: string; action: () => void; title?: string; start?: 'forgot'; resume?: PendingAction };
+
+/** A save that never blocks the redirect for long: after this the person goes to Google anyway. */
+const SAVE_BUDGET_MS = 1500;
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const session = useSession();
-  const [pending, setPending] = useState<{ reason: string; action: () => void; title?: string } | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [pending, setPending] = useState<Pending | null>(null);
   const signedIn = useRef(false);
   const ready = session.data?.status === 'signed-in';
+  const handlers = useRef<PendingHandlers>({});
+  const draftSavers = useRef(new Set<DraftSaver>());
+  // What was saved before leaving for Google, read once when the page loads
+  const [restore] = useState(() => peekPending());
+  const restored = useRef(false);
 
   const require = useCallback<Require>(
-    (reason, action, title) => {
+    (reason, action, title, resume) => {
       if (ready) action();
       else {
         signedIn.current = false;
-        setPending({ reason, action, title });
+        setPending({ reason, action, title, resume });
       }
     },
     [ready],
   );
 
+  // «Pedir otro» on /nueva-contrasena lands on Hoy with the sheet open on «¿La olvidaste?»
+  const openRecovery = useCallback(() => {
+    signedIn.current = false;
+    setPending({ reason: '', action: () => undefined, start: 'forgot' });
+  }, []);
+
+  const registry = useRef<Registry>({
+    setHandlers: (next) => {
+      handlers.current = next;
+    },
+    addDraftSaver: (saver) => {
+      draftSavers.current.add(saver);
+      return () => {
+        draftSavers.current.delete(saver);
+      };
+    },
+  });
+
+  // Back from Google: once the session is known, run the saved action if there is a person, and
+  // forget it either way. It never runs twice, and an old one was already dropped by peekPending.
+  useEffect(() => {
+    if (!restore || restored.current || session.data === undefined) return;
+    restored.current = true;
+    clearPending();
+    if (session.data.status !== 'signed-in') return;
+    if (restore.path !== location.pathname) navigate(restore.path, { replace: true });
+    const action = restore.resume;
+    const run = action ? (handlers.current[action.kind] as ((a: PendingAction) => void | Promise<void>) | undefined) : undefined;
+    if (action && run) void Promise.resolve(run(action)).catch(() => undefined);
+  }, [restore, session.data, location.pathname, navigate]);
+
+  // Before «Continuar con Google»: save the action and every registered draft
+  const beforeGoogle = async () => {
+    if (!pending) return;
+    savePending({
+      resume: pending.resume ?? null,
+      path: location.pathname + location.search,
+      reason: pending.reason,
+      title: pending.title,
+      savedAt: Date.now(),
+    });
+    const saves = [...draftSavers.current].map(async (get) => {
+      const entry = get();
+      if (entry) await saveDraft(entry.key, entry.draft);
+    });
+    await Promise.race([Promise.all(saves), new Promise((resolve) => setTimeout(resolve, SAVE_BUDGET_MS))]);
+  };
+
   return (
     <RequireContext.Provider value={require}>
-      {children}
-      {pending && (
-        <AuthSheet
-          reason={pending.reason}
-          title={pending.title}
-          onSignedIn={() => {
-            signedIn.current = true;
-          }}
-          onClose={() => {
-            const { action } = pending;
-            setPending(null);
-            if (signedIn.current) action();
-          }}
-        />
-      )}
+      <RecoveryContext.Provider value={openRecovery}>
+        <RegistryContext.Provider value={registry.current}>
+          {children}
+          {pending && (
+            <AuthSheet
+              reason={pending.reason}
+              title={pending.title}
+              start={pending.start}
+              beforeGoogle={beforeGoogle}
+              onSignedIn={() => {
+                signedIn.current = true;
+                // Signed in without leaving the page (e-mail): the action runs below, not from storage
+                clearPending();
+              }}
+              onClose={() => {
+                const { action } = pending;
+                setPending(null);
+                if (signedIn.current) action();
+              }}
+            />
+          )}
+        </RegistryContext.Provider>
+      </RecoveryContext.Provider>
     </RequireContext.Provider>
   );
 }
 
-/** `requireAccount(reason, action, title?)`: runs `action` now, or after the person creates an account. */
+/** `requireAccount(reason, action, title?, resume?)`: runs `action` now, or after the person creates an
+ * account. `resume` describes the action as data so it also survives the Google redirect. */
 export const useRequireAccount = () => useContext(RequireContext);
+
+/** Opens «Crea tu cuenta» straight on «¿La olvidaste?». */
+export const useOpenPasswordRecovery = () => useContext(RecoveryContext);
+
+/** ShellLayout registers what each pending `kind` does once the person is back from Google. */
+export function useRegisterPendingHandlers(handlers: PendingHandlers): void {
+  const { setHandlers } = useContext(RegistryContext);
+  useEffect(() => setHandlers(handlers));
+}
+
+/** A form with text typed behind the wall registers how to read its draft; it is saved before Google. */
+export function useDraftSaver(saver: DraftSaver): void {
+  const { addDraftSaver } = useContext(RegistryContext);
+  const latest = useRef(saver);
+  latest.current = saver;
+  useEffect(() => addDraftSaver(() => latest.current()), [addDraftSaver]);
+}

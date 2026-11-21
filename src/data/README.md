@@ -34,6 +34,8 @@ Every failure is a `DataError`. Pick the wiki message from `error.code`:
 |---|---|---|
 | `offline` | No connection | «Sin conexión, intenta de nuevo» + Reintentar |
 | `server` | Server failure | «Algo falló, intenta de nuevo» |
+| `wrong_password` | Sign-in with e-mail: known e-mail, other password | «Contraseña incorrecta» + «¿La olvidaste?» |
+| `google_account` | Sign-in with e-mail: the e-mail enters with Google | «Esta cuenta entra con Google» + the Google button |
 | `unauthenticated` | Guest acting, or `field: 'profile'` when «Tu barrio» is pending | Open «Crea tu cuenta para seguir» (or «Tu barrio») |
 | `forbidden` | Not allowed (own content, second vote, not the asker…) | Hide or disable the action |
 | `not_found` | Deleted or hidden | «Esto ya no está disponible» + Ir a Hoy |
@@ -61,11 +63,14 @@ Every call waits 300–600 ms, so skeletons and disabled buttons are visible.
 | How to sign in | Who | Useful for |
 |---|---|---|
 | «Continuar con Google» | Lucía M. (Cala Cala), balance 17, 2 open questions with answers | The normal signed-in flow |
-| Email `jorge@example.com` | Jorge R., has an active urgent question | Answering Lucía's questions |
-| Email `ana@example.com` | Ana R., balance 3 | «Te faltan yapitas» on Urgente |
+| Email `jorge@example.com` + `vecino123` | Jorge R., has an active urgent question | Answering Lucía's questions |
+| Email `ana@example.com` + `vecino123` | Ana R., balance 3 | «Te faltan yapitas» on Urgente |
 | Any other email (password ≥ 6) | New user without profile | «Tu barrio», «Preparando tu cuenta», welcome +5 |
+| Email `lucia@example.com` (any password) | Lucía enters with Google | `google_account`: «Esta cuenta entra con Google» |
+| Seed email + another password | — | `wrong_password`: «Contraseña incorrecta» + «¿La olvidaste?» |
 
-Any password of 6+ characters works for the seed emails. Cochabamba has 35 signs (two pages),
+The seed neighbors that use e-mail (Jorge, Ana, Marco, Rosa) share the password `vecino123`.
+«¿La olvidaste?» on a seed e-mail (not Lucía) acts as if the link was opened: `/nueva-contrasena` then shows its form. Cochabamba has 35 signs (two pages),
 La Paz has a few items, and Cobija is empty (empty states).
 
 Rewards show as «Pendiente» and become «Confirmado» about 2 s later; `useWallet` and

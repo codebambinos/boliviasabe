@@ -2,7 +2,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ListQuery, NewSign } from '../api';
 import { keys } from '../keys';
-import { invalidate } from '../query';
+import { invalidate, queryClient } from '../query';
 import { api } from '../source';
 import type { Id } from '../types';
 
@@ -18,6 +18,11 @@ export function useSigns(filters: Omit<ListQuery, 'cursor'>) {
     placeholderData: (previous, previousQuery) =>
       (previousQuery?.queryKey[3] as Omit<ListQuery, 'cursor'> | undefined)?.city === filters.city ? previous : undefined,
   });
+}
+
+/** Loads one letrero outside a component (a pending action coming back from Google opens its sheet). */
+export function fetchSign(id: Id) {
+  return queryClient.fetchQuery({ queryKey: keys.sign(id), queryFn: () => api.signs.get(id), staleTime: 0 });
 }
 
 export function useSign(id: Id) {

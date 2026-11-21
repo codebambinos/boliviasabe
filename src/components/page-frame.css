@@ -95,3 +95,8 @@
   font: 500 var(--t-display) / 1.1 var(--font-title);
   outline: none;
 }
+
+.page__lead {
+  margin: 0;
+  color: var(--color-muted);
+}
