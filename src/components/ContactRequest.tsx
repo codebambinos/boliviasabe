@@ -4,7 +4,7 @@
 // prefilled with the one saved in the profile.
 import { useEffect, useId, useState } from 'react';
 import { isDataError, useMyPhone, useRequestContact, useRespondContact, type Answer, type ContactDetails, type Question } from '../data';
-import { CheckIcon, CloseIcon, ContactIcon, CopyIcon, MailIcon, PhoneIcon } from './icons';
+import { ArrowLeftIcon, CheckIcon, CloseIcon, ContactIcon, CopyIcon, MailIcon, PhoneIcon } from './icons';
 import { errorMessage } from './messages';
 import { Sheet } from './Sheet';
 import './contact-request.css';
@@ -75,30 +75,35 @@ function RequestSheet({ question, answer, onClose }: { question: Question; answe
   const name = answer.author.displayName;
 
   return (
-    <Sheet labelledBy={titleId} variant="bottom" onClose={onClose} canClose={() => !request.isPending}>
+    // Full screen on a phone, as every sheet with a field: a bottom sheet with the keyboard open lets iOS scroll the
+    // page behind it, and the taps then land there instead of on «Pedir contacto»
+    <Sheet labelledBy={titleId} onClose={onClose} canClose={() => !request.isPending}>
       {(close, forceClose) => (
         <>
           <header className="sheet__bar">
+            <button type="button" className="icon-btn" aria-label="Volver" onClick={close}>
+              <ArrowLeftIcon className="sheet__icon-phone" />
+              <CloseIcon className="sheet__icon-desk" />
+            </button>
             <h2 id={titleId} className="sheet__bar-title">Pedir contacto a {name}</h2>
-            <button type="button" className="icon-btn" aria-label="Cerrar" onClick={close}>
-              <CloseIcon />
-            </button>
           </header>
-          <form
-            className="sheet__content contact__sheet"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (request.isPending) return;
-              request.mutate({ answerId: answer.id, questionId: question.id, phone }, { onSuccess: forceClose });
-            }}
-          >
-            <p className="empty__text">Si acepta, los dos verán el dato del otro: tu correo y, si lo pones, tu celular.</p>
-            <PhoneField id={fieldId} value={phone} onChange={setPhone} />
-            {request.error && <p className="field__error" role="alert">{phoneError(request.error)}</p>}
-            <button type="submit" className="btn btn--full" disabled={request.isPending}>
-              {request.isPending ? 'Enviando…' : 'Pedir contacto'}
-            </button>
-          </form>
+          <div className="sheet__body">
+            <form
+              className="sheet__content contact__sheet"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (request.isPending) return;
+                request.mutate({ answerId: answer.id, questionId: question.id, phone }, { onSuccess: forceClose });
+              }}
+            >
+              <p className="empty__text">Si acepta, los dos verán el dato del otro: tu correo y, si lo pones, tu celular.</p>
+              <PhoneField id={fieldId} value={phone} onChange={setPhone} />
+              {request.error && <p className="field__error" role="alert">{phoneError(request.error)}</p>}
+              <button type="submit" className="btn btn--full" disabled={request.isPending}>
+                {request.isPending ? 'Enviando…' : 'Pedir contacto'}
+              </button>
+            </form>
+          </div>
         </>
       )}
     </Sheet>

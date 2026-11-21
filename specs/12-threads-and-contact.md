@@ -147,6 +147,12 @@ reports: { report(kind: ReportKind, …); hideForMe(kind: ReportKind, …) };
 
 > Verified 2026-11-21. `rls.sql` (local) covers the contact rules (only the asker asks, only the answerer answers, «Ahora no» is final, a third person and a guest never see the details, the phone is validated and saved in the profile), the thread (comments on a solved question, 3 reports hide a comment, «En revisión» for its author), the cascade when an answer is deleted and «Me sirvió» on a Cerrada question → Solucionada. In a 360 px browser against the real project (`0006` applied): three comments fold into «Ver 1 comentario más» / «Ocultar comentarios», delete with «¿Borrar tu comentario?», report with «Reportar el comentario» and it disappears for the reporter; «Pedir contacto» → bad phone refused → «Esperando que acepte» → the answerer accepts in their answer → both boxes show the right e-mail and phone with Copiar / Llamar / Escribir correo; with the channel connected the detail stops polling and a comment from another account shows up about 1.4 s after it is saved. Light and dark, text at 130 %, no horizontal overflow. Pending: the two-phone checks on the preview.
 
+## Changes after the phone test
+
+- **«Pedir contacto» opens full screen on a phone** (not as a bottom sheet): with the keyboard or the browser's autofill open, iOS scrolled the page behind the bottom sheet and the taps landed there, so the button did not respond.
+- **A comment sent after Google empties its box**, and **«Volver» never returns to Google**: the page reached after signing in is marked as the first of the visit, so «Volver» goes to ¿Alguien sabe? (a question) or Hoy.
+- **Tapping the current tab again refreshes it** (Hoy, ¿Alguien sabe? or Yo), besides going back to the top: the way to see what others published on a computer, where there is no pull-to-refresh (wiki #181).
+
 ## Decisions
 
 - **Yes:** the shared detail is the account **e-mail**, plus an **optional phone** typed when asking or accepting and saved in the profile (the user's choice). **No:** a mandatory phone, or e-mail only. T29 will let people edit it.
