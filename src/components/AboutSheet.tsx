@@ -15,6 +15,15 @@ const STEP_ICON: Record<(typeof ABOUT.steps)[number]['icon'], ReactNode> = {
   yapita: <Yapita size="lg" />,
 };
 
+/** When this build was made, in Bolivia: tells which version an installed app is running (SPEC 16). */
+const BUILT = new Intl.DateTimeFormat('es-BO', {
+  timeZone: 'America/La_Paz',
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+}).format(new Date(Number(__APP_VERSION__.split('-').pop())));
+
 /** Staggered entrance order (about-sheet.css › about-rise). */
 const order = (i: number) => ({ '--i': i }) as CSSProperties;
 
@@ -91,6 +100,7 @@ export function AboutSheet({ onClose, onOpenPrivacy }: AboutSheetProps) {
                     <ChevronRightIcon size={20} />
                   </a>
                 </section>
+                <p className="meta about__version">Versión del {BUILT}</p>
               </div>
             </div>
           </>

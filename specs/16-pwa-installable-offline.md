@@ -161,6 +161,8 @@ New dependencies, pinned with `--save-exact`:
   status bar color follows the phone while it does. The manifest keeps `#151110`: a manifest cannot follow the
   system, and it only paints the Android splash.
 - **Reads and publishes fail right away without signal** (`networkMode: 'always'` in `query.ts`). TanStack's default pauses them until the network returns, so a question never opened before kept loading forever offline (Diego's iPhone test). Hoy and ¿Alguien sabe? show their error only when they have no list, so a failed refresh never covers the saved list.
+- **Data calls check the signal first** (`source.ts`). With `navigator.onLine` false they fail at once, so supabase-js never starts its session refresh, which keeps retrying offline and left the installed iPhone on the skeleton. A read with no answer at all gives up after 15 s; writes do not.
+- **«Acerca de» ends with «Versión del <fecha y hora>»** (the build time in Bolivia), to tell which version an installed app is running.
 - **The session is never persisted either**, besides the personal keys: it holds the person's profile.
 
 ## Decisions
