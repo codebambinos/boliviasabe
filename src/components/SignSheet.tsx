@@ -24,6 +24,7 @@ import { Sheet } from './Sheet';
 import { isStale, timeAgo } from './time';
 import { Yapita } from './Yapita';
 import './sign-sheet.css';
+import { FadeImage } from './FadeImage';
 
 type SignSheetProps = {
   sign: Sign;
@@ -196,7 +197,7 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
 
           {view === 'photo' ? (
             <button type="button" className="sheet__zoom" aria-label="Cerrar la foto" onClick={() => setView('detail')}>
-              <img src={sign.photoUrl} alt={sign.title} />
+              <FadeImage key={sign.photoUrl} src={sign.photoUrl} alt={sign.title} />
             </button>
           ) : view === 'report' ? (
             <ReportView sign={sign} headingRef={viewHeading} onDone={(how) => setView(how)} />
@@ -244,8 +245,12 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
           ) : (
             <div className="sheet__body">
               <button type="button" className="sheet__photo" aria-label="Ver la foto completa" onClick={() => setView('photo')}>
-                {/* The 480 px thumbnail is usually cached from the grid: it shows while the full photo loads */}
-                <img src={sign.photoUrl} alt={sign.title} style={{ backgroundImage: `url("${sign.thumbUrl}")` }} />
+                {/* The frame pulses while the full photo loads, then the photo fades in (wiki #196). The hidden
+                    thumbnail, usually cached from the grid, only gives the frame its final size */}
+                <span className="sheet__photo-frame">
+                  <img className="sheet__photo-thumb" src={sign.thumbUrl} alt="" aria-hidden="true" />
+                  <FadeImage key={sign.photoUrl} className="sheet__photo-full" src={sign.photoUrl} alt={sign.title} />
+                </span>
               </button>
               <div className="sheet__info">
                 {sign.price && <p className="letrero-price">{sign.price}</p>}

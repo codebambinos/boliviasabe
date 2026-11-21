@@ -146,7 +146,7 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
                   {tab !== 'yo' && (
                     <button type="button" className="shell__balance" onClick={account.onBalance} aria-label={`Tienes ${account.balance ?? '…'} yapitas, ver movimientos`}>
                       <Yapita />
-                      <span>{account.balance ?? '…'}</span>
+                      {account.balance === null ? <span className="num-wait" aria-hidden="true" /> : <span>{account.balance}</span>}
                     </button>
                   )}
                 </>

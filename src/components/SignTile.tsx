@@ -5,6 +5,7 @@ import { BookmarkIcon, ThumbIcon } from './icons';
 import { helpedText } from './messages';
 import { timeAgo } from './time';
 import './sign-tile.css';
+import { FadeImage } from './FadeImage';
 
 type SignTileProps = {
   sign: Sign;
@@ -23,7 +24,7 @@ export function SignTile({ sign, onOpen, onToggleSave }: SignTileProps) {
     <article className="tile">
       <div className="tile__media">
         {/* Thumbnail in the grid (wiki #142): small file, loaded only when near the screen */}
-        <img src={sign.thumbUrl} alt="" loading="lazy" decoding="async" />
+        <FadeImage key={sign.thumbUrl} src={sign.thumbUrl} alt="" loading="lazy" decoding="async" />
         {sign.price && <span className="tile__price" aria-hidden="true">{sign.price}</span>}
       </div>
       <h3 className="tile__title">

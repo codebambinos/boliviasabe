@@ -197,9 +197,32 @@
   width: 100%;
 }
 
-/* The full photo loads over its cached thumbnail */
-.sheet__photo img {
-  background: center / cover no-repeat;
+/* While the full photo loads, its frame pulses (wiki #194, #196). The thumbnail is never shown: it is usually
+   cached from the grid and only gives the frame the photo's final size, so nothing jumps when the photo fades in. */
+.sheet__photo-frame {
+  display: grid;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sheet__photo-frame > img {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: auto;
+}
+
+.sheet__photo-thumb {
+  visibility: hidden;
+}
+
+.sheet__photo-frame:has(.sheet__photo-full:not([data-loaded])) {
+  min-height: 12rem; /* in case the thumbnail is not cached either */
+  background: var(--color-sunken);
+  animation: photo-wait 1.6s ease-in-out infinite;
+}
+
+.sheet__photo-full {
+  position: relative;
 }
 
 /* Already voted: a marked state in the main slot, never a dead filled button */

@@ -4,6 +4,7 @@ import type { Question } from '../data';
 import { CheckIcon } from './icons';
 import { timeAgo } from './time';
 import './question-card.css';
+import { FadeImage } from './FadeImage';
 
 export const isUrgentActive = (question: Pick<Question, 'urgentUntil'>, now = Date.now()) =>
   question.urgentUntil !== null && Date.parse(question.urgentUntil) > now;
@@ -49,7 +50,7 @@ export function QuestionCard({ question, selected, onOpen }: QuestionCardProps) 
       </div>
       {question.photoUrl && (
         <div className="qcard__media">
-          <img src={question.photoUrl} alt="" loading="lazy" decoding="async" />
+          <FadeImage key={question.photoUrl} src={question.photoUrl} alt="" loading="lazy" decoding="async" />
         </div>
       )}
     </article>

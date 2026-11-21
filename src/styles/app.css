@@ -472,6 +472,51 @@ textarea {
   }
 }
 
+/* A number that is still loading (the balance): a short pulsing bar, never the previous value */
+.num-wait {
+  display: inline-block;
+  width: 2.2ch;
+  height: 0.8em;
+  border-radius: var(--r-sm, 0.25rem);
+  background: currentColor;
+  vertical-align: middle;
+  opacity: 0.22;
+  animation: num-wait 1.4s ease-in-out infinite;
+}
+
+@keyframes num-wait {
+  50% {
+    opacity: 0.08;
+  }
+}
+
+/* Photos fade in once loaded instead of popping in (FadeImage, wiki #194). Their frame pulses like a skeleton
+   meanwhile; the letrero detail shows its blurred thumbnail instead. */
+.fade-img {
+  opacity: 0;
+  transition: opacity 320ms var(--ease);
+}
+
+.fade-img[data-loaded] {
+  opacity: 1;
+}
+
+:is(.tile__media, .qcard__media, .qd__photo):has(> .fade-img:not([data-loaded])) {
+  animation: photo-wait 1.6s ease-in-out infinite; /* only the background pulses, not the price on top */
+}
+
+@keyframes photo-wait {
+  50% {
+    background-color: color-mix(in srgb, var(--color-sunken) 55%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-img {
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

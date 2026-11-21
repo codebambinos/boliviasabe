@@ -172,7 +172,7 @@ function YoSample({
           <div className="profile__balance">
             <Yapita size="lg" />
             <div>
-              <p className="profile__amount num">{balance ?? '…'}</p>
+              <p className="profile__amount num">{balance ?? <span className="num-wait" aria-label="Cargando" />}</p>
               <p className="meta">yapitas</p>
             </div>
           </div>
