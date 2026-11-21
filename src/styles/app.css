@@ -750,6 +750,13 @@ textarea {
   padding: var(--s-6) 0;
 }
 
+.empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+
 .empty__title {
   margin: 0;
   font-size: var(--t-h2);
@@ -1085,6 +1092,16 @@ html.theme-fade *::after {
     fill var(--m-theme) var(--ease),
     stroke var(--m-theme) var(--ease),
     box-shadow var(--m-theme) var(--ease) !important;
+}
+
+/* Theme change by View Transition: only the whole page cross-fades (no element has its own group) */
+html.theme-vt * {
+  view-transition-name: none !important;
+}
+
+html.theme-vt::view-transition-group(root) {
+  animation-duration: 280ms;
+  animation-timing-function: var(--ease);
 }
 
 /* The feed keeps its last result while a new search, chip or city loads: it only dims, no skeleton flash */

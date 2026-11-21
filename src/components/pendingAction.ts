@@ -6,7 +6,11 @@
 export type PendingAction =
   | { kind: 'save-sign'; id: number }
   | { kind: 'vote-sign'; id: number; value: 'helpful' | 'not_helpful' }
-  | { kind: 'open-new-sign' };
+  | { kind: 'save-question'; id: number }
+  | { kind: 'save-answer'; id: number }
+  | { kind: 'send-answer'; questionId: number }
+  | { kind: 'open-new-sign' }
+  | { kind: 'open-ask'; text: string };
 
 /** Registered by ShellLayout, which owns what a kind needs (sheets, city, navigation). */
 export type PendingHandlers = {
@@ -24,7 +28,7 @@ export type PendingRecord = {
 
 const KEY = 'bs:pending:v1';
 const MAX_AGE_MS = 10 * 60 * 1000;
-const KINDS: readonly PendingAction['kind'][] = ['save-sign', 'vote-sign', 'open-new-sign'];
+const KINDS: readonly PendingAction['kind'][] = ['save-sign', 'vote-sign', 'save-question', 'save-answer', 'send-answer', 'open-new-sign', 'open-ask'];
 
 export function savePending(record: PendingRecord): void {
   try {

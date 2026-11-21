@@ -1,13 +1,16 @@
 // The app frame for the tab routes (/, /preguntas, /yo): mounted once, so the city and the sheets
 // survive a tab change. The tab comes from the URL; pages render in the <Outlet /> (SPEC 04).
 import { useEffect, useId, useRef, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
-import { DEFAULT_CITY, fetchSign, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Sign } from '../data';
+import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { DEFAULT_CITY, fetchSign, useCreateAnswer, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Question, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
+import { AskQuestionSheet } from './AskQuestionSheet';
+import { sendDraftAnswer } from './AnswerBox';
+import { QuestionDetail } from './QuestionDetail';
 import { AppShell, type Tab } from './AppShell';
 import { AuthGate, useOpenPasswordRecovery, useRegisterPendingHandlers, useRequireAccount } from './AuthGate';
 import { CloseIcon } from './icons';
-import { Sheet } from './Sheet';
+import { Sheet, afterSheetPop } from './Sheet';
 import { SignSheet } from './SignSheet';
 import { Toast } from './Toast';
 import { goWithTransition } from './transition';
@@ -32,6 +35,7 @@ function Shell() {
   const location = useLocation();
   const navigate = useNavigate();
   const tab = tabOf(location.pathname);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [about, setAbout] = useState(false);
   const [city, setCity] = useState<City>(DEFAULT_CITY);
   const [selected, setSelected] = useState<Sign | null>(null);
@@ -40,6 +44,7 @@ function Shell() {
   const [avisos, setAvisos] = useState(false);
   const [searchHidden, setSearchHidden] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [asking, setAsking] = useState<{ text: string } | null>(null);
   const [notice, setNotice] = useState<{ id: number; rewarded: boolean } | null>(null);
   const [freshSignId, setFreshSignId] = useState<Id | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -47,6 +52,7 @@ function Shell() {
   const signedIn = session.data?.status === 'signed-in';
   const wallet = useWallet({ enabled: signedIn });
   const toggleSaved = useToggleSaved();
+  const createAnswer = useCreateAnswer();
   const requireAccount = useRequireAccount();
   const openRecovery = useOpenPasswordRecovery();
   const signIn = useSignInWithGoogle();
@@ -75,7 +81,11 @@ function Shell() {
       setResumeVote(value);
       setSelected(sign);
     },
+    'save-question': ({ id }) => toggleSaved.mutate({ kind: 'question', id }),
+    'save-answer': ({ id }) => toggleSaved.mutate({ kind: 'answer', id }),
+    'send-answer': ({ questionId }) => sendDraftAnswer(questionId, createAnswer.mutateAsync),
     'open-new-sign': () => setUploading(true),
+    'open-ask': ({ text }) => setAsking({ text }),
   });
 
   // Lupa (wiki #140): only while Hoy's own search is off screen
@@ -124,6 +134,23 @@ function Shell() {
     window.setTimeout(() => searchRef.current?.focus({ preventScroll: true }), smooth ? 350 : 0);
   };
 
+  // A conversation on desktop lives in the URL (`?p=<id>`) so a reload and Back keep it; on a phone it is a page
+  const selectedQuestion = tab === 'preguntas' && Number(searchParams.get('p')) > 0 ? Number(searchParams.get('p')) : null;
+  const openQuestion = (id: Id, options?: { share?: boolean; chargeFailed?: boolean }) => {
+    const state = options?.share ? { shareFor: id, chargeFailed: options.chargeFailed } : undefined;
+    if (window.matchMedia('(min-width: 64rem)').matches) setSearchParams({ p: String(id) }, { state });
+    else goWithTransition((viewTransition) => navigate(`/p/${id}`, { viewTransition, state }), 'forward');
+  };
+  const openAsk = (text = '') =>
+    requireAccount('Así tus vecinos pueden responderte.', () => setAsking({ text }), undefined, { kind: 'open-ask', text });
+
+  // After publishing: the sheet closes first (it owns a history entry), then the new question opens
+  const onQuestionPublished = ({ question, urgent, urgentCharged }: { question: Question; urgent: boolean; urgentCharged: boolean }) => {
+    if (question.city !== city) setCity(question.city);
+    // The notice travels with the navigation: on a phone the conversation is a page outside this shell
+    afterSheetPop(() => openQuestion(question.id, { share: true, chargeFailed: urgent && !urgentCharged }));
+  };
+
   const context: ShellContext = {
     city,
     setCity,
@@ -131,6 +158,9 @@ function Shell() {
     openSign: setSelected,
     onToggleSave,
     freshSignId,
+    openQuestion,
+    selectedQuestion,
+    openAsk,
     openAbout: () => setAbout(true),
     openPrivacy,
     signInWithGoogle: () => signIn.mutate(),
@@ -166,13 +196,18 @@ function Shell() {
         onFab={() =>
           requireAccount(
             tab === 'hoy' ? 'Así tu letrero aparece en Hoy y ganas una yapita.' : 'Así tus vecinos pueden responderte.',
-            tab === 'hoy' ? () => setUploading(true) : () => undefined,
+            tab === 'hoy' ? () => setUploading(true) : () => setAsking({ text: '' }),
             undefined,
-            tab === 'hoy' ? { kind: 'open-new-sign' } : undefined,
+            tab === 'hoy' ? { kind: 'open-new-sign' } : { kind: 'open-ask', text: '' },
           )
         }
         onSearch={searchHidden ? goToSearch : undefined}
-        detailEmpty="Cuando haya preguntas, su conversación se abre aquí."
+        detail={
+          selectedQuestion ? (
+            <QuestionDetail key={selectedQuestion} id={selectedQuestion} variant="panel" onGone={() => setSearchParams({}, { replace: true })} />
+          ) : undefined
+        }
+        detailEmpty="Toca una pregunta para ver su conversación aquí."
       >
         <Outlet context={context} />
       </AppShell>
@@ -186,6 +221,15 @@ function Shell() {
             setResumeVote(null);
           }}
           onToggleSave={onToggleSave}
+        />
+      )}
+      {asking && (
+        <AskQuestionSheet
+          viewingCity={city}
+          initialText={asking.text}
+          onClose={() => setAsking(null)}
+          onPublished={onQuestionPublished}
+          onOpenQuestion={(id) => afterSheetPop(() => openQuestion(id))}
         />
       )}
       {uploading && <UploadSignSheet viewingCity={city} onClose={() => setUploading(false)} onPublished={onPublished} />}

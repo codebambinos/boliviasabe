@@ -19,3 +19,20 @@ export function helpedText(count: number): string {
 export function firstName(displayName: string): string {
   return displayName.split(/\s+/)[0] ?? displayName;
 }
+
+/** wiki › flujo-final › 2: what each question limit says. Null for an error that is not a limit. */
+export function limitMessage(error: unknown): string | null {
+  if (!isDataError(error) || error.code !== 'limit') return null;
+  switch (error.limit) {
+    case 'questions_per_day':
+      return 'Llegaste al límite de hoy. Puedes volver a hacerlo mañana';
+    case 'open_questions':
+      return 'Cierra una de tus preguntas para hacer otra';
+    case 'urgent_active':
+      return 'Ya tienes una pregunta urgente';
+    case 'insufficient_balance':
+      return 'Te faltan yapitas para una pregunta urgente';
+    default:
+      return 'No se puede por ahora';
+  }
+}
