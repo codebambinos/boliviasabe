@@ -5,6 +5,28 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/p/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|Discordbot|LinkedInBot|SkypeUriPreview|Pinterest|redditbot|Embedly).*"
+        }
+      ],
+      "destination": "/api/og?kind=question&id=:id"
+    },
+    {
+      "source": "/l/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|Discordbot|LinkedInBot|SkypeUriPreview|Pinterest|redditbot|Embedly).*"
+        }
+      ],
+      "destination": "/api/og?kind=sign&id=:id"
+    },
+    {
       "source": "/((?!api/)[^.]*)",
       "destination": "/index.html"
     }
