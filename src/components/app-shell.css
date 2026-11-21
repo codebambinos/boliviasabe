@@ -1,0 +1,687 @@
+/* App frame. Art direction «Letrero» (DESIGN.md).
+   Phone first (360 px): top bar, one column, bottom nav fixed at the foot, FAB above it.
+   Tablet (768 px): the same, centered. Desktop (1024 px+): sidebar | column | detail panel. */
+
+.shell {
+  min-height: 100dvh;
+}
+
+.shell__column {
+  max-width: var(--frame);
+  margin: 0 auto;
+  /* room for the bottom nav, the FAB and the phone's home indicator */
+  padding-bottom: calc(var(--nav-h) + 5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Top bar: opaque, one hairline, the same at every scroll depth. The aguayo stripe sits on top. */
+.shell__top {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  container-type: inline-size;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: var(--color-bg);
+  border-bottom: var(--hairline);
+}
+
+.shell__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--top);
+  padding: var(--s-1) var(--s-2) var(--s-1) var(--gutter);
+}
+
+/* Large text (e.g. 130 %): rem grows with it. The bar keeps its reading order (logo, city,
+   actions); when they no longer fit, the actions wrap to a second line on the right. */
+@container (max-width: 22rem) {
+  .shell__bar {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+
+  .shell__city {
+    flex: 1 1 auto;
+  }
+}
+
+.shell__logo {
+  flex: none;
+}
+
+.shell__city {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  flex: 0 1 auto;
+  min-width: 0;
+  min-height: var(--touch);
+  padding: 0 var(--s-2);
+  border-radius: var(--r-pill);
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: background-color var(--m-out) var(--ease);
+}
+
+.shell__city:active {
+  background: var(--color-sunken);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shell__city:hover {
+    background: var(--color-sunken);
+  }
+}
+
+.shell__city-name {
+  overflow: hidden;
+  font: var(--w-title) var(--t-card) / 1.2 var(--font-title);
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.shell__city svg {
+  flex: none;
+  color: var(--color-muted);
+}
+
+/* The real control: covers the label, invisible, keeps the native picker and focus */
+.shell__city select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.shell__city:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.shell__account {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.shell__bell {
+  position: relative;
+}
+
+/* Unread count: a fuchsia pill on the bell's top-right corner, never over the glyph. 13 px. */
+.shell__badge {
+  position: absolute;
+  top: 0.25rem;
+  left: 1.5rem;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 0.25rem;
+  border: 2px solid var(--color-bg);
+  border-radius: var(--r-pill);
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  font: 600 var(--t-label) / 1 var(--font-body);
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: content-box;
+}
+
+/* Balance: neutral pill, the orange ★ disc carries the yapita color */
+.shell__balance {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--touch);
+  padding: 0 var(--s-3) 0 var(--s-2);
+  border: var(--hairline);
+  border-radius: var(--r-pill);
+  background: var(--color-card);
+  color: var(--color-ink);
+  font: var(--w-title) var(--t-body) / 1 var(--font-title);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color var(--m-out) var(--ease),
+    transform var(--m-out) var(--ease);
+}
+
+.shell__balance:active {
+  transform: scale(0.985);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shell__balance:hover {
+    border-color: var(--color-line-strong);
+  }
+}
+
+.shell__main {
+  container-type: inline-size; /* the Hoy grid picks its columns from the feed's width */
+  padding: 0 var(--gutter);
+}
+
+/* Floating action button: the one filled action of the tab, right side above the nav */
+.shell__fab {
+  position: fixed;
+  z-index: 4;
+  right: max(var(--gutter), calc((100vw - var(--frame)) / 2 + var(--gutter)));
+  bottom: calc(var(--nav-h) + var(--s-4) + env(safe-area-inset-bottom, 0px));
+  min-height: 3.25rem;
+  padding-inline: var(--s-5);
+  box-shadow: var(--shadow-float);
+}
+
+/* Tabs (bottom nav on phones, vertical list in the desktop sidebar) */
+.tabs {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tabs > li {
+  flex: 1;
+}
+
+.tabs__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-1);
+  width: 100%;
+  min-height: var(--nav-h);
+  padding: var(--s-2) var(--s-1);
+  border: 0;
+  background: none;
+  color: var(--color-muted);
+  font: 500 var(--t-label) / 1.2 var(--font-body);
+  cursor: pointer;
+  transition: color var(--m-out) var(--ease);
+}
+
+/* The icon sits in a pill that fills when the tab is current */
+.tabs__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 2rem;
+  border-radius: var(--r-pill);
+  transition: background-color var(--m-panel) var(--ease);
+}
+
+.tabs__item[aria-current='page'] {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.tabs__item[aria-current='page'] .tabs__icon {
+  background: var(--color-brand-soft);
+  color: var(--color-brand-text);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tabs__item:hover {
+    color: var(--color-ink);
+  }
+}
+
+/* Bottom nav: full width at the foot, on the card ground with one hairline */
+.shell__nav {
+  position: fixed;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--color-card);
+  border-top: var(--hairline);
+}
+
+.shell__nav .tabs {
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+.shell__sidebar,
+.shell__detail {
+  display: none;
+}
+
+/* Desktop: sidebar | column | detail */
+@media (min-width: 64rem) {
+  /* The feed is centered on the full width; the sidebar hangs in the left margin, against the feed.
+     Both margins are the same width (at least the sidebar's), so the center never moves. */
+  .shell {
+    --feed: var(--frame);
+    --side: 15rem;
+    display: grid;
+    --gap: var(--s-6);
+    grid-template-columns: minmax(var(--side), 1fr) minmax(0, var(--feed)) minmax(var(--side), 1fr);
+    gap: var(--gap);
+    padding: 0 var(--s-5);
+  }
+
+  .shell__sidebar {
+    grid-column: 1;
+    justify-self: end;
+    width: var(--side);
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-5);
+    height: 100dvh;
+    padding: var(--s-5) 0;
+  }
+
+  .shell__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding-left: var(--s-2);
+    font: 600 1.25rem var(--font-title);
+    letter-spacing: -0.02em;
+  }
+
+  .shell__sidebar .tabs {
+    flex-direction: column;
+    gap: var(--s-1);
+  }
+
+  .shell__sidebar .tabs__item {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--s-2);
+    min-height: 3rem;
+    padding: 0 var(--s-2);
+    border-radius: var(--r-pill);
+    font-size: var(--t-body);
+  }
+
+  .shell__sidebar .tabs__icon {
+    width: 2.5rem;
+  }
+
+  .shell__sidebar .tabs__item[aria-current='page'] {
+    background: var(--color-card);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+  }
+
+  .shell__sidebar .tabs__item[aria-current='page'] .tabs__icon {
+    background: none;
+  }
+
+  .shell__top {
+    border-bottom: 0;
+  }
+
+  .shell__column {
+    width: 100%;
+    padding-bottom: var(--s-6);
+    border-inline: var(--hairline);
+    background: var(--color-bg);
+  }
+
+  .shell__logo,
+  .shell__nav,
+  .shell__fab {
+    display: none;
+  }
+
+  .shell__detail {
+    display: block;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100dvh;
+    overflow-y: auto;
+    padding: var(--s-5) 0;
+  }
+
+  /* Nothing open yet: a quiet hint where the detail will appear */
+  .shell__detail-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 16rem;
+    padding: var(--s-5);
+    border: 1px dashed var(--color-line-strong);
+    border-radius: var(--r-lg);
+    color: var(--color-muted);
+    font-size: var(--t-small);
+    text-align: center;
+  }
+}
+
+/* Layout per tab (wiki #141, #145). Every tab uses the same frame (--frame, centered on the full
+   width), so nothing jumps when switching tabs. Hoy fills it with the grid; Yo with its own
+   two-column grid; ¿Alguien sabe? splits it into list + conversation, which together are the frame. */
+@media (min-width: 64rem) {
+  .shell[data-layout='split'] {
+    --panel: 24rem;
+    grid-template-columns:
+      minmax(var(--side), 1fr)
+      minmax(0, calc(var(--frame) - var(--panel) - var(--gap)))
+      var(--panel)
+      minmax(var(--side), 1fr);
+  }
+
+  /* The top bar spans the whole frame (list + conversation), as on every other tab */
+  .shell[data-layout='split'] .shell__top {
+    margin-right: calc(-1 * (var(--panel) + var(--gap)));
+  }
+
+  .shell[data-layout='split'] .shell__detail {
+    grid-column: 3;
+    top: calc(var(--top) + 3px);
+    max-height: calc(100dvh - var(--top) - 3px);
+    padding-top: calc(var(--top) + 3px + var(--s-5));
+  }
+}
+
+/* Navigation transitions (View Transitions API, transition.ts).
+   The bars, the sidebar and the FAB keep their own names, so they stay put. Everything else is
+   the root snapshot, which is exactly the viewport: the old screen fades out fast, the new one
+   fades in while it slides 12 px in the direction of travel. Capturing the viewport (not the
+   whole feed) is what keeps a scrolled list from jumping. The pseudo tree gets the page ground,
+   so the slide never reveals an empty edge. Reduced motion skips the API entirely. */
+.shell__top {
+  view-transition-name: topbar;
+}
+
+.shell__nav {
+  view-transition-name: tabbar;
+}
+
+.shell__fab {
+  view-transition-name: fab;
+}
+
+.shell__sidebar {
+  view-transition-name: sidebar;
+}
+
+.shell__detail {
+  view-transition-name: detail;
+}
+
+::view-transition {
+  background: var(--color-bg);
+}
+
+::view-transition-group(topbar),
+::view-transition-group(sidebar),
+::view-transition-group(tabbar) {
+  animation: none;
+}
+
+::view-transition-old(root) {
+  animation: vt-out 110ms var(--ease) both;
+}
+
+/* Fade-through: the new screen starts only once the old one is almost gone, so the two never
+   show at the same time. */
+::view-transition-new(root) {
+  animation: vt-in 220ms var(--ease-enter) 90ms both;
+}
+
+::view-transition-old(tabbar),
+::view-transition-new(tabbar),
+::view-transition-old(detail),
+::view-transition-new(detail) {
+  animation-duration: var(--m-panel);
+  animation-timing-function: var(--ease);
+}
+
+/* The FAB changes its label (Subir / Preguntar): two pills of different width must never overlap.
+   The old one leaves at once; the new one appears in place, anchored to the right edge. */
+::view-transition-group(fab) {
+  animation: none;
+}
+
+::view-transition-old(fab) {
+  display: none;
+}
+
+::view-transition-new(fab) {
+  inset: 0 0 auto auto;
+  width: auto;
+  height: 100%;
+  animation: fab-in var(--m-panel) var(--ease-enter) 90ms both;
+}
+
+@keyframes fab-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+:root {
+  --vt-dx: 12px;
+  --vt-dy: 0px;
+}
+
+:root[data-nav='back'] {
+  --vt-dx: -12px;
+}
+
+:root[data-nav='up'] {
+  --vt-dx: 0px;
+  --vt-dy: 16px;
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--vt-dx), var(--vt-dy));
+  }
+}
+
+/* The F5 logo is dark ink: on the dark ground it sits on a light tile until a light version exists */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .shell__logo,
+  :root:not([data-theme='light']) .shell__brand img {
+    padding: 0.1875rem;
+    border-radius: var(--r-sm);
+    background: #f5f2ef;
+  }
+}
+
+:root[data-theme='dark'] .shell__logo,
+:root[data-theme='dark'] .shell__brand img {
+  padding: 0.1875rem;
+  border-radius: var(--r-sm);
+  background: #f5f2ef;
+}
+
+/* Lupa (wiki #140): only while the screen's own search is off screen. Hidden, it takes no room,
+   no focus and no tap; it fades in when the search scrolls away. */
+.shell__search {
+  display: none;
+}
+
+.shell__search[data-shown] {
+  display: inline-flex;
+  animation: search-in var(--m-panel) var(--ease-enter) both;
+}
+
+@keyframes search-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+/* «Sin conexión» banner, under the top bar, inside the sticky header */
+.offline__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  padding: var(--s-2) var(--gutter);
+  border-top: var(--hairline);
+  background: var(--color-sunken);
+  color: var(--color-ink);
+  font-size: var(--t-small);
+}
+
+.offline__bar strong {
+  font-weight: 600;
+}
+
+/* Desktop below 101 rem: the full sidebar and the full 64 rem frame do not both fit centered, so
+   the sidebar becomes a rail (icons with their names under them). The frame keeps its width. */
+@media (min-width: 64rem) and (max-width: 100.99rem) {
+  .shell {
+    --side: 5.5rem;
+    --gap: var(--s-5);
+  }
+
+  .shell__sidebar {
+    align-items: center;
+  }
+
+  .shell__brand {
+    padding-left: 0;
+  }
+
+  .shell__sidebar .shell__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .shell__sidebar .tabs {
+    width: 100%;
+  }
+
+  .shell__sidebar .tabs__item {
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--s-1);
+    min-height: 4rem;
+    padding: var(--s-1);
+    border-radius: var(--r-md);
+    font-size: var(--t-label);
+    text-align: center;
+  }
+
+  .shell__sidebar .tabs__icon {
+    width: 3.5rem;
+  }
+
+  .shell__sidebar .tabs__item[aria-current='page'] {
+    background: none;
+    box-shadow: none;
+  }
+
+  .shell__sidebar .tabs__item[aria-current='page'] .tabs__icon {
+    background: var(--color-brand-soft);
+  }
+
+  .shell__side-action {
+    width: 3.5rem;
+    height: 3.5rem;
+    padding: 0;
+    border-radius: var(--r-md);
+  }
+}
+
+/* Tab names wrap evenly when the text is large */
+.tabs__label {
+  text-wrap: balance;
+}
+
+.shell__signin {
+  margin-left: var(--s-1);
+}
+
+/* FAB folds to its «+» while the list scrolls down (no width animation: the label fades) */
+.shell__fab-label {
+  transition: opacity var(--m-out) var(--ease);
+}
+
+.shell__fab[data-folded] {
+  width: 3.5rem;
+  min-height: 3.5rem;
+  padding: 0;
+}
+
+.shell__fab[data-folded] .shell__fab-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  opacity: 0;
+}
+
+/* The rail's main action keeps its name under the «+» (a verb, like the tabs) */
+.shell__rail-label {
+  display: none;
+}
+
+@media (min-width: 64rem) and (max-width: 100.99rem) {
+  .shell__side-action {
+    flex-direction: column;
+    gap: 0.125rem;
+    width: 4.5rem;
+    height: auto;
+    min-height: 4rem;
+    padding: var(--s-2) 0;
+    font-size: var(--t-label);
+  }
+
+  .shell__rail-label {
+    display: block;
+    line-height: 1.2;
+  }
+}
+
+/* «Entrar»: a word with room, an icon when the bar is tight (large text) */
+.shell__signin-icon {
+  display: none;
+}
+
+@container (max-width: 22rem) {
+  .shell__bar {
+    flex-wrap: nowrap;
+  }
+
+  .shell__signin {
+    width: var(--touch);
+    padding: 0;
+  }
+
+  .shell__signin-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .shell__signin-icon {
+    display: block;
+  }
+}

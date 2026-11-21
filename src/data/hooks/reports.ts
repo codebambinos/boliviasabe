@@ -1,0 +1,23 @@
+// «Reportar» and «Ya no quiero ver esto» hooks.
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { keys } from '../keys';
+import { invalidate } from '../query';
+import { api } from '../source';
+import type { ContentKind, Id, ReportReason } from '../types';
+
+export function useReport() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ kind, id, reason }: { kind: ContentKind; id: Id; reason: ReportReason }) => api.reports.report(kind, id, reason),
+    onSuccess: () => invalidate(client, keys.signs(), keys.questions()),
+  });
+}
+
+/** Hides the item for this user only. It disappears from every list. */
+export function useHideForMe() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ kind, id }: { kind: ContentKind; id: Id }) => api.reports.hideForMe(kind, id),
+    onSuccess: () => invalidate(client, keys.signs(), keys.questions(), keys.saved()),
+  });
+}

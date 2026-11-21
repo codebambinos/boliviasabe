@@ -21,3 +21,11 @@ dev-dist/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Impeccable: keep the shared config and critique history, not local caches
+.impeccable/hook.cache.json
+.impeccable/live/
+.impeccable/*.local.json
+
+# CodeGraph index (local)
+.codegraph/
