@@ -43,9 +43,11 @@ const loadData = () => import('./supabase/index').then((module) => module.supaba
 
 function lazySigns(): DataApi['signs'] {
   return {
-    ...mockAdapter.signs,
     list: (query) => loadData().then((data) => data.signs.list(query)),
     get: (id) => loadData().then((data) => data.signs.get(id)),
+    create: (input) => loadData().then((data) => data.signs.create(input)),
+    vote: (id, value) => loadData().then((data) => data.signs.vote(id, value)),
+    remove: (id) => loadData().then((data) => data.signs.remove(id)),
   };
 }
 
