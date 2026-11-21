@@ -23,8 +23,8 @@ Today the sheet, the hooks and the wall (`AuthSheet`, `useSignInWithGoogle`, `us
 - **Sheet copy** (`AuthSheet.tsx`): `wrong_password` → «Contraseña incorrecta» under the password field + a «¿La olvidaste?» link; `google_account` → «Esta cuenta entra con Google» + the Google button right there.
 - **Forgot password** inside the sheet: e-mail (pre-filled) → «Enviar correo» → «Te enviamos un correo. Si no llega, revisa Spam».
 - **`/nueva-contrasena`** (`NewPasswordPage.tsx`): new password (minimum 6, show/hide) → «Guardar contraseña» → signed in → Hoy. A link that does not work shows «Este enlace ya no sirve» + «Pedir otro» (goes to Hoy with the forgot-password step open).
-- **Pending action** (`src/components/pendingAction.ts` + `AuthGate.tsx`): `requireAccount(reason, action, title?, resume?)` gets an optional serializable `resume` descriptor. Before going to Google it is saved with the return path; when the app loads signed in, `AuthGate` runs it once and clears it. Existing call sites that become resumable: Guardar and Me sirvió / No me sirvió (the others keep working as today, not resumable, until their own tasks). The `PendingAction` union is meant to grow: each later task adds its own `kind` and registers its handler in `ShellLayout` (a `kind` with no handler is ignored without error). SPEC 06 (T19) adds `open-new-sign` so «+ Subir letrero» reopens its form after Google.
-- **Draft store** (`src/components/draftStore.ts`): text fields in `localStorage`, photos in IndexedDB. A form registers a getter with `AuthGate`, which saves the draft before the redirect; the form reads it back on mount. It is for inline text boxes where the wall comes at «Enviar», not at the opening button (answers in T20, thread comments in T22). Forms opened from a button that already requires an account, like «+ Subir letrero» (T19), have nothing typed when the redirect happens and do not use it.
+- **Pending action** (`src/components/pendingAction.ts` + `AuthGate.tsx`): `requireAccount(reason, action, title?, resume?)` gets an optional serializable `resume` descriptor. Before going to Google it is saved with the return path; when the app loads signed in, `AuthGate` runs it once and clears it. Existing call sites that become resumable: Guardar and Me sirvió / No me sirvió (the others keep working as today, not resumable, until their own tasks). The `PendingAction` union is meant to grow: each later task adds its own `kind` and registers its handler in `ShellLayout` (a `kind` with no handler is ignored without error). This spec adds `open-new-sign` itself (T19 was merged without a `resume`), so «+ Subir letrero» reopens its form after Google: the FAB passes it and `ShellLayout` registers a handler that opens the upload sheet.
+- **Draft store** (`src/components/draftStore.ts`): text fields in `localStorage`, photos in IndexedDB. A form registers a getter with `AuthGate`, which saves the draft before the redirect; the form reads it back on mount. It is for inline text boxes where the wall comes at «Enviar», not at the opening button (answers in T20, thread comments in T22). Forms opened from a button that already requires an account, like «+ Subir letrero» (T19), have nothing typed when the redirect happens and do not use it. The store uses its own IndexedDB database, so it never collides with `src/components/draft.ts` while that file is still in `main` (issue #12 asks to remove it).
 - **Mock parity**: the mock now keeps a password and a sign-in method per user, so `wrong_password`, `google_account` and the reset flow can be tested without Supabase.
 - **Supabase setup**: migration `supabase/migrations/0004_auth_method.sql`, a check for it in `supabase/tests/rls.sql`, and an «Auth setup» section in `supabase/README.md` with the dashboard settings (Site URL, Redirect URLs, e-mail provider, Google provider, SMTP).
 
@@ -33,7 +33,7 @@ Today the sheet, the hooks and the wall (`AuthSheet`, `useSignInWithGoogle`, `us
 - «Tu barrio» and `saveProfile` against Supabase (T16). `supabaseAuth.saveProfile` rejects with `server` until then; creating the `profiles` row and the Stellar account belong to T16.
 - The rest of the Supabase adapter (signs, questions, saved, reports, wallet).
 - Cerrar sesión screen and deleting the push subscription on sign-out (T29, T27). `signOut` itself is implemented.
-- The forms themselves: «+ Subir letrero» (T19, SPEC 06) adds its own `resume` kind; answers and comments (T20, T22) will use the draft store.
+- The forms themselves and the T19 corrections (in-memory draft, profile city; issue #12). Answers and comments (T20, T22) will use the draft store.
 - E-mail confirmation, Apple login, phone login, linking Google and password to one account by hand.
 - Rate limits on sign-in attempts beyond what Supabase does by default.
 - The Vercel project, its URL and the production Redirect URLs (T13).
@@ -72,8 +72,9 @@ Pending action, `src/components/pendingAction.ts`:
 ```ts
 type PendingAction =
   | { kind: 'save-sign'; id: number }
-  | { kind: 'vote-sign'; id: number; value: 'helpful' | 'not_helpful' };
-// Later tasks extend it, e.g. SPEC 06 adds { kind: 'open-new-sign' }.
+  | { kind: 'vote-sign'; id: number; value: 'helpful' | 'not_helpful' }
+  | { kind: 'open-new-sign' };
+// Later tasks extend it, e.g. T20 adds its own kind.
 
 /** Registered by ShellLayout, which owns what a kind needs (sheets, city, navigation). */
 type PendingHandlers = { [K in PendingAction['kind']]?: (action: Extract<PendingAction, { kind: K }>) => void | Promise<void> };
@@ -89,7 +90,7 @@ type DraftRecord = { fields: Record<string, unknown>; blobs: Record<string, Blob
 saveDraft(key: string, draft: DraftRecord): Promise<void>;
 loadDraft(key: string): Promise<DraftRecord | null>;
 clearDraft(key: string): Promise<void>;
-// fields: localStorage 'bs:draft:<key>:v1'. blobs: IndexedDB database 'boliviasabe', store 'draft-blobs'.
+// fields: localStorage 'bs:draft:<key>:v1'. blobs: IndexedDB database 'boliviasabe-drafts', store 'blobs'.
 // Expires after 30 minutes. If either storage fails, it falls back to memory and never throws.
 ```
 
@@ -102,7 +103,7 @@ Environment: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (public values; th
 3. In `src/data/errors.ts` and `src/data/api.ts` add the two codes and the three methods. Update the mock: users get `password` and `provider` (Lucía is `google`), `signInWithEmail` follows the same three branches, `requestPasswordReset` marks a recovery for that e-mail, `recoveryReady` reads it, `updatePassword` sets it and signs in. Add the hooks. Manual test on the mock: wrong password and Google e-mail reject with the new codes.
 4. Update `AuthSheet.tsx` for the new messages, «¿La olvidaste?» and the forgot-password step (with `src/components/messages.ts` mapping the codes), and build `NewPasswordPage.tsx` with its states (checking, form, invalid link). Manual test on the mock at 360 px, light and dark, text at 130 %: the whole recovery flow works with no Supabase.
 5. Create `src/data/supabase/client.ts` and `auth.ts` and select them in `source.ts`. Manual test with `VITE_DATA_SOURCE=supabase`: create an account with an e-mail, sign out, sign in again, wrong password, forgot password, the e-mail arrives and `/nueva-contrasena` changes it.
-6. Create `pendingAction.ts` and `draftStore.ts`; make `AuthGate` save the pending action and the registered draft before `signInWithGoogle` and restore them on load; convert the Guardar and Me sirvió / No me sirvió call sites to pass `resume`. Manual test: as a guest, tap Guardar on a letrero, continue with Google, and the letrero comes back saved; check the draft store from the browser console with one photo, a reload and the 30-minute expiry.
+6. Create `pendingAction.ts` and `draftStore.ts`; make `AuthGate` save the pending action and the registered draft before `signInWithGoogle` and restore them on load; convert the Guardar and Me sirvió / No me sirvió call sites to pass `resume`, and make the FAB pass `{ kind: 'open-new-sign' }` with a `ShellLayout` handler that opens `UploadSignSheet`. Manual test: as a guest, tap Guardar on a letrero, continue with Google, and the letrero comes back saved; check the draft store from the browser console with one photo, a reload and the 30-minute expiry.
 7. Walk the acceptance list on a real Android and a real iPhone, including Google from a link opened inside WhatsApp. Open the PR with `Closes #8` and move the card to In Review.
 
 ## Acceptance criteria
@@ -117,6 +118,7 @@ Environment: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (public values; th
 - [ ] Opening `/nueva-contrasena` with no valid link shows «Este enlace ya no sirve» and «Pedir otro». A used link shows the same.
 - [ ] «Continuar con Google» signs in with a Google account and returns to the same page; the Google screen shows no logo.
 - [ ] As a guest, Guardar on a letrero → Google → back: the letrero is saved and its sheet is open. The same for «Me sirvió».
+- [ ] As a guest on Hoy, «+ Subir» → Google → back: the upload form opens on its own, empty.
 - [ ] A pending action older than 10 minutes is dropped without running; a pending action never runs twice; a `kind` with no registered handler is dropped without an error.
 - [ ] A draft with text and one photo saved with `saveDraft` survives a reload and is returned by `loadDraft`; after 30 minutes it returns `null`; with IndexedDB blocked it still works in memory and does not throw.
 - [ ] Closing the sheet (✕, Android back, scrim) returns to where the person was and keeps what they typed in the e-mail field.
@@ -138,7 +140,8 @@ Environment: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (public values; th
 - **Yes:** a serializable `resume` descriptor for pending actions. A closure cannot survive the Google redirect.
 - **No:** restoring every action now. Report, Subir and Preguntar stay as today until their tasks add a `kind`; the descriptor union grows then.
 - **Yes:** the draft store ships in T15 with no form using it yet, because #117 and the issue ask for it here. Its first users are inline text boxes with the wall at «Enviar» (T20, T22).
-- **Yes:** SPEC 06 keeps its draft in memory. «+ Subir letrero» requires the account before the form opens (wiki: «+ Subir letrero 🔒»), so nothing is typed when Google reloads the page. What SPEC 06 needs from this spec is only a `resume` kind, `open-new-sign`, so the form opens again on its own.
+- **Yes:** «+ Subir letrero» keeps its draft in memory (wiki #167, corrected 2026-11-21). It requires the account before the form opens (wiki: «+ Subir letrero 🔒»), so nothing is typed when Google reloads the page. The merged T19 (PR #36) persists the draft in `draft.ts`; issue #12 was reopened to remove that, after this spec lands. This spec only adds the `open-new-sign` kind so the form opens again after Google.
+- **Yes:** the draft store opens its own IndexedDB database (`boliviasabe-drafts`). `draft.ts` in `main` opens `boliviasabe` v1 with another store, and two modules on one database would overwrite each other's schema; a separate name makes the merge order irrelevant.
 - **No:** moving the wall of «Subir» from the button to «Publicar». It would let guests fill the form and force a photo draft across the redirect, but it changes the wiki flow and needs a product decision first.
 - **Yes:** `localStorage` for fields and IndexedDB for photos (wiki #117, `tecnico.md`). Both with short expiry, versioned keys (`:v1`) and a memory fallback.
 - **Yes:** the mock simulates the whole recovery (`recoveryReady`, `requestPasswordReset`) so the screen can be built and checked before Supabase is configured.
