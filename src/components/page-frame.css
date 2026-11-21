@@ -82,3 +82,16 @@
     transform: scaleX(0);
   }
 }
+
+/* Body of the simple pages (details, new password): one column inside the frame */
+.page__main {
+  max-width: calc(var(--frame) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--s-6) var(--gutter) var(--s-8);
+}
+
+.page__title {
+  margin: 0 0 var(--s-3);
+  font: 500 var(--t-display) / 1.1 var(--font-title);
+  outline: none;
+}

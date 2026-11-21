@@ -3,11 +3,17 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { App } from './App';
 import { setDirection } from './components/transition';
+import { NewPasswordPage } from './pages/NewPasswordPage';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { QuestionDetailPage } from './pages/QuestionDetailPage';
+import { SignDetailPage } from './pages/SignDetailPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <App /> },
+  { path: '/l/:id', element: <SignDetailPage /> },
+  { path: '/p/:id', element: <QuestionDetailPage /> },
   { path: '/privacidad', element: <PrivacyPage /> },
+  { path: '/nueva-contrasena', element: <NewPasswordPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ]);
 
