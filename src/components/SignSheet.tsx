@@ -245,8 +245,8 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
           ) : (
             <div className="sheet__body">
               <button type="button" className="sheet__photo" aria-label="Ver la foto completa" onClick={() => setView('photo')}>
-                {/* The 480 px thumbnail is usually cached from the grid: it shows, blurred, while the full photo loads
-                    and fades in over it (wiki #194) */}
+                {/* The frame pulses while the full photo loads, then the photo fades in (wiki #196). The hidden
+                    thumbnail, usually cached from the grid, only gives the frame its final size */}
                 <span className="sheet__photo-frame">
                   <img className="sheet__photo-thumb" src={sign.thumbUrl} alt="" aria-hidden="true" />
                   <FadeImage key={sign.photoUrl} className="sheet__photo-full" src={sign.photoUrl} alt={sign.title} />

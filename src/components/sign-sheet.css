@@ -197,8 +197,8 @@
   width: 100%;
 }
 
-/* The full photo fades in over its cached thumbnail, which shows blurred meanwhile (wiki #194). Both share one
-   grid cell and the same box, so nothing jumps when the full one arrives. */
+/* While the full photo loads, its frame pulses (wiki #194, #196). The thumbnail is never shown: it is usually
+   cached from the grid and only gives the frame the photo's final size, so nothing jumps when the photo fades in. */
 .sheet__photo-frame {
   display: grid;
   width: 100%;
@@ -212,13 +212,13 @@
 }
 
 .sheet__photo-thumb {
-  filter: blur(8px);
-  transition: opacity 200ms var(--ease) 320ms;
+  visibility: hidden;
 }
 
-/* Once the full photo is in, the blurred thumbnail goes away: no soft halo around the edges */
-.sheet__photo-frame:has(.sheet__photo-full[data-loaded]) .sheet__photo-thumb {
-  opacity: 0;
+.sheet__photo-frame:has(.sheet__photo-full:not([data-loaded])) {
+  min-height: 12rem; /* in case the thumbnail is not cached either */
+  background: var(--color-sunken);
+  animation: photo-wait 1.6s ease-in-out infinite;
 }
 
 .sheet__photo-full {
