@@ -472,6 +472,33 @@ textarea {
   }
 }
 
+/* Photos fade in once loaded instead of popping in (FadeImage, wiki #194). Their frame pulses like a skeleton
+   meanwhile; the letrero detail shows its blurred thumbnail instead. */
+.fade-img {
+  opacity: 0;
+  transition: opacity 320ms var(--ease);
+}
+
+.fade-img[data-loaded] {
+  opacity: 1;
+}
+
+:is(.tile__media, .qcard__media, .qd__photo):has(> .fade-img:not([data-loaded])) {
+  animation: photo-wait 1.6s ease-in-out infinite; /* only the background pulses, not the price on top */
+}
+
+@keyframes photo-wait {
+  50% {
+    background-color: color-mix(in srgb, var(--color-sunken) 55%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-img {
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -37,6 +37,7 @@ import { timeAgo } from './time';
 import { Yapita } from './Yapita';
 import './sign-sheet.css';
 import './question-detail.css';
+import { FadeImage } from './FadeImage';
 
 type Target = { type: 'question' } | { type: 'answer'; answer: Answer } | { type: 'comment'; comment: Comment };
 type Dialog = { kind: 'menu' | 'report' | 'delete' | 'reported' | 'hidden' | 'deleted' | 'close' | 'closed'; target: Target } | { kind: 'photo' };
@@ -195,7 +196,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
         <AuthorLine author={question.author} mine={question.isMine} when={timeAgo(question.createdAt)} prefix="Lo preguntaste " />
         {question.photoUrl && (
           <button type="button" className="qd__photo" aria-label="Ver la foto completa" onClick={() => setDialog({ kind: 'photo' })}>
-            <img src={question.photoUrl} alt="Foto de la pregunta" />
+            <FadeImage key={question.photoUrl} src={question.photoUrl} alt="Foto de la pregunta" />
           </button>
         )}
         <div className="qd__actions">
@@ -335,7 +336,7 @@ function PhotoZoom({ src, onClose }: { src: string; onClose: () => void }) {
         <>
           <span id={titleId} className="sr-only">Foto de la pregunta</span>
           <button type="button" className="sheet__zoom" aria-label="Cerrar la foto" onClick={close}>
-            <img src={src} alt="Foto de la pregunta" />
+            <FadeImage key={src} src={src} alt="Foto de la pregunta" />
           </button>
         </>
       )}

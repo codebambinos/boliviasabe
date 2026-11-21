@@ -197,9 +197,28 @@
   width: 100%;
 }
 
-/* The full photo loads over its cached thumbnail */
-.sheet__photo img {
-  background: center / cover no-repeat;
+/* The full photo fades in over its cached thumbnail, which shows blurred meanwhile (wiki #194). Both share one
+   grid cell and the same box, so nothing jumps when the full one arrives. */
+.sheet__photo-frame {
+  display: grid;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sheet__photo-frame > img {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: auto;
+}
+
+.sheet__photo-thumb {
+  filter: blur(8px);
+  transform: scale(1.04); /* the blur would show a soft edge */
+}
+
+/* Positioned so it paints above the transformed thumbnail */
+.sheet__photo-full {
+  position: relative;
 }
 
 /* Already voted: a marked state in the main slot, never a dead filled button */
