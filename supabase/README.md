@@ -49,14 +49,21 @@ Then run `npx supabase db reset` and `tests/rls.sql`. If the new table has user 
 
 ## Remote project
 
-The remote project already exists (board card T08). Applying the migrations to it is a separate step, done after the PR is merged and by someone with access to the project:
+The remote project is `boliviasabe` (ref `wyadmywsqdohvegwucfj`, marked as production). Migrations `0001` to `0003` are already applied there (T08).
+
+With Supabase CLI 3, every database command targets the **local** stack unless you pass `--remote`. Without it, `db push` only touches your Docker database. To apply a new migration to the project, someone with access runs:
 
 ```sh
-npx supabase login                              # opens the browser; the token stays on your machine
-npx supabase link --project-ref <project-ref>   # the ref is in the Supabase dashboard
-npx supabase db push --dry-run                  # lists the migrations that would run
-npx supabase db push                            # applies them
+npx supabase login                               # opens the browser; the token stays on your machine
+npx supabase link --project-ref wyadmywsqdohvegwucfj
+npx supabase migration list --remote             # local and remote history side by side
+npx supabase db push --dry-run --remote          # lists the migrations that would run, applies nothing
+npx supabase db push --remote                    # applies them
 ```
+
+Run the dry run first and check that it lists only the new migration. An applied migration is never edited: fix it with a new one.
+
+For a read-only look at the remote schema, use `npx supabase db query --remote --read-only "<sql>"`.
 
 Never put the database password, the service role key or a personal access token in this repo. The browser only gets `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. `SUPABASE_SERVICE_ROLE_KEY` lives in Vercel and in `.env` on the developer machine, and it bypasses RLS.
 
