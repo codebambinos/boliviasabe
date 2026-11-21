@@ -27,6 +27,7 @@ import {
 import { useRequireAccount } from './AuthGate';
 import { AnswerBox } from './AnswerBox';
 import { AnswerThread } from './AnswerThread';
+import { ContactPanel, RequestContactButton, canRequestContact } from './ContactRequest';
 import { BookmarkIcon, CheckIcon, CloseIcon, FlagIcon, MoreIcon, ShareIcon, ThumbDownIcon, ThumbIcon, TrashIcon } from './icons';
 import { errorMessage, firstName } from './messages';
 import { answersText, isUrgentActive } from './QuestionCard';
@@ -273,6 +274,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
                         )}
                       </button>
                     )}
+                    {canRequestContact(question, answer) && <RequestContactButton question={question} answer={answer} />}
                     <button
                       type="button"
                       className="icon-btn"
@@ -288,6 +290,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
                       </button>
                     )}
                   </div>
+                  <ContactPanel question={question} answer={answer} />
                   <AnswerThread questionId={question.id} answer={answer} onMenu={(comment) => openMenu({ type: 'comment', comment })} />
                 </li>
               );
