@@ -169,6 +169,12 @@ live: {
 - [ ] `git grep -i "SECRET\|SERVICE_ROLE"` shows no values.
 - [ ] Wiki #214, issue #17 and `types.ts` describe the same contract.
 
+## Changes during implementation
+
+- **Sign-out no longer refetches personal queries.** `enabled` alone did not stop the 401s: `useSessionMutation` reset the personal keys, and that refetched the queries still on screen (the bell, Mi actividad) before they unmounted. On sign-out they are now removed instead of reset; on sign-in they are still reset. This also fixes the `saved_items` 401 noted for T38.
+- **Guests get SQLSTATE `28000`** (unauthenticated) from the functions, as in the rest of the adapter, instead of `42501`.
+- **`notice_item` is revoked from `authenticated` too:** Supabase grants new functions to it by default.
+
 ## Decisions taken and discarded
 
 | Decision | Discarded | Why |
