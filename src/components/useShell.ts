@@ -23,6 +23,8 @@ export type ShellContext = {
   openAsk: (text?: string) => void;
   /** Opens «Subir letrero» (Yo › Mis letreros, when empty). */
   openUpload: () => void;
+  /** Opens the Avisos sheet (SPEC 24): the bell and the Avisos card in Yo. */
+  openAvisos: () => void;
   openAbout: () => void;
   openPrivacy: () => void;
   signInWithGoogle: () => void;

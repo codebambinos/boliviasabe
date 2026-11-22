@@ -3,7 +3,7 @@
 // Guardar, Compartir, ⋯ (Reportar · Borrar), answering, rating and the thread under each answer (SPEC 12).
 import { useEffect, useId, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import {
   REPORT_REASONS,
   isDataError,
@@ -35,6 +35,7 @@ import { answersText, isUrgentActive } from './QuestionCard';
 import { Sheet } from './Sheet';
 import { timeAgo } from './time';
 import { Yapita } from './Yapita';
+import type { NoticeFocus } from './notices';
 import './sign-sheet.css';
 import './question-detail.css';
 import { FadeImage } from './FadeImage';
@@ -81,12 +82,66 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [sent, setSent] = useState(false);
   const [shareDismissed, setShareDismissed] = useState(false);
-  const navState = useLocation().state as { shareFor?: Id; chargeFailed?: boolean } | null;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const navState = location.state as { shareFor?: Id; chargeFailed?: boolean; focus?: NoticeFocus } | null;
   const shareFor = navState?.shareFor;
   const [notice, setNotice] = useState<{ title: string; text: string } | null>(null);
   const markHelpful = useMarkHelpful();
   const heading = useRef<HTMLHeadingElement>(null);
   const Heading = variant === 'page' ? 'h1' : 'h2';
+
+  // Opened from Avisos (SPEC 24, wiki #216): scroll to the answer or comment the notice is about and frame it for a
+  // moment. It is found by its text (the notice carries the full text). The request leaves history, so Back or a
+  // reload do not replay it; if nothing matches (deleted, edited), the question just opens at its top.
+  const focus = navState?.focus;
+  const answersData = detail.data?.answers;
+  const [spot, setSpot] = useState<{ kind: 'answer' | 'comment'; id: Id } | null>(null);
+  const focusHandled = useRef<string | null>(null);
+  const focusRetry = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(focusRetry.current), []);
+  useEffect(() => {
+    if (!focus || !answersData) return;
+    const handledKey = `${id}|${focus.kind}|${focus.text}`;
+    if (focusHandled.current === handledKey) return;
+    focusHandled.current = handledKey;
+    let target: { kind: 'answer' | 'comment'; id: Id } | null = null;
+    if (focus.kind === 'answer') {
+      const found = answersData.find((a) => a.text === focus.text);
+      if (found) target = { kind: 'answer', id: found.id };
+    } else {
+      for (const a of answersData) {
+        const found = a.comments.find((c) => c.text === focus.text);
+        if (found) {
+          target = { kind: 'comment', id: found.id };
+          break;
+        }
+      }
+    }
+    const { focus: _done, ...rest } = navState ?? {};
+    navigate(location.pathname + location.search, { replace: true, state: Object.keys(rest).length > 0 ? rest : null, preventScrollReset: true });
+    if (!target) return;
+    const goal = target;
+    setSpot(goal);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const bringIntoView = () => {
+      const el = document.getElementById(`${variant}-${goal.kind}-${goal.id}`);
+      if (!el) return;
+      const box = el.getBoundingClientRect();
+      if (box.top >= 0 && box.bottom <= window.innerHeight) return; // already in view
+      el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+    };
+    // Once a hidden comment has unfolded, and again after the screen change: its scroll restoration lands the new
+    // page at the top a moment later, which would undo the first try
+    requestAnimationFrame(() => requestAnimationFrame(bringIntoView));
+    // Not tied to this effect's cleanup: dropping `focus` from history re-runs it right away
+    focusRetry.current = window.setTimeout(bringIntoView, 450);
+  }, [focus, answersData, id, variant, navState, navigate, location.pathname, location.search]);
+  useEffect(() => {
+    if (spot === null) return;
+    const done = window.setTimeout(() => setSpot(null), 2800);
+    return () => window.clearTimeout(done);
+  }, [spot]);
 
   // A conversation opened from the panel takes the focus on its text
   useEffect(() => {
@@ -242,7 +297,13 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
               const canDelete = answer.isMine && !answer.helpful;
               const hasMenu = !answer.isMine || canDelete;
               return (
-                <li key={answer.id} className="answer" data-helpful={answer.helpful || undefined}>
+                <li
+                  key={answer.id}
+                  id={`${variant}-answer-${answer.id}`}
+                  className="answer"
+                  data-helpful={answer.helpful || undefined}
+                  data-spotlight={(spot?.kind === 'answer' && spot.id === answer.id) || undefined}
+                >
                   {/* Guardar and ⋯ sit by the author, so the row under the text keeps only the actions on it */}
                   <div className="answer__head">
                     <AuthorLine author={answer.author} mine={answer.isMine} when={timeAgo(answer.createdAt)} prefix="Lo respondiste " />
@@ -300,7 +361,13 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
                     </div>
                   )}
                   <ContactPanel question={question} answer={answer} />
-                  <AnswerThread questionId={question.id} answer={answer} onMenu={(comment) => openMenu({ type: 'comment', comment })} />
+                  <AnswerThread
+                    questionId={question.id}
+                    answer={answer}
+                    onMenu={(comment) => openMenu({ type: 'comment', comment })}
+                    idPrefix={variant}
+                    spotlightId={spot?.kind === 'comment' ? spot.id : null}
+                  />
                 </li>
               );
             })}

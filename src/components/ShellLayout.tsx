@@ -1,8 +1,8 @@
 // The app frame for the tab routes (/, /preguntas, /yo): mounted once, so the city and the sheets
 // survive a tab change. The tab comes from the URL; pages render in the <Outlet /> (SPEC 04).
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { DEFAULT_CITY, fetchSign, isDataError, useCreateAnswer, useCreateComment, useRefresh, useSession, useSignInWithGoogle, useToggleSaved, useUnreadNotices, useWallet, type City, type Id, type Question, type Sign } from '../data';
+import { DEFAULT_CITY, fetchQuestion, fetchSign, isDataError, useCreateAnswer, useCreateComment, useRefresh, useSession, useSignInWithGoogle, useToggleSaved, useUnreadNotices, useWallet, type City, type Id, type Question, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
 import { AskQuestionSheet } from './AskQuestionSheet';
 import { sendDraftAnswer } from './AnswerBox';
@@ -10,8 +10,9 @@ import { sendDraftComment } from './AnswerThread';
 import { QuestionDetail } from './QuestionDetail';
 import { AppShell, type Tab } from './AppShell';
 import { AuthGate, useOpenPasswordRecovery, useRegisterPendingHandlers, useRequireAccount } from './AuthGate';
-import { CloseIcon } from './icons';
-import { Sheet, afterSheetPop } from './Sheet';
+import { afterSheetPop } from './Sheet';
+import { AvisosSheet } from './AvisosSheet';
+import type { NoticeFocus } from './notices';
 import { SignSheet } from './SignSheet';
 import { Toast } from './Toast';
 import { goWithTransition, navigateWithTransition } from './transition';
@@ -199,6 +200,27 @@ function Shell() {
     if (window.matchMedia('(min-width: 64rem)').matches) setSearchParams({ p: String(id) }, { state, preventScrollReset: true });
     else goWithTransition((viewTransition) => navigate(`/p/${id}`, { viewTransition, state }), 'forward');
   };
+  /**
+   * A question from Avisos (SPEC 24, wiki #216). On a phone it opens the conversation itself, which scrolls to the
+   * answer or comment the notice is about and frames it (`focus`, read by QuestionDetail). On desktop it shows
+   * ¿Alguien sabe? in the question's city with its card framed (`spotlight`, PreguntasPage) and the conversation in the
+   * panel, framed the same way. If the question cannot be loaded now, it opens as before. `pending` lets the caller
+   * start loading it while the sheet closes.
+   */
+  const openNoticeQuestion = (id: Id, pending = fetchQuestion(id), focus?: NoticeFocus) => {
+    if (!window.matchMedia('(min-width: 64rem)').matches) {
+      goWithTransition((viewTransition) => navigate(`/p/${id}`, { viewTransition, state: { focus } }), 'forward');
+      return;
+    }
+    pending.then(
+      ({ question }) => {
+        if (question.city !== city) setCity(question.city);
+        const direction = tab === 'preguntas' ? 'up' : ORDER.indexOf('preguntas') > ORDER.indexOf(tab) ? 'forward' : 'back';
+        goWithTransition((viewTransition) => navigate(`/preguntas?p=${id}`, { viewTransition, state: { spotlight: id, focus } }), direction);
+      },
+      () => openQuestion(id),
+    );
+  };
   const openAsk = (text = '') =>
     requireAccount('Así tus vecinos pueden responderte.', () => setAsking({ text }), undefined, { kind: 'open-ask', text });
 
@@ -223,6 +245,7 @@ function Shell() {
     openAsk,
     openUpload: () =>
       requireAccount('Así tu letrero aparece en Hoy y ganas una yapita.', () => setUploading(true), undefined, { kind: 'open-new-sign' }),
+    openAvisos: () => setAvisos(true),
     openAbout: () => setAbout(true),
     openPrivacy,
     signInWithGoogle: () => signIn.mutate(),
@@ -314,31 +337,19 @@ function Shell() {
         />
       )}
       {about && <AboutSheet onClose={() => setAbout(false)} onOpenPrivacy={openPrivacy} />}
-      {avisos && <AvisosSheet onClose={() => setAvisos(false)} />}
-    </>
-  );
-}
-
-function AvisosSheet({ onClose }: { onClose: () => void }) {
-  const titleId = useId();
-  return (
-    <Sheet labelledBy={titleId} variant="bottom" onClose={onClose}>
-      {(close) => (
-        <>
-          <header className="sheet__bar">
-            <h2 id={titleId} className="sheet__bar-title">Avisos</h2>
-            <button type="button" className="icon-btn" aria-label="Cerrar" onClick={close}>
-              <CloseIcon />
-            </button>
-          </header>
-          <div className="sheet__body">
-            <div className="sheet__content empty">
-              <h3 className="empty__title">Sin avisos por ahora</h3>
-              <p className="empty__text">Aquí verás cuando alguien te responda o le sirva tu letrero.</p>
-            </div>
-          </div>
-        </>
+      {avisos && (
+        <AvisosSheet
+          onClose={() => setAvisos(false)}
+          onOpenQuestion={(id, focus) => {
+            // Ask for the question now, while the sheet closes: by then its city is usually known
+            const pending = fetchQuestion(id);
+            afterSheetPop(() => openNoticeQuestion(id, pending, focus));
+          }}
+          // /l/:id opens Hoy in the letrero's city with its sheet (SPEC 19)
+          onOpenSign={(id) => afterSheetPop(() => navigate(`/l/${id}`))}
+          onGoHoy={() => afterSheetPop(() => goToTab('hoy'))}
+        />
       )}
-    </Sheet>
+    </>
   );
 }

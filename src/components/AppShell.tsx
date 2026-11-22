@@ -3,7 +3,8 @@
 // It holds no data of its own: ShellLayout (SPEC 04) passes everything in and renders the route.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { CITIES, useRefresh, type City } from '../data';
-import { BellIcon, ChevronDownIcon, HomeIcon, PlusIcon, QuestionIcon, SearchIcon, UserIcon } from './icons';
+import { BellButton } from './BellButton';
+import { ChevronDownIcon, HomeIcon, PlusIcon, QuestionIcon, SearchIcon, UserIcon } from './icons';
 import { OfflineBanner } from './OfflineBanner';
 import { useTabSwipe } from './useTabSwipe';
 import { Yapita } from './Yapita';
@@ -163,15 +164,7 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
               </button>
               {account && (
                 <>
-                  <button
-                    type="button"
-                    className="icon-btn shell__bell"
-                    onClick={account.onBell}
-                    aria-label={account.unread > 0 ? `Avisos, ${account.unread} sin leer` : 'Avisos'}
-                  >
-                    <BellIcon />
-                    {account.unread > 0 && <span className="shell__badge" aria-hidden="true">{account.unread > 9 ? '9+' : account.unread}</span>}
-                  </button>
+                  <BellButton unread={account.unread} onClick={account.onBell} />
                   {/* On Yo the profile card already shows the balance: never twice on one screen */}
                   {tab !== 'yo' && (
                     <button type="button" className="shell__balance" onClick={account.onBalance} aria-label={`Tienes ${account.balance ?? '…'} yapitas, ver movimientos`}>

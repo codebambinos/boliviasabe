@@ -40,14 +40,24 @@ type AnswerThreadProps = {
   answer: Answer;
   /** ⋯ of a comment: Reportar (others') or Borrar (mine). */
   onMenu: (comment: Comment) => void;
+  /** Prefix of each comment's element id (`<prefix>-comment-<id>`), so Avisos can scroll to it. */
+  idPrefix?: string;
+  /** A comment opened from Avisos (SPEC 24): it is framed for a moment, and the thread unfolds if it was hidden. */
+  spotlightId?: number | null;
 };
 
-export function AnswerThread({ questionId, answer, onMenu }: AnswerThreadProps) {
+export function AnswerThread({ questionId, answer, onMenu, idPrefix = 'qd', spotlightId = null }: AnswerThreadProps) {
   const fieldId = useId();
   const key = draftKey(answer.id);
   const requireAccount = useRequireAccount();
   const create = useCreateComment();
   const [expanded, setExpanded] = useState(false);
+  // A framed comment among the older, hidden ones: show them all
+  useEffect(() => {
+    if (spotlightId === null) return;
+    const index = answer.comments.findIndex((c) => c.id === spotlightId);
+    if (index >= 0 && index < answer.comments.length - SHOWN) setExpanded(true);
+  }, [spotlightId, answer.comments]);
   const [composing, setComposing] = useState(false);
   const [text, setText] = useState('');
   const edited = useRef(false);
@@ -117,7 +127,12 @@ export function AnswerThread({ questionId, answer, onMenu }: AnswerThreadProps) 
       {shown.length > 0 && (
         <ul className="thread__list" aria-label="Comentarios">
           {shown.map((comment) => (
-            <li key={comment.id} className="comment">
+            <li
+              key={comment.id}
+              id={`${idPrefix}-comment-${comment.id}`}
+              className="comment"
+              data-spotlight={comment.id === spotlightId || undefined}
+            >
               <div className="comment__body">
                 <p className="comment__meta">
                   <span className="comment__name">{comment.isMine ? 'Tú' : comment.author.displayName}</span>

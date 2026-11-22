@@ -633,9 +633,9 @@ textarea {
 }
 
 /* Yo (SPEC 21): two columns that stack on their own, so a long Movimientos never leaves gaps on the left.
-   Phone: one column in the wiki order (#157) profile → Movimientos → cuenta → Mi actividad → Ajustes; the column
+   Phone: one column in the wiki order (#157, #216) profile → Movimientos → cuenta → Mi actividad → Avisos → Ajustes; the column
    wrappers step aside (display: contents) and `order` interleaves their cards.
-   Wide frame: left = profile, cuenta, Ajustes; right = Movimientos, Mi actividad. */
+   Wide frame: left = profile, cuenta, Ajustes; right = Movimientos, Mi actividad, Avisos. */
 .yo-grid {
   display: flex;
   flex-direction: column;
@@ -666,8 +666,12 @@ textarea {
   order: 4;
 }
 
-.yo-grid__settings {
+.yo-grid__avisos {
   order: 5;
+}
+
+.yo-grid__settings {
+  order: 6;
 }
 
 @container (min-width: 48rem) {

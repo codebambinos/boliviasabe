@@ -1,0 +1,176 @@
+/* Avisos (SPEC 24): the sheet's list, the unread highlight and the contact buttons.
+   Motion uses only opacity, transform and the highlight's color; with «reducir movimiento» nothing moves. */
+
+.avisos__all {
+  padding-inline: var(--s-2);
+  white-space: nowrap;
+}
+
+.avisos__content {
+  padding-top: var(--s-2);
+}
+
+.avisos__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.avisos__more {
+  margin-top: var(--s-3);
+}
+
+/* One notice. Unread: a soft fill and a dot; both fade out when it becomes read. */
+.aviso {
+  margin: 0 calc(var(--s-2) * -1);
+  padding: 0 var(--s-2);
+  border-bottom: var(--hairline);
+  border-radius: var(--r-md);
+  transition: background-color var(--m-panel) var(--ease);
+}
+
+.aviso:last-child {
+  border-bottom: 0;
+}
+
+.aviso[data-unread] {
+  background: var(--color-brand-soft);
+}
+
+.aviso__open {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: var(--s-3);
+  min-height: var(--touch);
+  padding: var(--s-3) 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font: 400 var(--t-body) / 1.35 var(--font-body);
+  text-align: start;
+  cursor: pointer;
+}
+
+.aviso__open:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--r-md);
+}
+
+.aviso__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--color-sunken);
+  color: var(--color-muted);
+}
+
+.aviso__main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.125rem;
+}
+
+.aviso__line {
+  font-weight: var(--w-strong);
+}
+
+.aviso__text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--color-muted);
+  font-size: var(--t-small);
+  overflow-wrap: anywhere;
+}
+
+.aviso__dot {
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-top: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-brand);
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity var(--m-panel) var(--ease),
+    transform var(--m-panel) var(--ease);
+}
+
+.aviso[data-unread] .aviso__dot {
+  opacity: 1;
+  transform: none;
+}
+
+/* The contact request, under the line: lined up with the text, not the icon */
+.aviso__contact {
+  margin: 0 0 var(--s-3) calc(2.25rem + var(--s-3));
+}
+
+.aviso__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+
+.aviso__buttons .btn[aria-busy='true']:disabled {
+  opacity: 1;
+}
+
+/* «Esto ya no está disponible»: slides in over the list */
+.avisos__step {
+  animation: avisos-step-in 240ms var(--ease-enter) both;
+}
+
+@keyframes avisos-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+/* Rows from «Ver más»: one after another, 30 ms apart */
+.aviso--rise {
+  animation: aviso-rise var(--m-panel) var(--ease-enter) both;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+@keyframes aviso-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* The contact result replaces the buttons with a short cross-fade */
+.aviso--fade {
+  animation: aviso-fade var(--m-panel) var(--ease) both;
+}
+
+@keyframes aviso-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aviso,
+  .aviso__dot {
+    transition: none;
+  }
+
+  .avisos__step,
+  .aviso--rise,
+  .aviso--fade {
+    animation: none;
+  }
+}

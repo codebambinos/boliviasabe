@@ -320,3 +320,61 @@
     animation: none;
   }
 }
+
+/* An answer or comment opened from Avisos (SPEC 24, wiki #216): the same fuchsia frame as the card in the list.
+   Its border and fill fade in and out on the one element; a ring breathes out from it twice (transform and
+   opacity on a pseudo-element). Off with reduced motion. */
+.answer,
+.comment {
+  position: relative;
+  transition:
+    border-color 600ms var(--ease),
+    background-color 600ms var(--ease),
+    box-shadow 600ms var(--ease);
+}
+
+.answer[data-spotlight],
+.comment[data-spotlight] {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  box-shadow: inset 0 0 0 1px var(--color-brand);
+}
+
+.answer::after,
+.comment::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--color-brand);
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.answer[data-spotlight]::after,
+.comment[data-spotlight]::after {
+  animation: spot-ring 1100ms var(--ease) 2 both;
+}
+
+@keyframes spot-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.03, 1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .answer,
+  .comment {
+    transition: none;
+  }
+
+  .answer[data-spotlight]::after,
+  .comment[data-spotlight]::after {
+    animation: none;
+  }
+}

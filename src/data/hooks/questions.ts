@@ -2,7 +2,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ListQuery, NewQuestion } from '../api';
 import { keys } from '../keys';
-import { invalidate } from '../query';
+import { invalidate, queryClient } from '../query';
 import { api } from '../source';
 import type { Answer, Id } from '../types';
 
@@ -24,6 +24,11 @@ const QUESTION_REFRESH_MS = 15_000;
  * connected (`useLiveQuestion`); otherwise the detail falls back to the 15 s refresh. Threads keep going on
  * Solucionada and Cerrada questions, so the fallback runs for every status.
  */
+/** Loads one question outside a component (Avisos needs its city before showing it in ¿Alguien sabe?, SPEC 24). */
+export function fetchQuestion(id: Id) {
+  return queryClient.fetchQuery({ queryKey: keys.question(id), queryFn: () => api.questions.get(id), staleTime: 10_000 });
+}
+
 export function useQuestion(id: Id, { live = false }: { live?: boolean } = {}) {
   return useQuery({
     queryKey: keys.question(id),

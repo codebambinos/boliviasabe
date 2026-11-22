@@ -155,7 +155,7 @@ function IncomingRequest({ question, requestId }: { question: Question; requestI
   );
 }
 
-function ContactBox({ name, details }: { name: string; details: ContactDetails }) {
+export function ContactBox({ name, details }: { name: string; details: ContactDetails }) {
   const [copied, setCopied] = useState<string | null>(null);
   const copy = async (value: string) => {
     try {

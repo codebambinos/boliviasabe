@@ -152,6 +152,137 @@
   box-sizing: content-box;
 }
 
+/* A new notice (SPEC 24, wiki #216): for about 10 s the bell rings, the bubble bounces and golden sparkles burst
+   around it. It plays in 5 cycles of 2 s, each with a burst and then a rest, so it reads as «something arrived»
+   and never as a constant shake. Small elements, transform and opacity only, so the top bar never repaints.
+   Off with reduced motion. */
+.shell__bell {
+  --celebrate-cycle: 2s;
+  --celebrate-times: 5;
+}
+
+.shell__bell-icon {
+  display: inline-flex;
+  transform-origin: 50% 10%;
+}
+
+.shell__bell-icon[data-ring] {
+  animation: bell-ring var(--celebrate-cycle) var(--ease) var(--celebrate-times) both;
+}
+
+/* The ring takes the first third of each cycle; the rest is still */
+@keyframes bell-ring {
+  0%,
+  35%,
+  100% {
+    transform: rotate(0);
+  }
+  5% {
+    transform: rotate(14deg);
+  }
+  12% {
+    transform: rotate(-11deg);
+  }
+  19% {
+    transform: rotate(7deg);
+  }
+  26% {
+    transform: rotate(-3deg);
+  }
+}
+
+/* The bubble pops in once, then bounces at the start of every cycle */
+.shell__badge[data-new] {
+  animation:
+    badge-in 280ms var(--ease-enter) both,
+    badge-bounce var(--celebrate-cycle) cubic-bezier(0.3, 0, 0.3, 1) 280ms var(--celebrate-times) both;
+}
+
+@keyframes badge-in {
+  from {
+    transform: scale(0.4);
+  }
+}
+
+@keyframes badge-bounce {
+  0%,
+  40%,
+  100% {
+    transform: none;
+  }
+  10% {
+    transform: translateY(-7px) scale(1.16);
+  }
+  20% {
+    transform: translateY(0) scale(0.95);
+  }
+  30% {
+    transform: translateY(-3px) scale(1.05);
+  }
+}
+
+/* Sparkles: six small four-point stars thrown out from the bubble's center, once per cycle */
+.shell__sparkles {
+  position: absolute;
+  top: 0.8125rem;
+  left: 2.0625rem;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.shell__sparkles > i {
+  position: absolute;
+  top: -0.25rem;
+  left: -0.25rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--color-yapita);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+  animation: sparkle var(--celebrate-cycle) ease-out 80ms var(--celebrate-times) both;
+  will-change: transform, opacity;
+}
+
+.shell__sparkles > i:nth-child(even) {
+  width: 0.375rem;
+  height: 0.375rem;
+  animation-delay: 160ms;
+}
+
+/* Out fast, shine for a moment, then fade while drifting; the rest of the cycle stays dark */
+@keyframes sparkle {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(0) scale(0.2) rotate(0);
+  }
+  9% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(-0.7rem) scale(1) rotate(30deg);
+  }
+  26% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(-1.05rem) scale(0.85) rotate(65deg);
+  }
+  42%,
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(-1.3rem) scale(0.35) rotate(90deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell__bell-icon[data-ring],
+  .shell__badge[data-new] {
+    animation: none;
+  }
+
+  .shell__sparkles {
+    display: none;
+  }
+}
+
+
 /* Balance: neutral pill, the orange ★ disc carries the yapita color */
 .shell__balance {
   display: inline-flex;
