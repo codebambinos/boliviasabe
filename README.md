@@ -6,6 +6,8 @@ BoliviaSabe es la guía viva de tu ciudad. Los vecinos suben la foto de un **let
 
 Hecha por **CodeBambinos** para el hackathon National Startups by Stellar 2026. Todo corre en la **red de pruebas** de Stellar: no hay dinero real.
 
+**Pitch deck (PDF):** https://drive.google.com/file/d/1c6a5ZMkokjHeDHesX-xzRb4C6Wp_vK6l/view?usp=sharing
+
 ## El problema
 
 En Bolivia, para saber dónde hay almuerzo barato, quién repara una laptop o si hay agua, la gente pregunta en grupos de WhatsApp y Facebook. Solo en Cochabamba hay al menos 20 grupos públicos «¿Alguien sabe?» en Facebook; el mayor, [«¿Alguien Sabe? - Cochabamba»](https://www.facebook.com/groups/alguien.sabe.cbba/), tiene 209 mil miembros y más de 90 publicaciones al día, y el de la UMSS, 15 mil. Hay grupos así en 8 de los 9 departamentos. Pasa todos los días y lo vivimos en Cochabamba: preguntamos en cinco grupos y la respuesta llega tarde o nunca, se pierde entre cientos de mensajes y nadie sabe si un precio sigue vigente. Quien sabe no gana nada por ayudar y calla. Los más afectados son estudiantes y vecinos con poco presupuesto, y los negocios de barrio que nadie encuentra.
