@@ -6,6 +6,7 @@ import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useMarkAllNoticesRead, useMarkNoticeRead, useMyPhone, useNotices, useRespondContact, type Notice, type NoticeKind } from '../data';
 import { ContactBox } from './ContactRequest';
 import { ArrowLeftIcon, BellIcon, CloseIcon, CommentIcon, ContactIcon, QuestionIcon, ThumbIcon } from './icons';
+import { errorMessage } from './messages';
 import { noticeFocus, noticeLine, type NoticeFocus } from './notices';
 import { Sheet } from './Sheet';
 import { timeAgo } from './time';
@@ -91,6 +92,9 @@ export function AvisosSheet({ onClose, onOpenQuestion, onOpenSign, onGoHoy }: Av
               </div>
             </header>
             <div ref={bodyRef} className="sheet__body">
+              {!gone && markAll.isError && (
+                <p className="field__error avisos__error" role="alert">{errorMessage(markAll.error)}</p>
+              )}
               {gone ? (
                 <div className="sheet__content empty avisos__step">
                   <h3 className="empty__title">Esto ya no está disponible</h3>
@@ -247,7 +251,7 @@ function NoticeContact({ notice, onAnswered }: { notice: Notice; onAnswered: () 
   return (
     <div className="aviso__contact contact__incoming">
       <p className="meta">{phone ? 'Si aceptas, compartes tu correo y tu celular de Ajustes.' : 'Si aceptas, compartes tu correo.'}</p>
-      {respond.isError && <p className="field__error" role="alert">Algo falló, intenta de nuevo</p>}
+      {respond.isError && <p className="field__error" role="alert">{errorMessage(respond.error)}</p>}
       <div className="aviso__buttons">
         <button type="button" className="btn btn--secondary btn--small" disabled={busy} aria-busy={working === 'decline' || undefined} onClick={() => answer(false)}>
           {working === 'decline' ? <>{spinner} Ahora no</> : 'Ahora no'}

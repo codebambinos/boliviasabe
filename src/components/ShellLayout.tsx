@@ -20,7 +20,8 @@ import { UploadSignSheet } from './UploadSignSheet';
 import { Yapita } from './Yapita';
 import type { ShellContext } from './useShell';
 import { askAfterPublish } from '../push/prompt';
-import { UnavailablePage } from '../pages/UnavailablePage';
+import { LoadFailedPage, UnavailablePage } from '../pages/UnavailablePage';
+import { errorMessage } from './messages';
 
 const PATH: Record<Tab, string> = { hoy: '/', preguntas: '/preguntas', yo: '/yo' };
 const ORDER: Tab[] = ['hoy', 'preguntas', 'yo'];
@@ -66,13 +67,17 @@ function Shell() {
   const refresh = useRefresh();
 
   // /l/:id, a shared letrero (SPEC 19): Hoy in the letrero's city with its sheet open, as if tapped there.
-  // Deleted, hidden or in review → «Esto ya no está disponible»; any other failure just leaves Hoy.
+  // Deleted, hidden or in review → «Esto ya no está disponible»; no signal or a server error → its message + Reintentar
+  // (wiki › Transversal), never a silent Hoy.
   const linkedSign = location.pathname.startsWith('/l/') ? location.pathname.slice(3) : null;
   const [linkGone, setLinkGone] = useState(false);
+  const [linkError, setLinkError] = useState<unknown>(null);
+  const [linkAttempt, setLinkAttempt] = useState(0);
   useEffect(() => {
     if (linkedSign === null) return;
     const id = /^\d{1,15}$/.test(linkedSign) ? Number(linkedSign) : 0;
     setLinkGone(false);
+    setLinkError(null);
     if (id <= 0) {
       setLinkGone(true);
       return;
@@ -88,13 +93,13 @@ function Shell() {
       (error: unknown) => {
         if (!live) return;
         if (isDataError(error) && error.code === 'not_found') setLinkGone(true);
-        else navigate('/', { replace: true });
+        else setLinkError(error);
       },
     );
     return () => {
       live = false;
     };
-  }, [linkedSign, navigate]);
+  }, [linkedSign, linkAttempt, navigate]);
 
   // «Pedir otro» from /nueva-contrasena: open «¿La olvidaste?» once and drop the flag from history
   useEffect(() => {
@@ -104,17 +109,36 @@ function Shell() {
     }
   }, [location.state, location.pathname, navigate, openRecovery]);
 
+  // ☆ Guardar on a letrero (the tile and the sheet): one request at a time per letrero, so a double tap never saves
+  // and unsaves; a failure says why. Resolves to whether it changed.
+  const savingSigns = useRef(new Set<Id>());
+  const [saveFailed, setSaveFailed] = useState<{ id: number; message: string } | null>(null);
+  const saveSign = (id: Id): Promise<boolean> => {
+    if (savingSigns.current.has(id)) return Promise.resolve(false);
+    savingSigns.current.add(id);
+    return toggleSaved
+      .mutateAsync({ kind: 'sign', id })
+      .then(
+        () => true,
+        (error: unknown) => {
+          setSaveFailed({ id: Date.now(), message: errorMessage(error) });
+          return false;
+        },
+      )
+      .finally(() => savingSigns.current.delete(id));
+  };
+
   const onToggleSave = (sign: Sign) =>
     requireAccount(
       'Así guardas este letrero para verlo después.',
-      () => toggleSaved.mutate({ kind: 'sign', id: sign.id }),
+      () => void saveSign(sign.id),
       undefined,
       { kind: 'save-sign', id: sign.id },
     );
 
   // What each saved action does once the person is back from Google (SPEC 07)
   useRegisterPendingHandlers({
-    'save-sign': ({ id }) => toggleSaved.mutate({ kind: 'sign', id }),
+    'save-sign': ({ id }) => void saveSign(id),
     'vote-sign': async ({ id, value }) => {
       const sign = await fetchSign(id);
       setResumeVote(value);
@@ -253,6 +277,9 @@ function Shell() {
   };
 
   if (linkedSign !== null && linkGone) return <UnavailablePage title="Letrero" />;
+  if (linkedSign !== null && linkError !== null) {
+    return <LoadFailedPage title="Letrero" message={errorMessage(linkError)} onRetry={() => setLinkAttempt((n) => n + 1)} />;
+  }
 
   return (
     <>
@@ -308,7 +335,7 @@ function Shell() {
             setSelected(null);
             setResumeVote(null);
           }}
-          onToggleSave={onToggleSave}
+          onSave={saveSign}
         />
       )}
       {asking && (
@@ -336,6 +363,7 @@ function Shell() {
           onDone={() => setNotice(null)}
         />
       )}
+      {saveFailed && <Toast key={saveFailed.id} message={saveFailed.message} onDone={() => setSaveFailed(null)} />}
       {about && <AboutSheet onClose={() => setAbout(false)} onOpenPrivacy={openPrivacy} />}
       {avisos && (
         <AvisosSheet

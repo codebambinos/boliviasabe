@@ -34,6 +34,7 @@ import { errorMessage, firstName, rewardCapMessage } from './messages';
 import { answersText, isUrgentActive } from './QuestionCard';
 import { Sheet } from './Sheet';
 import { timeAgo } from './time';
+import { Toast } from './Toast';
 import { Yapita } from './Yapita';
 import type { NoticeFocus } from './notices';
 import './sign-sheet.css';
@@ -87,6 +88,8 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
   const navState = location.state as { shareFor?: Id; chargeFailed?: boolean; focus?: NoticeFocus } | null;
   const shareFor = navState?.shareFor;
   const [notice, setNotice] = useState<{ title: string; text: string } | null>(null);
+  const [saveFailed, setSaveFailed] = useState<{ id: number; message: string } | null>(null);
+  const saving = useRef(false);
   const markHelpful = useMarkHelpful();
   const heading = useRef<HTMLHeadingElement>(null);
   const Heading = variant === 'page' ? 'h1' : 'h2';
@@ -180,17 +183,34 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
   const { question, answers } = detail.data;
   const urgent = question.status === 'open' && isUrgentActive(question);
 
+  // ☆ Guardar: one at a time, so a double tap never saves and unsaves; a failure says why (a toast)
+  const toggle = (kind: 'question' | 'answer', itemId: Id) => {
+    if (saving.current) return;
+    saving.current = true;
+    toggleSaved.mutate(
+      { kind, id: itemId },
+      {
+        onError: (error) => setSaveFailed({ id: Date.now(), message: errorMessage(error) }),
+        onSettled: () => {
+          saving.current = false;
+        },
+      },
+    );
+  };
+  const savingQuestion = toggleSaved.isPending && toggleSaved.variables?.kind === 'question';
+  const savingAnswer = (answer: Answer) => toggleSaved.isPending && toggleSaved.variables?.kind === 'answer' && toggleSaved.variables.id === answer.id;
+
   const saveQuestion = () =>
     requireAccount(
       'Así guardas esta pregunta para verla después.',
-      () => toggleSaved.mutate({ kind: 'question', id: question.id }),
+      () => toggle('question', question.id),
       undefined,
       { kind: 'save-question', id: question.id },
     );
   const saveAnswer = (answer: Answer) =>
     requireAccount(
       'Así guardas esta respuesta para verla después.',
-      () => toggleSaved.mutate({ kind: 'answer', id: answer.id }),
+      () => toggle('answer', answer.id),
       undefined,
       { kind: 'save-answer', id: answer.id },
     );
@@ -219,6 +239,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
 
   return (
     <div className="qd">
+      {saveFailed && <Toast key={saveFailed.id} message={saveFailed.message} onDone={() => setSaveFailed(null)} />}
       {shareFor === question.id && question.isMine && navState?.chargeFailed && (
         <p className="notice" role="status">No pudimos cobrar, se publicó normal</p>
       )}
@@ -259,6 +280,8 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
             type="button"
             className="btn btn--secondary btn--small"
             aria-pressed={question.savedByMe}
+            aria-busy={savingQuestion || undefined}
+            disabled={savingQuestion}
             onClick={saveQuestion}
           >
             <BookmarkIcon size={18} fill={question.savedByMe ? 'currentColor' : 'none'} /> {question.savedByMe ? 'Guardada' : 'Guardar'}
@@ -313,6 +336,8 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
                         className="icon-btn"
                         aria-label={answer.savedByMe ? 'Quitar la respuesta de guardados' : 'Guardar la respuesta'}
                         aria-pressed={answer.savedByMe}
+                        aria-busy={savingAnswer(answer) || undefined}
+                        disabled={savingAnswer(answer)}
                         onClick={() => saveAnswer(answer)}
                       >
                         <BookmarkIcon size={20} fill={answer.savedByMe ? 'currentColor' : 'none'} />
@@ -510,10 +535,12 @@ function ActionSheet({
                       type="button"
                       className="menu__item"
                       disabled={markNotHelpful.isPending}
+                      aria-busy={markNotHelpful.isPending || undefined}
                       onClick={() => markNotHelpful.mutate(target.answer.id, { onSuccess: close })}
                     >
-                      <ThumbDownIcon size={20} /> No me sirvió
+                      <ThumbDownIcon size={20} /> {markNotHelpful.isPending ? 'Enviando…' : 'No me sirvió'}
                     </button>
+                    {markNotHelpful.error && <p className="field__error menu__error" role="alert">{errorMessage(markNotHelpful.error)}</p>}
                   </li>
                 )}
                 {!mine && (

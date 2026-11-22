@@ -3,7 +3,7 @@
 // neighbor a yapita, so it answers with the reward. On your own letrero the main action is
 // sharing it (WhatsApp is how neighbors arrive).
 import { useEffect, useId, useRef, useState } from 'react';
-import { REPORT_REASONS, useHideForMe, useRemoveSign, useReport, useSign, useVoteSign, type ReportReason, type RewardCap, type Sign } from '../data';
+import { REPORT_REASONS, useHideForMe, useRemoveSign, useReport, useSign, useVoteSign, type Id, type ReportReason, type RewardCap, type Sign } from '../data';
 import { useRequireAccount } from './AuthGate';
 import {
   ArrowLeftIcon,
@@ -31,7 +31,8 @@ type SignSheetProps = {
   /** The person was voting when «Crea tu cuenta» sent them to Google: send that vote on open (SPEC 07). */
   resumeVote?: 'helpful' | 'not_helpful';
   onClose: () => void;
-  onToggleSave?: (sign: Sign) => void;
+  /** Saves or unsaves the letrero (no wall: the sheet asks for the account first). Resolves to whether it changed. */
+  onSave?: (id: Id) => Promise<boolean>;
 };
 
 type View = 'detail' | 'photo' | 'report' | 'reported' | 'hidden' | 'confirm-delete' | 'deleted';
@@ -48,7 +49,7 @@ function whatsappHref(sign: Sign): string {
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
 
-export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: SignSheetProps) {
+export function SignSheet({ sign: initial, resumeVote, onClose, onSave }: SignSheetProps) {
   const titleId = useId();
   const viewHeading = useRef<HTMLHeadingElement>(null);
   const fresh = useSign(initial.id);
@@ -57,6 +58,7 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
   /** Why the «Me sirvió» paid nothing (3 rewards today to the same person), or null when it paid. */
   const [rewardCap, setRewardCap] = useState<RewardCap | null>(null);
   const [sending, setSending] = useState(false);
+  const saving = useRef(false);
   const thanksRef = useRef<HTMLParagraphElement>(null);
   const [view, setView] = useState<View>('detail');
   const [menu, setMenu] = useState(false);
@@ -119,6 +121,7 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
             setSign(updated);
             setView('detail');
           },
+          onSettled: () => setSending(false),
         },
       ),
     );
@@ -151,8 +154,17 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onToggleSave }: 
     requireAccount(
       'Así guardas este letrero para verlo después.',
       () => {
+        // The star turns at once; it turns back if the save fails (the shell says why). No second tap meanwhile.
+        if (!onSave || saving.current) return;
+        saving.current = true;
         setSign((s) => ({ ...s, savedByMe: !s.savedByMe }));
-        onToggleSave?.(sign);
+        void onSave(sign.id)
+          .then((changed) => {
+            if (!changed) setSign((s) => ({ ...s, savedByMe: !s.savedByMe }));
+          })
+          .finally(() => {
+            saving.current = false;
+          });
       },
       undefined,
       { kind: 'save-sign', id: sign.id },

@@ -150,6 +150,11 @@
   background: var(--color-sunken);
 }
 
+/* Why a menu action failed, under its row */
+.menu__error {
+  padding: var(--s-2) var(--gutter);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .menu__item:hover {
     background: var(--color-sunken);

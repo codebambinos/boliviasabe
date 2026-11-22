@@ -174,3 +174,8 @@
     animation: none;
   }
 }
+
+/* «Marcar todo como leído» failed: the reason, above the list */
+.avisos__error {
+  padding: var(--s-3) var(--gutter) 0;
+}
