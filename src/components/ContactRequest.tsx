@@ -12,13 +12,13 @@ import './contact-request.css';
 /** The asker may ask on someone else's answer to their question, once. */
 export const canRequestContact = (question: Question, answer: Answer) => question.isMine && !answer.isMine && answer.contact === null;
 
-function phoneError(error: unknown): string | null {
+export function phoneError(error: unknown): string | null {
   if (!error) return null;
   if (isDataError(error) && error.code === 'validation') return 'Revisa el número: solo números, espacios y un + al inicio';
   return errorMessage(error);
 }
 
-function PhoneField({ id, value, onChange }: { id: string; value: string; onChange: (value: string) => void }) {
+export function PhoneField({ id, value, onChange }: { id: string; value: string; onChange: (value: string) => void }) {
   return (
     <div className="contact__field">
       <label htmlFor={id} className="contact__label">Tu celular (opcional)</label>

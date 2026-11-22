@@ -3,6 +3,7 @@
 // `respond_contact`, which keep the e-mail and phone away from anyone but the two people.
 import type { DataApi } from '../api';
 import { DataError } from '../errors';
+import { cleanPhone } from '../phone';
 import type { Answer, Comment, ContactState, Question } from '../types';
 import { supabase } from './client';
 import { requireMe } from './me';
@@ -51,6 +52,15 @@ export const supabaseContact: DataApi['contact'] = {
     const { data, error } = await supabase.from('profiles').select('phone').eq('id', me.id).single<{ phone: string | null }>();
     if (error) throw toDataError(error);
     return data.phone;
+  },
+
+  // The owner may update `profiles.phone` (0002_rls.sql); the app checks it with the same rule as clean_phone
+  async setMyPhone(phone) {
+    const clean = cleanPhone(phone);
+    const me = await requireMe();
+    const { error } = await supabase.from('profiles').update({ phone: clean }).eq('id', me.id);
+    if (error) throw toDataError(error);
+    return clean;
   },
 };
 

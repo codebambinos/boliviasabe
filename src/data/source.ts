@@ -71,6 +71,7 @@ function supabaseAdapter(): DataApi {
       request: (answerId, phone) => loadData().then((data) => data.contact.request(answerId, phone)),
       respond: (requestId, accept, phone) => loadData().then((data) => data.contact.respond(requestId, accept, phone)),
       myPhone: () => read(loadData().then((data) => data.contact.myPhone())),
+      setMyPhone: (phone) => loadData().then((data) => data.contact.setMyPhone(phone)),
     },
     live: {
       // Subscribing is synchronous for the caller: the channel opens once the adapter chunk has loaded

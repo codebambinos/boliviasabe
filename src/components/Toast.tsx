@@ -1,6 +1,9 @@
 // A short notice above the tab bar (wiki #167: «¡Publicado! Ganaste +1 yapita»). It rises in, leaves on
 // its own after about 4 s (sliding down), and screen readers hear it through role="status".
+// Drawn in <body> (a portal, like the sheets): inside .shell__main, a size container, `position: fixed` would be
+// relative to the page content instead of the screen, and on a long page like Yo it ended up out of view.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import './toast.css';
 
 const SHOW_MS = 4000;
@@ -24,9 +27,10 @@ export function Toast({ message, onDone }: ToastProps) {
     };
   }, []);
 
-  return (
+  return createPortal(
     <div className="toast" role="status" aria-live="polite" data-leaving={leaving || undefined}>
       <p className="toast__box">{message}</p>
-    </div>
+    </div>,
+    document.body,
   );
 }

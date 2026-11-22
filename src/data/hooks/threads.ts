@@ -50,6 +50,18 @@ export function useMyPhone(enabled = true) {
 }
 
 /**
+ * Ajustes › Mi celular (SPEC 23): saves or deletes (null / blank) the phone. The saved value goes straight into the
+ * cache, so the row and the contact sheet show it at once, with no refetch flash.
+ */
+export function useSetMyPhone() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (phone: string | null) => api.contact.setMyPhone(phone),
+    onSuccess: (saved) => client.setQueryData(keys.myPhone(), saved),
+  });
+}
+
+/**
  * Listens to the question while it is on screen and refreshes it at once when a comment, answer, rating or contact
  * request changes (wiki #185). Returns whether the channel is connected; while it is not, `useQuestion` keeps its
  * 15 s refresh.
