@@ -2,7 +2,7 @@
 // survive a tab change. The tab comes from the URL; pages render in the <Outlet /> (SPEC 04).
 import { useEffect, useId, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { DEFAULT_CITY, fetchSign, isDataError, useCreateAnswer, useCreateComment, useRefresh, useSession, useSignInWithGoogle, useToggleSaved, useWallet, type City, type Id, type Question, type Sign } from '../data';
+import { DEFAULT_CITY, fetchSign, isDataError, useCreateAnswer, useCreateComment, useRefresh, useSession, useSignInWithGoogle, useToggleSaved, useUnreadNotices, useWallet, type City, type Id, type Question, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
 import { AskQuestionSheet } from './AskQuestionSheet';
 import { sendDraftAnswer } from './AnswerBox';
@@ -45,6 +45,8 @@ function Shell() {
   // «Me sirvió» / «No me sirvió» coming back from Google: the sheet opens and sends the vote itself
   const [resumeVote, setResumeVote] = useState<'helpful' | 'not_helpful' | null>(null);
   const [avisos, setAvisos] = useState(false);
+  // The bell's number, live (SPEC 22); 0 and no request for a guest
+  const unread = useUnreadNotices();
   const [searchHidden, setSearchHidden] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [asking, setAsking] = useState<{ text: string } | null>(null);
@@ -239,7 +241,7 @@ function Shell() {
         account={
           signedIn
             ? {
-                unread: 0,
+                unread,
                 balance: wallet.data?.balance ?? null,
                 onBell: () => setAvisos(true),
                 // The balance opens Movimientos (wiki), not just the top of Yo
