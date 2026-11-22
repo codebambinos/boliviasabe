@@ -207,6 +207,18 @@ export const mockAuth: DataApi['auth'] = {
     }),
 };
 
+/** Words every question has: they never make two questions «parecidas». Same list as migration 0011. */
+const STOPWORDS = new Set(
+  (
+    'alguien alguna alguno algunos algunas algun algo sabe saben sabes saber donde adonde cuanto cuanta cuantos cuantas ' +
+    'como cual cuales cuando quien quienes para porque pero esta este esto estos estas estan hace hacen tiene tienen ' +
+    'tengo puedo puede pueden podria quiero necesito busco buscando vende venden conseguir consigo encuentro encontrar ' +
+    'comprar conoce conocen recomienda recomiendan recomiendo favor gracias hola buenas buenos dias tardes noches aqui ' +
+    'alli ahora todo toda todos todas desde hasta entre sobre cerca mucho mucha muchos poco otro otra otros otras ' +
+    'mismo misma tambien solo ayuda ayudar informacion'
+  ).split(' '),
+);
+
 // ---------- signs ----------
 
 export const mockSigns: DataApi['signs'] = {
@@ -408,12 +420,13 @@ export const mockQuestions: DataApi['questions'] = {
       return { question: toQuestion(question), answers };
     }),
 
-  /** «Preguntas parecidas»: from 3 typed words, up to 3 questions sharing words of 4+ letters. */
+  /** «Preguntas parecidas»: from 3 typed words, up to 3 questions sharing words of 4+ letters, minus the ones every
+   * question has (migration 0011). */
   similar: (text) =>
     simulate(() => {
       const words = normalize(text).split(/\s+/).filter(Boolean);
       if (words.length < 3) return [];
-      const keywords = words.filter((w) => w.length >= 4);
+      const keywords = [...new Set(words.map((w) => w.replace(/[^a-z0-9ñ]/g, '')))].filter((w) => w.length >= 4 && !STOPWORDS.has(w));
       const session = sessionOf();
       const city = session.status === 'signed-in' && session.profile ? session.profile.city : DEFAULT_CITY;
       const viewer = currentUserId();

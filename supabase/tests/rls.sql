@@ -738,6 +738,7 @@ select pg_temp.expect_text('list_questions (x): urgent first', $q$select public.
 select pg_temp.expect_text('list_questions (x): my zone before the rest of the city', $q$select public.list_questions('Oruro')->'items'->1->>'text'$q$, 'Pregunta sin respuestas de x');
 select pg_temp.expect_text('list_questions: search ignores accents', $q$select jsonb_array_length(public.list_questions('Oruro', 'DONDE')->'items')::text$q$, '1');
 select pg_temp.expect_text('similar_questions: shared words of 4+ letters', $q$select jsonb_array_length(public.similar_questions('quiero gas envasado barato'))::text$q$, '1');
+select pg_temp.expect_text('similar_questions: words every question has do not count', $q$select jsonb_array_length(public.similar_questions('donde venden pollo'))::text$q$, '0');
 select pg_temp.expect_text('similar_questions: under 3 words gives none', $q$select jsonb_array_length(public.similar_questions('gas envasado'))::text$q$, '0');
 
 -- answers
