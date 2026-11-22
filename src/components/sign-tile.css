@@ -203,7 +203,7 @@
   }
 }
 
-/* The ring is an outline whose color fades in and out (colors only, SPEC 26). An outline, not a pseudo-element:
+/* The ring is an outline whose color fades in and out (colors only, SPEC 27). An outline, not a pseudo-element:
    .tile__media clips its children (overflow: hidden), and the ring sits just outside the photo. */
 @keyframes tile-fresh-ring {
   0% {

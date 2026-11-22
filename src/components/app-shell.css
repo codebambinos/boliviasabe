@@ -360,7 +360,7 @@
     color var(--m-out) var(--ease);
 }
 
-/* Press: 1 px down and .985, like every small target (SPEC 26) */
+/* Press: 1 px down and .985, like every small target (SPEC 27) */
 .tabs__item:active {
   transform: translateY(1px) scale(0.985);
   transition-duration: var(--m-press);

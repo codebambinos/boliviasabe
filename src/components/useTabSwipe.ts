@@ -28,7 +28,7 @@ const IN_MS = 240;
 const BACK_MS = 320;
 const EASE_OUT = 'cubic-bezier(0.4, 0, 1, 1)';
 const EASE_IN = 'cubic-bezier(0.22, 1, 0.36, 1)';
-// Released half-way, the screen settles back with --ease-enter: no overshoot (DESIGN.md › Motion, SPEC 26)
+// Released half-way, the screen settles back with --ease-enter: no overshoot (DESIGN.md › Motion, SPEC 27)
 const SETTLE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;

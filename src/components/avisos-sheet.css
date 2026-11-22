@@ -52,7 +52,7 @@
   cursor: pointer;
 }
 
-/* A full-width row only darkens when pressed (SPEC 26) */
+/* A full-width row only darkens when pressed (SPEC 27) */
 .aviso:has(.aviso__open:active) {
   background: var(--color-sunken);
   transition-duration: var(--m-press);

@@ -77,7 +77,7 @@ Familiar patterns win over novelty; craft is in spacing, type and the states.
   nav on the right, with the float shadow.
 - **Screen title:** the tab's name in display size once per screen («¿Alguien sabe?», «Yo»). Hoy keeps
   «Hoy en <ciudad>» for screen readers only: the city is already in the top bar, and the grid shows more
-  photos above the fold (SPEC 26).
+  photos above the fold (SPEC 27).
 - **Hoy grid** (`SignTile`, `sign-tile.css`, wiki #138-140, #142): open tiles on the ground, no
   card box; 2 columns on a phone, 3 from 40 rem, 4 from 90 rem. Photo 4:5 (`--r-md`) with the price
   pill on its bottom-left and Guardar as a 44 px round button on its top-right; title 2 lines max;

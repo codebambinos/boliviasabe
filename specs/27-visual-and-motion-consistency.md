@@ -1,4 +1,4 @@
-# SPEC 26 — Visual and motion consistency
+# SPEC 27 — Visual and motion consistency
 
 > **Status:** Implemented
 > **Depends on:** SPEC 05 (Hoy grid, `SignTile`, the fresh-letrero entrance), SPEC 21 (Yo motion, `MovementsCard` «Ver más»), SPEC 24 (the bell celebration). Board card: T43 (issue #76). The `LoadFailedPage` comes from the T31 fixes (PR #71).

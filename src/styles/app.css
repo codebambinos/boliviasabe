@@ -222,7 +222,7 @@ textarea {
     border-color var(--m-out) var(--ease);
 }
 
-/* Press on small targets (DESIGN.md › Motion, SPEC 26): 1 px down and .985, like .btn; disabled ones stay put */
+/* Press on small targets (DESIGN.md › Motion, SPEC 27): 1 px down and .985, like .btn; disabled ones stay put */
 .icon-btn:active:not(:disabled),
 .link-btn:active:not(:disabled),
 .chip:active:not(:disabled) {
@@ -230,7 +230,7 @@ textarea {
   transition-duration: var(--m-press);
 }
 
-/* A long label never squeezes the icon (SPEC 26: «Cómo llegar» shrank to 7 px at 360 px) */
+/* A long label never squeezes the icon (SPEC 27: «Cómo llegar» shrank to 7 px at 360 px) */
 .btn > svg {
   flex: none;
 }
@@ -1100,7 +1100,7 @@ textarea {
   transition: background-color var(--m-out) var(--ease);
 }
 
-/* A full-width row only darkens when pressed: scaling a whole row looks wrong (SPEC 26) */
+/* A full-width row only darkens when pressed: scaling a whole row looks wrong (SPEC 27) */
 .row__link:active:not(:disabled):not(.row__link--static) {
   background: var(--color-sunken);
   transition-duration: var(--m-press);
@@ -1286,7 +1286,7 @@ input[role='switch']:focus-visible {
   }
 }
 
-/* The app's in-button loader («Publicando…», «Guardando…»): a small turning ring (SPEC 26, moved from the upload sheet) */
+/* The app's in-button loader («Publicando…», «Guardando…»): a small turning ring (SPEC 27, moved from the upload sheet) */
 .spinner {
   display: inline-block;
   width: 1em;
