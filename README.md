@@ -44,7 +44,7 @@ En Bolivia, para saber dónde hay almuerzo barato, quién repara una laptop o si
 - **Los letreros piden lo concreto:** un encuestado pidió «que pongan precio y número de celular». Por eso cada letrero lleva precio, zona y fecha, y se puede pedir el contacto.
 - **Estudiantes, con cuidado:** los 5 estudiantes dijeron que sí, pero son pocos. Empezamos cerca de las universidades y lo validamos en el piloto.
 
-**Lo que falta validar:** si los dueños darían descuentos a cambio de yapitas y cuánto; cuánto debería valer una yapita (preguntaron «¿cuánto vale un punto?» y «¿quién paga el descuento?»); y, tras la prueba gratis, si los negocios siguen subiendo ofertas y cuántos clientes llegan. Las 4 personas que no usarían la app tienen 54 años o más.
+**Lo que falta validar:** cuánto descuento darían los dueños y cuánto debería valer una yapita; si los negocios siguen subiendo ofertas después de la prueba gratis y cuántos clientes llegan; y si el «sí» se sostiene fuera de nuestros contactos.
 
 ## Pruébala
 
