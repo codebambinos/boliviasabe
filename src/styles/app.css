@@ -222,6 +222,19 @@ textarea {
     border-color var(--m-out) var(--ease);
 }
 
+/* Press on small targets (DESIGN.md › Motion, SPEC 27): 1 px down and .985, like .btn; disabled ones stay put */
+.icon-btn:active:not(:disabled),
+.link-btn:active:not(:disabled),
+.chip:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+  transition-duration: var(--m-press);
+}
+
+/* A long label never squeezes the icon (SPEC 27: «Cómo llegar» shrank to 7 px at 360 px) */
+.btn > svg {
+  flex: none;
+}
+
 .btn:active:not(:disabled) {
   transform: translateY(1px) scale(0.985);
   transition-duration: var(--m-press);
@@ -281,7 +294,9 @@ textarea {
   background: none;
   color: var(--color-ink);
   cursor: pointer;
-  transition: background-color var(--m-out) var(--ease);
+  transition:
+    transform var(--m-out) var(--ease),
+    background-color var(--m-out) var(--ease);
 }
 
 .icon-btn:active {
@@ -310,6 +325,7 @@ textarea {
   white-space: nowrap;
   cursor: pointer;
   transition:
+    transform var(--m-out) var(--ease),
     background-color var(--m-out) var(--ease),
     color var(--m-out) var(--ease);
 }
@@ -353,28 +369,18 @@ textarea {
 
 .tag--ok {
   background: var(--color-ok);
-  color: #1f1a17;
+  color: var(--color-on-fill);
 }
 
 .tag--info {
   background: var(--color-info-soft);
-  color: var(--color-info);
+  color: var(--color-info-text);
 }
 
 .tag--muted {
   background: transparent;
   color: var(--color-muted);
   box-shadow: inset 0 0 0 1px var(--color-line-strong);
-}
-
-:root[data-theme='dark'] .tag--info {
-  color: #9cc0f0;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .tag--info {
-    color: #9cc0f0;
-  }
 }
 
 /* Yapita mark (Yapita.tsx): the orange disc with a drawn star. Orange never carries text. */
@@ -387,7 +393,7 @@ textarea {
   height: 1.25rem;
   border-radius: 50%;
   background: var(--color-yapita);
-  color: #1f1a17;
+  color: var(--color-on-fill);
 }
 
 .yapita--sm {
@@ -871,6 +877,7 @@ textarea {
   text-decoration: underline;
   text-underline-offset: 0.2em;
   cursor: pointer;
+  transition: transform var(--m-out) var(--ease);
 }
 
 /* Skip link: hidden until it takes the keyboard focus */
@@ -1089,6 +1096,14 @@ textarea {
   text-align: start;
   text-decoration: none;
   cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background-color var(--m-out) var(--ease);
+}
+
+/* A full-width row only darkens when pressed: scaling a whole row looks wrong (SPEC 27) */
+.row__link:active:not(:disabled):not(.row__link--static) {
+  background: var(--color-sunken);
+  transition-duration: var(--m-press);
 }
 
 .row__link > .row__main {
@@ -1108,12 +1123,12 @@ li {
 /* Borrar: the one destructive action, red, never fuchsia */
 .btn--danger {
   background: var(--color-danger);
-  color: #fff;
+  color: var(--color-on-danger);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .btn--danger:hover:not(:disabled) {
-    background-color: color-mix(in srgb, var(--color-danger) 86%, #000);
+    background-color: color-mix(in srgb, var(--color-danger) 86%, var(--color-ink));
   }
 }
 
@@ -1268,5 +1283,32 @@ input[role='switch']:focus-visible {
   input[role='switch'],
   input[role='switch']::after {
     transition: none;
+  }
+}
+
+/* The app's in-button loader («Publicando…», «Guardando…»): a small turning ring (SPEC 27, moved from the upload sheet) */
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: var(--s-2);
+  vertical-align: -0.15em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner-turn 700ms linear infinite;
+}
+
+@keyframes spinner-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The spinner is the only sign of work: it keeps turning, slower */
+  .spinner {
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
   }
 }

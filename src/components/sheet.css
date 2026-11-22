@@ -29,7 +29,7 @@
   max-height: 100dvh;
   background: var(--color-bg);
   outline: none;
-  animation: sheet-in 260ms var(--ease-enter) both;
+  animation: sheet-in var(--m-sheet-in) var(--ease-enter) both;
 }
 
 .sheet[data-variant='bottom'] .sheet__panel {
@@ -56,11 +56,11 @@
 }
 
 .sheet[data-closing] .sheet__panel {
-  animation: sheet-out 160ms var(--ease) both;
+  animation: sheet-out var(--m-exit) var(--ease) both;
 }
 
 .sheet[data-closing] .sheet__scrim {
-  animation: sheet-fade-out 160ms var(--ease) both;
+  animation: sheet-fade-out var(--m-exit) var(--ease) both;
 }
 
 @keyframes sheet-in {

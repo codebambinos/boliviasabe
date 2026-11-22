@@ -24,7 +24,7 @@ export function LoadFailedPage({ title, message, onRetry }: { title: string; mes
         <div className="empty" role="alert">
           <h1 tabIndex={-1} className="empty__title">{message}</h1>
           <div className="empty__actions">
-            <button type="button" className="btn" onClick={onRetry}>Reintentar</button>
+            <button type="button" className="btn btn--secondary" onClick={onRetry}>Reintentar</button>
             <Link className="btn btn--secondary" to="/" replace>Ir a Hoy</Link>
           </div>
         </div>

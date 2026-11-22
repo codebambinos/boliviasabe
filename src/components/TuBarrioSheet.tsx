@@ -7,7 +7,6 @@ import { ArrowLeftIcon, CloseIcon } from './icons';
 import { errorMessage } from './messages';
 import { Sheet } from './Sheet';
 import './tu-barrio-sheet.css';
-import './upload-sign-sheet.css'; // .upload__spinner, the app's in-button loader
 
 const NAME_MIN = 2;
 const NAME_MAX = 60;
@@ -176,7 +175,7 @@ export function TuBarrioSheet({ suggestedName, initial, onSaved, onClose }: TuBa
                 >
                   {save.isPending ? (
                     <>
-                      <span className="upload__spinner" aria-hidden="true" /> Guardando…
+                      <span className="spinner" aria-hidden="true" /> Guardando…
                     </>
                   ) : editing ? (
                     'Guardar'

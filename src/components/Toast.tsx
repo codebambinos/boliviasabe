@@ -4,10 +4,10 @@
 // relative to the page content instead of the screen, and on a long page like Yo it ended up out of view.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { EXIT_MS } from './Sheet';
 import './toast.css';
 
 const SHOW_MS = 4000;
-const EXIT_MS = 180;
 
 type ToastProps = { message: ReactNode; onDone: () => void };
 

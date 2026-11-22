@@ -28,7 +28,7 @@
   min-height: 0;
   padding: 0;
   border: 0;
-  background: #0d0b0a;
+  background: var(--color-photo-backdrop);
   cursor: zoom-out;
 }
 
@@ -50,7 +50,7 @@
   padding: var(--s-1) var(--s-3) calc(var(--s-1) + 3px);
   border-radius: var(--r-sm) var(--r-sm) 2px 2px;
   background: var(--color-yellow);
-  color: #1f1a17;
+  color: var(--color-on-fill);
   font: 600 2.25rem / 1.1 var(--font-title);
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;

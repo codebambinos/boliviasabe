@@ -378,7 +378,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
                         >
                           {markHelpful.isPending && markHelpful.variables === answer.id ? (
                             <>
-                              <span className="upload__spinner" aria-hidden="true" /> Enviando…
+                              <span className="spinner" aria-hidden="true" /> Enviando…
                             </>
                           ) : (
                             <>

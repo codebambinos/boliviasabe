@@ -75,8 +75,9 @@ Familiar patterns win over novelty; craft is in spacing, type and the states.
   pill nav.
 - **FAB:** the tab's one main action («Subir», «Preguntar») as a fuchsia pill with `+`, above the
   nav on the right, with the float shadow.
-- **Screen title:** the tab's name in display size once per screen («Hoy en Cochabamba»,
-  «¿Alguien sabe?», «Yo»).
+- **Screen title:** the tab's name in display size once per screen («¿Alguien sabe?», «Yo»). Hoy keeps
+  «Hoy en <ciudad>» for screen readers only: the city is already in the top bar, and the grid shows more
+  photos above the fold (SPEC 27).
 - **Hoy grid** (`SignTile`, `sign-tile.css`, wiki #138-140, #142): open tiles on the ground, no
   card box; 2 columns on a phone, 3 from 40 rem, 4 from 90 rem. Photo 4:5 (`--r-md`) with the price
   pill on its bottom-left and Guardar as a 44 px round button on its top-right; title 2 lines max;
@@ -151,7 +152,16 @@ Familiar patterns win over novelty; craft is in spacing, type and the states.
 
 - One ease-out `--ease` cubic-bezier(.2,.8,.2,1); `--ease-enter` for things settling. No bounce
   or overshoot. Transform, opacity and colors only.
-- Press (every button, touch included): 1 px down and scale .985 in 90 ms.
+  - **Exception (height):** opening and closing a list may animate its height, so the page does not jump
+    (only Movimientos «Ver más» / «Ver menos»).
+  - **Exception (bounce):** the new-notice celebration (the bell rings, the bubble bounces, sparkles; wiki #216)
+    is the one bounce in the app.
+- Timings are tokens in `tokens.css`: `--m-press` 90, `--m-out` 120, `--m-in` 150, `--m-panel` 200,
+  `--m-sheet-in` 260 (a sheet rises), `--m-exit` 160 (sheets and toasts leave; `EXIT_MS` in `Sheet.tsx` is the
+  same value for waits in code), `--m-image` 600, `--m-theme` 260. Loops (skeleton, spinner) keep their own.
+- Press, by size (touch included): small targets (buttons, icon buttons, links, chips, tabs) go 1 px down and
+  scale .985 in `--m-press`; full-width rows (Ajustes, Avisos, Mi actividad) only take the sunken background.
+  Disabled controls do not move.
 - Hover (fine pointer only): buttons step 1 px up and darken 14 %; a linked card lifts 2 px and its
   photo zooms to 1.03 inside its frame over 600 ms.
 - Panels and the tab pill: 200 ms. Nothing fades or rises in on scroll; no parallax, carousels or

@@ -138,7 +138,7 @@
   z-index: -1;
   border-radius: 50%;
   background: var(--color-card);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+  box-shadow: var(--shadow-on-photo);
   transition: transform var(--m-out) var(--ease);
 }
 
@@ -203,15 +203,17 @@
   }
 }
 
+/* The ring is an outline whose color fades in and out (colors only, SPEC 27). An outline, not a pseudo-element:
+   .tile__media clips its children (overflow: hidden), and the ring sits just outside the photo. */
 @keyframes tile-fresh-ring {
   0% {
-    box-shadow: 0 0 0 0 var(--color-brand);
+    outline: 4px solid transparent;
   }
   30% {
-    box-shadow: 0 0 0 4px var(--color-brand);
+    outline: 4px solid var(--color-brand);
   }
   100% {
-    box-shadow: 0 0 0 4px transparent;
+    outline: 4px solid transparent;
   }
 }
 

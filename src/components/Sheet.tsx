@@ -35,7 +35,8 @@ if (typeof window !== 'undefined') {
   );
 }
 
-const EXIT_MS = 160;
+/** How long a sheet takes to leave (--m-exit); toasts and «after the sheet closes» waits use the same value. */
+export const EXIT_MS = 160;
 
 function setBackgroundInert() {
   const root = document.getElementById('root');

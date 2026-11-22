@@ -7,7 +7,6 @@ import { useSetMyPhone } from '../data';
 import { PhoneField, phoneError } from './ContactRequest';
 import { CloseIcon } from './icons';
 import { Sheet } from './Sheet';
-import './upload-sign-sheet.css'; // .upload__spinner, the app's in-button loader
 
 export type PhoneSaved = 'saved' | 'deleted';
 
@@ -43,7 +42,7 @@ export function MyPhoneSheet({ saved, onDone, onClose }: MyPhoneSheetProps) {
             onSettled: () => setWorking(null),
           });
         };
-        const spinner = <span className="upload__spinner" aria-hidden="true" />;
+        const spinner = <span className="spinner" aria-hidden="true" />;
         return (
           <>
             <header className="sheet__bar">
