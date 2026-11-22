@@ -70,7 +70,7 @@ Antes del hackathon no existía nada: empezamos de cero el **20 de noviembre**. 
 
 **Cómo llegamos a los primeros usuarios:** sin publicidad pagada. Respondemos preguntas reales en los grupos «¿Alguien sabe?» de Cochabamba y pedimos permiso a sus administradores para presentar la app (sus reglas prohíben la publicidad). En grupos de compra y venta como [«Cala Cala - Ciudad Cochabamba»](https://www.facebook.com/groups/calacala/) (633 miembros) compartimos letreros con su enlace. Antes cargamos letreros reales para que nadie encuentre la app vacía, y cada cuenta nueva recibe 5 yapitas de bienvenida.
 
-**Metas al día 30:** 200 cuentas, 60 activas por semana y menos de 30 minutos hasta la primera respuesta.
+**Metas al día 30:** 150 cuentas, 45 activas por semana y menos de 30 minutos hasta la primera respuesta.
 
 ## Equipo CodeBambinos
 
