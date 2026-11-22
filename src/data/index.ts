@@ -11,6 +11,7 @@ export * from './hooks/wallet';
 export * from './hooks/activity';
 export * from './hooks/refresh';
 export * from './hooks/push';
+export * from './hooks/notices';
 
 export type * from './types';
 export type { ListQuery, NewQuestion, NewSign, NotifPrefs, ProfileInput, PushSubscriptionInput, SavedItems } from './api';

@@ -87,6 +87,19 @@ function supabaseAdapter(): DataApi {
           stop?.();
         };
       },
+      notices: (onChange, onStatus) => {
+        let stop: (() => void) | null = null;
+        let cancelled = false;
+        loadData()
+          .then((data) => {
+            if (!cancelled) stop = data.live.notices(onChange, onStatus);
+          })
+          .catch(() => onStatus?.(false)); // offline: no channel, the bell asks every 60 s
+        return () => {
+          cancelled = true;
+          stop?.();
+        };
+      },
     },
     saved: {
       toggle: (kind, id) => loadData().then((data) => data.saved.toggle(kind, id)),
@@ -106,6 +119,12 @@ function supabaseAdapter(): DataApi {
       myQuestions: () => read(loadData().then((data) => data.activity.myQuestions())),
       myAnswers: () => read(loadData().then((data) => data.activity.myAnswers())),
       mySigns: () => read(loadData().then((data) => data.activity.mySigns())),
+    },
+    notices: {
+      list: (offset) => read(loadData().then((data) => data.notices.list(offset))),
+      unreadCount: () => read(loadData().then((data) => data.notices.unreadCount())),
+      markRead: (id) => loadData().then((data) => data.notices.markRead(id)),
+      markAllRead: () => loadData().then((data) => data.notices.markAllRead()),
     },
     push: {
       getPrefs: () => read(loadData().then((data) => data.push.getPrefs())),

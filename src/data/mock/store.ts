@@ -7,6 +7,7 @@ import type {
   ContactRec,
   ContentRef,
   MovementRec,
+  NoticeRec,
   QuestionRec,
   ReportRec,
   SignRec,
@@ -31,6 +32,7 @@ export type MockStore = {
   comments: CommentRec[];
   contacts: ContactRec[];
   movements: MovementRec[];
+  notices: NoticeRec[];
   saved: ContentRef[];
   reports: ReportRec[];
   hidden: ContentRef[];
@@ -48,9 +50,10 @@ function createStore(): MockStore {
     signVotes: copy(seed.signVotes),
     questions: copy(seed.questions),
     answers: copy(seed.answers),
-    comments: [],
-    contacts: [],
+    comments: copy(seed.comments),
+    contacts: copy(seed.contacts),
     movements: copy(seed.movements),
+    notices: copy(seed.notices),
     saved: copy(seed.saved),
     reports: copy(seed.reports),
     hidden: copy(seed.hidden),
@@ -59,8 +62,8 @@ function createStore(): MockStore {
       sign: maxId(seed.signs),
       question: maxId(seed.questions),
       answer: maxId(seed.answers),
-      comment: 0,
-      contact: 0,
+      comment: maxId(seed.comments),
+      contact: maxId(seed.contacts),
       movement: maxId(seed.movements),
     },
   };

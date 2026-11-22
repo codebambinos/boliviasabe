@@ -77,4 +77,27 @@ export const supabaseLive: DataApi['live'] = {
       void supabase.removeChannel(channel);
     };
   },
+
+  /**
+   * The bell (SPEC 22): one channel on my `notifications` rows. The filter keeps the traffic small; RLS is the guard
+   * (Realtime only delivers rows the subscriber can read). Like the question channel, events only trigger a refetch.
+   */
+  notices(onChange, onStatus) {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    requireMe()
+      .then((me) => {
+        if (cancelled) return;
+        channel = supabase
+          .channel(`notices:${me.id}:${Math.random().toString(36).slice(2)}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${me.id}` }, () => onChange())
+          .subscribe((status) => onStatus?.(status === 'SUBSCRIBED'));
+      })
+      .catch(() => onStatus?.(false)); // no profile yet or offline: the bell asks every 60 s
+    return () => {
+      cancelled = true;
+      onStatus?.(false);
+      if (channel) void supabase.removeChannel(channel);
+    };
+  },
 };

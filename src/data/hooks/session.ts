@@ -20,7 +20,12 @@ function useSessionMutation<TInput>(run: (input: TInput) => Promise<Session>, af
     mutationFn: run,
     onSuccess: (session) => {
       client.setQueryData(keys.session(), session);
-      for (const key of PERSONAL_KEYS) void client.resetQueries({ queryKey: key });
+      // Signed out: drop the personal queries without fetching them again. A reset would refetch the ones still on
+      // screen before they unmount, with no session (the 401s seen on «Cerrar sesión», SPEC 22).
+      for (const key of PERSONAL_KEYS) {
+        if (session.status === 'guest') client.removeQueries({ queryKey: key });
+        else void client.resetQueries({ queryKey: key });
+      }
       void client.invalidateQueries({ queryKey: keys.all, predicate: (q) => !isPersonalKey(q.queryKey) && q.queryKey[1] !== 'session' });
       after?.();
     },

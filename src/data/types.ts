@@ -141,3 +141,40 @@ export type ContentKind = 'sign' | 'question' | 'answer';
 /** What can be reported or hidden: any content, plus comments (which cannot be saved). */
 export type ReportKind = ContentKind | 'comment';
 export type ReportReason = (typeof REPORT_REASONS)[number]['value'];
+
+/** The 8 kinds of notice (wiki › flujo-final › 3 · Yo › Avisos, #202, #208). */
+export type NoticeKind =
+  | 'answer'
+  | 'comment'
+  | 'helpful'
+  | 'sign_helpful'
+  | 'contact_request'
+  | 'contact_accepted'
+  | 'urgent'
+  | 'reminder';
+
+/** One row of Avisos, already built (SPEC 22, wiki #214). «Me sirvió» of the same letrero come as one notice. */
+export type Notice = {
+  /** The newest row of the notice; what `markRead` takes. */
+  id: Id;
+  kind: NoticeKind;
+  /** The newest row's date (ISO). */
+  createdAt: string;
+  /** False while any row of the notice is unread. */
+  read: boolean;
+  /** Who caused it (the newest in a group). Null on `reminder`. */
+  actor: string | null;
+  /** How many «Me sirvió» are in the group. 1 for every other kind. */
+  count: number;
+  /** The piece of text: the answer, the comment, the letrero's title or the question. Null when it is gone. */
+  text: string | null;
+  /** Only `urgent`: the question's zone. */
+  zone: string | null;
+  /** Where it opens: `/p/:id` or `/l/:id`. Null = «Esto ya no está disponible» (deleted, hidden by me or in review). */
+  open: { kind: 'question' | 'sign'; id: Id } | null;
+  /** `contact_request` and `contact_accepted`: the same state as the thread (Aceptar / Ahora no, or the contact). */
+  contact: ContactState | null;
+};
+
+/** 30 notices per page, newest first. `nextOffset` is null on the last page. */
+export type NoticePage = { items: Notice[]; nextOffset: number | null };

@@ -10,6 +10,7 @@ import type {
   ContentKind,
   Id,
   Movement,
+  NoticePage,
   Page,
   Question,
   ReportKind,
@@ -128,6 +129,8 @@ export interface DataApi {
      * Returns the unsubscribe. The mock never connects, so the screen keeps its 15 s refresh.
      */
     question(questionId: Id, onChange: (answerId: Id | null) => void, onStatus?: (connected: boolean) => void): () => void;
+    /** Calls `onChange` when one of my notifications is inserted or updated (SPEC 22). The mock never connects. */
+    notices(onChange: () => void, onStatus?: (connected: boolean) => void): () => void;
   };
   saved: {
     /** Returns whether the item is saved after the toggle. */
@@ -148,6 +151,16 @@ export interface DataApi {
     myQuestions(): Promise<Question[]>;
     myAnswers(): Promise<Answer[]>;
     mySigns(): Promise<Sign[]>;
+  };
+  /** Avisos (SPEC 22, wiki #214): the caller's notices, already built. */
+  notices: {
+    /** 30 per page, newest first. «Me sirvió» of the same letrero come as one notice. */
+    list(offset?: number): Promise<NoticePage>;
+    /** Notices with something unread (a group counts once). */
+    unreadCount(): Promise<number>;
+    /** Marks that notice; for a grouped `sign_helpful`, the whole group. */
+    markRead(id: Id): Promise<void>;
+    markAllRead(): Promise<void>;
   };
   /** Push notifications (SPEC 15). The preferences belong to the account; a subscription to this device. */
   push: {
