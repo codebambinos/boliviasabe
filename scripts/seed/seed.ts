@@ -20,8 +20,8 @@ import { chargeUrgent, isCapped, payReward, planCharge, planReward, type Premiar
 import { provisionWallet, walletEnv } from '../../lib/stellar/wallet.ts';
 import { pointsBalance } from '../../lib/stellar/points.ts';
 import { NEIGHBORS, QUESTIONS, SIGNS, TEST_EMAIL, type NeighborKey } from './content.ts';
+import { allUsers, BUCKET, deleteOwned, fail } from '../shared/delete-content.ts';
 
-const BUCKET = 'photos';
 const HOUR = 3600 * 1000;
 const PHOTOS = new URL('./photos/', import.meta.url);
 
@@ -31,104 +31,12 @@ const DRY = args.has('--dry-run');
 
 type Db = SupabaseClient;
 
-function fail(what: string, error: { message: string } | null): asserts error is null {
-  if (error) throw new Error(`${what}: ${error.message}`);
-}
-
 const ago = (hours: number) => new Date(Date.now() - hours * HOUR).toISOString();
 
 /** "Lucía Mamani" → "Lucía M." (same rule as the app). */
 function displayName(fullName: string): string {
   const [first, second] = fullName.trim().split(/\s+/);
   return second ? `${first} ${second[0].toUpperCase()}.` : first;
-}
-
-async function allUsers(db: Db): Promise<{ id: string; email?: string }[]> {
-  const users: { id: string; email?: string }[] = [];
-  for (let page = 1; ; page++) {
-    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 200 });
-    fail('auth users', error);
-    users.push(...data.users);
-    if (data.users.length < 200) return users;
-  }
-}
-
-const ids = (rows: { id: number }[] | null) => (rows ?? []).map((r) => r.id);
-
-// ---------------------------------------------------------------------------
-// Deleting: everything a set of profiles owns, and what others wrote on it
-// ---------------------------------------------------------------------------
-
-/** Deletes the content of `profiles`. With `everything`, also their rewards, keys, profiles and auth users. */
-async function deleteOwned(db: Db, profiles: { id: number; authId: string }[], everything: boolean): Promise<void> {
-  if (!profiles.length) return;
-  const p = profiles.map((x) => x.id);
-
-  const { data: s, error: e1 } = await db.from('signs').select('id').in('author_id', p);
-  fail('signs', e1);
-  const { data: q, error: e2 } = await db.from('questions').select('id').in('author_id', p);
-  fail('questions', e2);
-  const signIds = ids(s);
-  const questionIds = ids(q);
-  const { data: a, error: e3 } = await db
-    .from('answers')
-    .select('id')
-    .or(`author_id.in.(${p.join(',')})${questionIds.length ? `,question_id.in.(${questionIds.join(',')})` : ''}`);
-  fail('answers', e3);
-  const answerIds = ids(a);
-  const inList = (xs: number[]) => `(${xs.length ? xs.join(',') : '0'})`;
-
-  const steps: [string, () => PromiseLike<{ error: { message: string } | null }>][] = [
-    ['comments', () => db.from('answer_comments').delete().or(`author_id.in.${inList(p)},answer_id.in.${inList(answerIds)}`)],
-    ['ratings', () => db.from('ratings').delete().or(`rater_id.in.${inList(p)},answer_id.in.${inList(answerIds)}`)],
-    [
-      'contact requests',
-      () =>
-        db
-          .from('contact_requests')
-          .delete()
-          .or(`requester_id.in.${inList(p)},owner_id.in.${inList(p)},answer_id.in.${inList(answerIds)},question_id.in.${inList(questionIds)}`),
-    ],
-    ['answers', () => db.from('answers').delete().in('id', answerIds.length ? answerIds : [0])],
-    ['sign votes', () => db.from('sign_votes').delete().or(`voter_id.in.${inList(p)},sign_id.in.${inList(signIds)}`)],
-    ['signs', () => db.from('signs').delete().in('id', signIds.length ? signIds : [0])],
-    ['questions', () => db.from('questions').delete().in('id', questionIds.length ? questionIds : [0])],
-  ];
-  // Others' saved items, hidden items and reports that point at the deleted content
-  for (const [kind, list] of [['sign', signIds], ['question', questionIds], ['answer', answerIds]] as const) {
-    if (!list.length) continue;
-    for (const table of ['saved', 'hidden_items', 'reports'] as const) {
-      steps.push([`${table} on ${kind}`, () => db.from(table).delete().eq('kind', kind).in('target_id', list)]);
-    }
-  }
-  steps.push(
-    ['saved', () => db.from('saved').delete().in('user_id', p)],
-    ['hidden items', () => db.from('hidden_items').delete().in('user_id', p)],
-    ['reports', () => db.from('reports').delete().in('reporter_id', p)],
-  );
-  if (everything) {
-    steps.push(
-      ['notifications', () => db.from('notifications').delete().in('user_id', p)],
-      ['push subscriptions', () => db.from('push_subscriptions').delete().in('user_id', p)],
-      // Others keep their rewards; they only lose the link to who gave them
-      ['reward sources', () => db.from('rewards').update({ source_id: null }).in('source_id', p).not('profile_id', 'in', inList(p))],
-      ['rewards', () => db.from('rewards').delete().in('profile_id', p)],
-      ['wallet keys', () => db.from('wallet_keys').delete().in('profile_id', p)],
-    );
-  }
-  for (const [what, run] of steps) fail(`delete ${what}`, (await run()).error);
-
-  // Photos: each profile has its own folder in the bucket
-  for (const { id } of profiles) {
-    const { data: files, error } = await db.storage.from(BUCKET).list(String(id), { limit: 1000 });
-    fail('photos list', error);
-    if (files?.length) fail('photos delete', (await db.storage.from(BUCKET).remove(files.map((f) => `${id}/${f.name}`))).error);
-  }
-
-  if (everything) {
-    fail('delete profiles', (await db.from('profiles').delete().in('id', p)).error);
-    for (const { authId } of profiles) fail('delete auth user', (await db.auth.admin.deleteUser(authId)).error);
-  }
 }
 
 async function profilesOf(db: Db, authIds: string[]): Promise<{ id: number; authId: string }[]> {
