@@ -8,6 +8,7 @@
 
 .qcard {
   position: relative;
+  isolation: isolate; /* the spotlight frame (::before, z-index -1) stays inside the card, under its text */
   display: flex;
   align-items: flex-start;
   gap: var(--s-3);
@@ -100,4 +101,68 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* A question opened from Avisos (SPEC 24, wiki #216): a fuchsia frame fades in around the card, a soft ring
+   breathes out from it twice, then the frame fades away when the spotlight ends. Only opacity and transform move,
+   on two pseudo-elements, so the list itself never repaints. */
+.qcard::before,
+.qcard::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--s-1) * -1) calc(var(--s-2) * -1);
+  border-radius: var(--r-md);
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* The frame */
+.qcard::before {
+  border: 2px solid var(--color-brand);
+  background: color-mix(in srgb, var(--color-brand-soft) 70%, transparent);
+  z-index: -1;
+  transition: opacity 700ms var(--ease);
+}
+
+.qcard[data-spotlight]::before {
+  opacity: 1;
+  animation: qcard-frame-in 320ms var(--ease-enter) both;
+}
+
+/* The ring that breathes out */
+.qcard::after {
+  border: 2px solid var(--color-brand);
+}
+
+.qcard[data-spotlight]::after {
+  animation: qcard-ring 1100ms var(--ease) 2 both;
+}
+
+@keyframes qcard-frame-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes qcard-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.04, 1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qcard::before {
+    transition: none;
+  }
+
+  .qcard[data-spotlight]::before,
+  .qcard[data-spotlight]::after {
+    animation: none;
+  }
 }

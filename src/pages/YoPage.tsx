@@ -1,8 +1,9 @@
 // Yo (wiki › flujo-final › 3 · Yo, SPEC 21). Guest: «¡Hola, vecino!» and the way in. Signed in, in this order on a
-// phone (#157): profile → Movimientos → Mi cuenta de prueba → Mi actividad → Ajustes. No Tilcho (#191).
-// Ajustes is its own card (SPEC 23, src/components/SettingsCard.tsx); the Avisos screen comes with T24.
+// phone (#157): profile → Movimientos → Mi cuenta de prueba → Mi actividad → Avisos (#216) → Ajustes. No Tilcho (#191).
+// Ajustes is its own card (SPEC 23, src/components/SettingsCard.tsx); the Avisos sheet lives in the shell (SPEC 24).
 import { useState } from 'react';
 import { ActivityCard } from '../components/ActivityCard';
+import { AvisosCard } from '../components/AvisosCard';
 import { useOpenEmailSignIn } from '../components/AuthGate';
 import { InstallRow } from '../components/InstallRow';
 import { MovementsCard } from '../components/MovementsCard';
@@ -52,6 +53,7 @@ export function YoPage() {
         <div className="yo-col">
           <MovementsCard />
           <ActivityCard onAsk={() => shell.openAsk()} onUpload={shell.openUpload} />
+          <AvisosCard onOpen={shell.openAvisos} />
         </div>
       </div>
       {editing && profile && (

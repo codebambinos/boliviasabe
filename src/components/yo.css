@@ -165,6 +165,13 @@
   padding: var(--s-3) 0 var(--s-1);
 }
 
+/* ---------- Avisos card (SPEC 24) ---------- */
+
+.avisos-card__count {
+  color: var(--color-brand-text);
+  font-weight: var(--w-strong);
+}
+
 /* ---------- Ajustes › Mi celular (SPEC 23) ---------- */
 
 /* Right under the notification switches, which already draw the line above it */

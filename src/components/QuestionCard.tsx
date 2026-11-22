@@ -14,10 +14,12 @@ export const answersText = (count: number) => (count === 0 ? 'Sin respuestas' : 
 type QuestionCardProps = {
   question: Question;
   selected?: boolean;
+  /** Just opened from Avisos (SPEC 24): a fuchsia frame that pulses, then fades. */
+  spotlight?: boolean;
   onOpen: (question: Question) => void;
 };
 
-export function QuestionCard({ question, selected, onOpen }: QuestionCardProps) {
+export function QuestionCard({ question, selected, spotlight, onOpen }: QuestionCardProps) {
   const urgent = question.status === 'open' && isUrgentActive(question);
   const when = timeAgo(question.createdAt);
   const status = question.status === 'solved' ? 'Solucionada' : question.status === 'closed' ? 'Cerrada' : null;
@@ -26,7 +28,7 @@ export function QuestionCard({ question, selected, onOpen }: QuestionCardProps) 
     .join(', ');
 
   return (
-    <article className="qcard" data-selected={selected || undefined}>
+    <article className="qcard" data-selected={selected || undefined} data-spotlight={spotlight || undefined}>
       <div className="qcard__main">
         <h3 className="qcard__text">
           {/* Stretched button: the whole card is one tap target and works by keyboard */}

@@ -1,7 +1,8 @@
 // ¿Alguien sabe? (wiki › flujo-final › «2 · ¿Alguien sabe?», SPEC 10): search, tag chips and the list of
 // questions in the wiki order (urgent → your zone → city → solved/closed), 30 + «Ver más». The shell owns
 // the city, Preguntar and the open conversation; this page reads them through useShell().
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { ChipRow } from '../components/ChipRow';
 import { Hint } from '../components/Hint';
 import { SearchIcon } from '../components/icons';
@@ -10,7 +11,10 @@ import { PullIndicator } from '../components/PullIndicator';
 import { QuestionCard, QuestionCardSkeleton } from '../components/QuestionCard';
 import { usePullToRefresh } from '../components/usePullToRefresh';
 import { useShell } from '../components/useShell';
-import { TAGS, useQuestions, type Tag } from '../data';
+import { TAGS, useQuestions, type Id, type Tag } from '../data';
+
+/** How long a question from Avisos stays framed before the frame fades (SPEC 24). */
+const SPOTLIGHT_MS = 2800;
 
 export function PreguntasPage() {
   const { city, openQuestion, selectedQuestion, goneQuestions, openAsk } = useShell();
@@ -29,6 +33,47 @@ export function PreguntasPage() {
   }, []);
 
   const items = (questions.data?.pages.flatMap((page) => page.items) ?? []).filter((q) => !goneQuestions.has(q.id));
+
+  // A question opened from Avisos (SPEC 24, wiki #216): once the list is in, scroll to its card and frame it for a
+  // moment. The request is dropped from history so Back / a reload do not play it again. If the card is not in the
+  // list (filters, an older page), the question opens directly (on desktop the panel already shows it).
+  const location = useLocation();
+  const navigate = useNavigate();
+  const navState = location.state as { spotlight?: Id; focus?: unknown } | null;
+  const wanted = navState?.spotlight ?? null;
+  const [spotlight, setSpotlight] = useState<Id | null>(null);
+  // Each request is handled once, even if the page renders again before history drops it
+  const handled = useRef<Id | null>(null);
+  const listReady = questions.isSuccess && !questions.isPlaceholderData;
+  const wantedInList = wanted !== null && items.some((q) => q.id === wanted);
+  useEffect(() => {
+    if (wanted === null) {
+      handled.current = null;
+      return;
+    }
+    if (!listReady || handled.current === wanted) return;
+    handled.current = wanted;
+    // The panel's conversation may still need `focus` (the answer to frame): only the list's request is dropped
+    const keep = navState?.focus ? { focus: navState.focus } : null;
+    navigate(location.pathname + location.search, { replace: true, state: keep, preventScrollReset: true });
+    if (!wantedInList) {
+      if (!window.matchMedia('(min-width: 64rem)').matches) openQuestion(wanted);
+      return;
+    }
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Two frames: the screen change has painted and ScrollRestoration has run, so this scroll is the last word
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        document.getElementById(`q-card-${wanted}`)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+        setSpotlight(wanted);
+      }),
+    );
+  }, [wanted, listReady, wantedInList, navigate, location.pathname, location.search, openQuestion, navState?.focus]);
+  useEffect(() => {
+    if (spotlight === null) return;
+    const done = window.setTimeout(() => setSpotlight(null), SPOTLIGHT_MS);
+    return () => window.clearTimeout(done);
+  }, [spotlight]);
   const toggle = (tag: Tag) => setTags((t) => (t.includes(tag) ? t.filter((x) => x !== tag) : [...t, tag]));
   const filtering = search.trim() !== '' || tags.length > 0;
   const clear = () => {
@@ -109,8 +154,13 @@ export function PreguntasPage() {
           <ul className="qlist">
             {items.map((question) => (
               // Its name for the «remove» transition: the card that leaves shrinks, the others slide into place
-              <li key={question.id} style={{ '--vt-card': `q-${question.id}` } as CSSProperties}>
-                <QuestionCard question={question} selected={question.id === selectedQuestion} onOpen={(q) => openQuestion(q.id)} />
+              <li key={question.id} id={`q-card-${question.id}`} style={{ '--vt-card': `q-${question.id}` } as CSSProperties}>
+                <QuestionCard
+                  question={question}
+                  selected={question.id === selectedQuestion}
+                  spotlight={question.id === spotlight}
+                  onOpen={(q) => openQuestion(q.id)}
+                />
               </li>
             ))}
           </ul>
