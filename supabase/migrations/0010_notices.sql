@@ -84,7 +84,7 @@ declare
   v_total integer;
   v_offset integer := greatest(coalesce(p_offset, 0), 0);
 begin
-  if me is null then raise exception 'Sign in first' using errcode = '42501'; end if;
+  if me is null then raise exception 'Sign in first' using errcode = '28000'; end if;
 
   with mine as (
     select n.*,
@@ -164,7 +164,7 @@ declare
   me bigint := public.current_profile_id();
   n public.notifications;
 begin
-  if me is null then raise exception 'Sign in first' using errcode = '42501'; end if;
+  if me is null then raise exception 'Sign in first' using errcode = '28000'; end if;
   select * into n from public.notifications where id = p_id and user_id = me;
   if not found then return; end if;
   update public.notifications o
@@ -185,7 +185,7 @@ as $$
 declare
   me bigint := public.current_profile_id();
 begin
-  if me is null then raise exception 'Sign in first' using errcode = '42501'; end if;
+  if me is null then raise exception 'Sign in first' using errcode = '28000'; end if;
   update public.notifications set read_at = now() where user_id = me and read_at is null;
 end;
 $$;

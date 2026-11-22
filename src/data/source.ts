@@ -87,10 +87,18 @@ function supabaseAdapter(): DataApi {
           stop?.();
         };
       },
-      // The Supabase channel arrives with the migration (SPEC 22 step 4): until then the bell asks every 60 s
-      notices: (_onChange, onStatus) => {
-        onStatus?.(false);
-        return () => undefined;
+      notices: (onChange, onStatus) => {
+        let stop: (() => void) | null = null;
+        let cancelled = false;
+        loadData()
+          .then((data) => {
+            if (!cancelled) stop = data.live.notices(onChange, onStatus);
+          })
+          .catch(() => onStatus?.(false)); // offline: no channel, the bell asks every 60 s
+        return () => {
+          cancelled = true;
+          stop?.();
+        };
       },
     },
     saved: {
@@ -113,10 +121,10 @@ function supabaseAdapter(): DataApi {
       mySigns: () => read(loadData().then((data) => data.activity.mySigns())),
     },
     notices: {
-      list: () => Promise.reject(new DataError('server', 'Notices are not ready yet')),
-      unreadCount: () => Promise.reject(new DataError('server', 'Notices are not ready yet')),
-      markRead: () => Promise.reject(new DataError('server', 'Notices are not ready yet')),
-      markAllRead: () => Promise.reject(new DataError('server', 'Notices are not ready yet')),
+      list: (offset) => read(loadData().then((data) => data.notices.list(offset))),
+      unreadCount: () => read(loadData().then((data) => data.notices.unreadCount())),
+      markRead: (id) => loadData().then((data) => data.notices.markRead(id)),
+      markAllRead: () => loadData().then((data) => data.notices.markAllRead()),
     },
     push: {
       getPrefs: () => read(loadData().then((data) => data.push.getPrefs())),
