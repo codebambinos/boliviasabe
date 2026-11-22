@@ -64,7 +64,7 @@ Antes del hackathon no existía nada: empezamos de cero el **20 de noviembre**. 
 
 | Fechas | Objetivo | Qué hacemos | Cómo lo medimos |
 |---|---|---|---|
-| 23 al 29 nov | Piloto en Cochabamba | Aplicar lo que diga el jurado. Visitar 8 negocios de Cala Cala, Sarco y el Centro para que suban sus ofertas, y responder preguntas reales en los grupos «¿Alguien sabe?» de Cochabamba | 50 cuentas y 8 negocios con letreros |
+| 23 al 29 nov | Piloto en Cochabamba | Aplicar lo que diga el jurado. Visitar 5 negocios de Cala Cala, Sarco y el Centro para que suban sus ofertas, y responder preguntas reales en los grupos «¿Alguien sabe?» de Cochabamba | 30 cuentas y 5 negocios con letreros |
 | 30 nov al 13 dic | Confianza y crecer en Cochabamba | Confirmación de correo, verificación con terceros, normativa de datos y reglas de moderación; seguir respondiendo en los grupos y sumar negocios | 20 perfiles verificados |
 | 14 al 22 dic | Siguientes implementaciones | Billeteras propias con Pollar, canje de yapitas con negocios aliados, paso a la red principal de Stellar y las primeras ciudades del eje troncal | 1 canje real y 3 negocios que pagan |
 
