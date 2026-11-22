@@ -60,6 +60,16 @@ Antes del hackathon no existía nada: empezamos de cero el **20 de noviembre**. 
 - **Cómo trabajamos:** cada tarea tiene su especificación en `specs/` (qué entra, qué no, plan y criterios de aceptación) y su tarjeta en el tablero del equipo.
 - **Lo que falta:** canje de yapitas con negocios, billeteras propias con Pollar y la red principal de Stellar (ver el plan).
 
+## Cómo se sostiene
+
+Para los vecinos es gratis: ver, publicar, responder y premiar. Marcar una pregunta como urgente cuesta 5 yapitas, que no son dinero.
+
+Pagan los **negocios de barrio**: por **Bs 50 al mes** (precio a validar en el piloto), sus letreros salen primero en Hoy para los vecinos de su zona, con la marca «Destacado». Es menos que la inversión mínima que se suele recomendar para anuncios de Facebook y llega solo a vecinos de su zona. En el piloto se paga fuera de la app (QR o transferencia); más adelante, con Pollar.
+
+Ese ingreso llena el fondo del **canje**: el vecino cambia sus yapitas por un descuento en un negocio aliado y va a ese negocio a usarlo. Así el negocio que paga recibe clientes. En la app nunca se muestran bolivianos: el vecino solo ve yapitas.
+
+Cómo lo validamos: los 5 negocios del piloto tienen el primer mes gratis y al final se les pregunta si pagarían Bs 50; la meta del día 30 es que **3 negocios paguen**.
+
 ## Plan de 30 días
 
 | Fechas | Objetivo | Qué hacemos | Cómo lo medimos |
