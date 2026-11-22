@@ -12,37 +12,37 @@ Hecha por **CodeBambinos** para el hackathon National Startups by Stellar 2026. 
 
 ## El problema
 
-En Bolivia, para saber dónde hay almuerzo barato, quién repara una laptop o si hay agua, la gente pregunta en grupos de WhatsApp y Facebook. Solo en Cochabamba hay al menos 20 grupos públicos «¿Alguien sabe?» en Facebook; el mayor, [«¿Alguien Sabe? - Cochabamba»](https://www.facebook.com/groups/alguien.sabe.cbba/), tiene 209 mil miembros y más de 90 publicaciones al día, y el de la UMSS, 15 mil. Hay grupos así en 8 de los 9 departamentos. Pasa todos los días, y lo confirmamos con una encuesta (ver «Lo que nos dijeron 24 personas»): lo que más molesta no es que tarde, sino que **la pregunta se pierde** entre mensajes y que **nadie sabe si la información sigue vigente**. Quien sabe no gana nada por ayudar. Los más afectados son los estudiantes y los negocios de barrio que nadie encuentra.
+En Bolivia, para saber dónde hay almuerzo barato, quién repara una laptop o si hay agua, la gente pregunta en grupos de WhatsApp y Facebook. Solo en Cochabamba hay al menos 20 grupos públicos «¿Alguien sabe?» en Facebook; el mayor, [«¿Alguien Sabe? - Cochabamba»](https://www.facebook.com/groups/alguien.sabe.cbba/), tiene 209 mil miembros y más de 90 publicaciones al día, y el de la UMSS, 15 mil. Hay grupos así en 8 de los 9 departamentos. Pasa todos los días, y lo confirmamos con encuestas anónimas (ver «Lo que nos dijeron los vecinos»): las 18 personas preguntaron en un grupo el último mes, y las molestias están casi empatadas: **tardan en responder** (9 de 18), **nadie sabe si sigue vigente** (8) y **la pregunta se pierde** (7). Quien sabe no gana nada por ayudar. Los más afectados son los estudiantes y los negocios de barrio que nadie encuentra.
 
 **Cómo lo resuelve BoliviaSabe:** todo queda por ciudad y zona y se busca por texto, así nada se pierde; cada letrero muestra su fecha y lo viejo avisa que puede estar desactualizado; cada pregunta se comparte en grupos de WhatsApp con un enlace que abre la app y las urgentes salen primero 24 horas; y quien ayuda gana yapitas. A diferencia de WhatsApp y Facebook, ordena y premia; a diferencia de Marketplace y Google Maps, tiene datos del día y ayuda entre vecinos.
 
-## Lo que nos dijeron 24 personas
+## Lo que nos dijeron los vecinos
 
-Encuesta por WhatsApp a 24 personas de Cochabamba: 8 estudiantes, 11 vecinos y 5 dueños de negocio (Centro 8, Sarco 7, Cala Cala 5, otras zonas 4). Es una muestra por conveniencia: sirve para orientar el piloto, no para generalizar.
+28 respuestas en tres formularios de Google anónimos (sin nombres, teléfonos ni correos), del 19 al 22 de noviembre: 12 vecinos, estudiantes y dueños por WhatsApp, 10 dueños de negocio y 6 entrevistas en persona o por audio. **Datos crudos:** [docs/encuesta-2026-11-22.md](docs/encuesta-2026-11-22.md).
 
-| Pregunta | Resultado |
+**Cómo leerlo:** es una muestra por conveniencia (contactos y grupos del equipo, sobre todo de Cala Cala), por eso el «sí» sale tan alto. Algunos dueños pueden haber respondido dos formularios. Sirve para orientar el piloto, no para generalizar.
+
+| Vecinos, estudiantes y dueños (18) | Resultado |
 |---|---|
-| Preguntó algo en un grupo el último mes | **18 de 24** (12 varias veces, 6 una vez) |
-| Cuánto tardó la primera respuesta útil (20 que preguntaron) | 8 menos de 1 h · 9 entre 1 y 24 h · 2 más de un día · 1 nunca |
-| Qué le molesta (varias opciones) | **La pregunta se pierde: 14** · No sabe si sigue vigente: 12 · Tardan: 8 · Nadie responde: 3 · Nada: 2 |
-| Responde cuando sabe algo | Casi siempre 9 · A veces 12 · Casi nunca 3 |
-| Respondería más a cambio de puntos | Sí 11 · Tal vez 10 · No 3 |
-| Usaría la app | Sí 11 · Tal vez 9 · No 4 |
-| Estudiantes que usarían la app (8) | Sí 5 · Tal vez 3 · No 0 |
+| Preguntó algo en un grupo el último mes | **18 de 18** (13 varias veces, 5 una vez) |
+| Qué le molesta (varias opciones) | **Tardan en responder: 9** · No sabe si sigue vigente: 8 · Se pierde: 7 · Nadie responde: 6 · Nada: 3 |
+| Usaría la app | Sí 17 · Tal vez 1 · No 0 |
 
-| Dueños de negocio (5) | Resultado |
+| Dueños de negocio (10) | Resultado |
 |---|---|
-| Gasto en publicidad al mes | Bs 0: 2 · solo por temporada: 1 · Bs 300: 1 · Bs 500: 1 |
-| Que sus ofertas salgan primero en su zona | Sí 2 · Tal vez 2 · No 1 |
-| Pagaría Bs 50 al mes | **1 de 5**; los otros 4 proponen unos Bs 20 |
-| Prueba gratis | **4 de 5** |
+| Probaría gratis un mes | **Sí 7** · Tal vez 3 · No 0 |
+| Cuánto pagaría al mes | Nada 1 · Bs 10: 3 · **Bs 20: 4** · Bs 50: 2 (6 de 10 pagarían Bs 20 o más) |
+| Daría un descuento a clientes que lleguen con puntos | **Sí 6** · Tal vez 4 · No 0 |
+| Gasto en publicidad al mes | Nada 5 · menos de Bs 100: 3 · Bs 100 a 500: 1 · más de Bs 500: 1 |
+| Cómo los encuentran (varias) | Facebook o Instagram 7 · Recomendación 6 · Letrero 4 · Google Maps 4 · Estados de WhatsApp 2 |
 
 **Lo que cambiamos por esto:**
 
-- **El valor está en ordenar y en que la información sea vigente, no en la rapidez:** casi todos recibieron respuesta en menos de un día, pero la pregunta se pierde y la información envejece. Por eso la búsqueda, la zona y la fecha de cada letrero van primero.
-- **Empezamos con estudiantes y negocios cerca de las universidades, en Sarco y el Centro:** ningún estudiante dijo que no, y los dos dueños más dispuestos tienen negocios con clientes jóvenes (una cafetería en Sarco y una fotocopiadora junto a la UMSS).
-- **El precio baja a Bs 20 al mes** (ver «Cómo se sostiene»).
-- **Subir una oferta tiene que ser muy fácil:** los dueños dicen que sus precios cambian cada semana. Si actualizar cuesta, la app repite el problema de los grupos.
+- **El problema no es una sola cosa, es todo junto:** tarda, envejece y se pierde casi por igual. Por eso BoliviaSabe ataca las tres: urgentes y avisos por zona para que respondan rápido, la fecha en cada letrero para saber si sigue vigente, y búsqueda por texto y zona para que nada se pierda.
+- **Los negocios de barrio no tienen dónde anunciarse:** 5 de 10 no gastan nada en publicidad y dependen de la recomendación. Para ellos es «Destacado» a **Bs 20 al mes** (ver «Cómo se sostiene»).
+- **El canje tiene socios posibles:** 6 de 10 dueños darían un descuento a quien llegue con puntos, y ninguno dijo que no.
+- **Los letreros piden lo concreto:** un encuestado pidió «que pongan precio y número de celular». Por eso cada letrero lleva precio, zona y fecha, y se puede pedir el contacto.
+- **Estudiantes, con cuidado:** los 5 estudiantes dijeron que sí, pero son pocos. Empezamos cerca de las universidades y lo validamos en el piloto.
 
 **Lo que falta validar:** si los dueños darían descuentos a cambio de yapitas y cuánto; cuánto debería valer una yapita (preguntaron «¿cuánto vale un punto?» y «¿quién paga el descuento?»); y, tras la prueba gratis, si los negocios siguen subiendo ofertas y cuántos clientes llegan. Las 4 personas que no usarían la app tienen 54 años o más.
 
@@ -117,11 +117,11 @@ Antes del hackathon no existía nada: empezamos de cero el **20 de noviembre**. 
 
 Para los vecinos es gratis: ver, publicar, responder y premiar. Marcar una pregunta como urgente cuesta 5 yapitas, que no son dinero.
 
-Pagan los **negocios de barrio**: por **Bs 20 al mes** (precio a validar en el piloto), sus letreros salen primero en Hoy para los vecinos de su zona, con la marca «Destacado». Empezamos con Bs 50, pero en la encuesta solo 1 de 5 dueños lo pagaría y el resto propuso unos Bs 20. En el piloto se paga fuera de la app (QR o transferencia); más adelante, con Pollar.
+Pagan los **negocios de barrio**: por **Bs 20 al mes** (precio a validar en el piloto), sus letreros salen primero en Hoy para los vecinos de su zona, con la marca «Destacado». En la encuesta, Bs 20 fue la respuesta más común (4 de 10 dueños) y 6 de 10 pagarían Bs 20 o más; solo 2 pagarían Bs 50. En el piloto se paga fuera de la app (QR o transferencia); más adelante, con Pollar.
 
 Ese ingreso llena el fondo del **canje**: el vecino cambia sus yapitas por un descuento en un negocio aliado y va a ese negocio a usarlo. Así el negocio que paga recibe clientes. En la app nunca se muestran bolivianos: el vecino solo ve yapitas.
 
-Cómo lo validamos: los 5 negocios del piloto tienen el primer mes gratis (4 de los 5 dueños encuestados ya aceptaron probar) y al final se les pregunta si pagarían Bs 20; la meta del día 30 es que **5 negocios paguen**.
+Cómo lo validamos: los 5 negocios del piloto tienen el primer mes gratis (7 de los 10 dueños encuestados probarían gratis) y al final se les pregunta si pagarían Bs 20; la meta del día 30 es que **5 negocios paguen**.
 
 **Cuántos pueden pagar:** en el departamento de Cochabamba hay **66.170 empresas registradas** ([SEPREC, noviembre de 2025](https://www.seprec.gob.bo/wp-content/uploads/2025/12/Informacion-ESTADISTICA-WEB-NOV_v1.pdf)). Muchos negocios de barrio son informales y no están en ese registro, así que es un piso, no un techo. No encontramos un dato oficial de negocios por zona (Sarco y el Centro), así que no lo inventamos: el techo que sí se puede calcular es el del departamento. Si pagara el 1 % de esas empresas a Bs 20, serían unos Bs 13.200 al mes; con el 5 %, unos Bs 66.200 al mes, antes de pagar el canje.
 
@@ -150,7 +150,7 @@ Los topes contra el abuso (10 letreros con premio por día, 3 «Me sirvió» con
 | 30 nov al 13 dic | Confianza y crecer en Cochabamba | Confirmación de correo, verificación con terceros, normativa de datos y reglas de moderación; seguir respondiendo en los grupos y sumar negocios | 20 perfiles verificados |
 | 14 al 22 dic | Siguientes implementaciones | Billeteras propias con Pollar, canje de yapitas con negocios aliados, paso a la red principal de Stellar y las primeras ciudades del eje troncal | 1 canje real y 5 negocios que pagan |
 
-**Cómo llegamos a los primeros usuarios:** empezamos por los estudiantes, que en la encuesta fueron los más dispuestos, sin publicidad pagada. Respondemos preguntas reales en los grupos «¿Alguien sabe?» de Cochabamba y de la UMSS y pedimos permiso a sus administradores para presentar la app (sus reglas prohíben la publicidad). En grupos de compra y venta como [«Cala Cala - Ciudad Cochabamba»](https://www.facebook.com/groups/calacala/) (633 miembros) compartimos letreros con su enlace. Antes cargamos letreros reales para que nadie encuentre la app vacía, y cada cuenta nueva recibe 5 yapitas de bienvenida.
+**Cómo llegamos a los primeros usuarios:** empezamos por los estudiantes y los negocios cerca de las universidades, sin publicidad pagada. Respondemos preguntas reales en los grupos «¿Alguien sabe?» de Cochabamba y de la UMSS y pedimos permiso a sus administradores para presentar la app (sus reglas prohíben la publicidad). En grupos de compra y venta como [«Cala Cala - Ciudad Cochabamba»](https://www.facebook.com/groups/calacala/) (633 miembros) compartimos letreros con su enlace. Antes cargamos letreros reales para que nadie encuentre la app vacía, y cada cuenta nueva recibe 5 yapitas de bienvenida.
 
 **Metas al día 30:** 150 cuentas, 45 activas por semana y menos de 30 minutos hasta la primera respuesta.
 
@@ -158,7 +158,7 @@ Los topes contra el abuso (10 letreros con premio por día, 3 «Me sirvió» con
 
 El primer análisis de Atlas dio 67/100 y el segundo, 73/100. Después del segundo:
 
-- **La encuesta, contada sin sumar los «tal vez»:** 11 sí, 9 tal vez y 4 no; entre los estudiantes, 5 sí y 3 tal vez.
+- **Encuestas reales, con los datos crudos:** 28 respuestas anónimas del 19 al 22 de noviembre ([docs/encuesta-2026-11-22.md](docs/encuesta-2026-11-22.md)). **Corrección:** una versión anterior de este README mostraba una «encuesta a 24 personas» que en realidad eran perfiles simulados, no respuestas reales. La quitamos del README, el deck, el video y la wiki.
 - **El nicho, con su propia cifra:** 15 mil miembros en el grupo de la UMSS, y el techo de ingresos calculado sobre las 66.170 empresas de SEPREC, sin inventar un dato por zona.
 - **Una ruta de 60 segundos para jueces** en «Pruébala», y el video enlazado también en la página en vivo.
 - **La emisora, cerrada y verificable:** su clave tiene peso 0 ([transacción](https://stellar.expert/explorer/testnet/tx/5bd2581b7a0cadadce8f3961611a722ada08620e3e429aea49c33ccab3d7ebbc)), así que «fondo fijo» ya no es una promesa.
@@ -173,7 +173,7 @@ Después del primero:
 - **Las 10 ciudades, sin exagerar:** el selector ya las tiene, pero el contenido real hoy es de Cochabamba.
 - **Modelo de ingresos:** publicidad local para negocios (antes decía también «freemium», y no hay un nivel pago para vecinos).
 - **El aporte de todo el equipo, visible:** la carpeta pública de Yaeko y los LinkedIn de Yaeko y Aldrin en «Equipo».
-- **Validación con personas reales:** encuesta a 24 personas, 5 de ellas dueños de negocio («Lo que nos dijeron 24 personas»); por ella el precio baja a Bs 20 y el piloto se enfoca en estudiantes y negocios cerca de las universidades.
+- **Validación con personas:** la primera versión usaba perfiles simulados; después del segundo análisis la reemplazamos por encuestas reales (ver arriba).
 - **Una sola meta de piloto:** 30 cuentas y 5 negocios en la primera semana. Un título de commit (#72) dice 50 porque fue el primer borrador del mismo cambio; el contenido final dice 30.
 
 ## Equipo CodeBambinos
