@@ -1,6 +1,6 @@
 # SPEC 28 — Motion polish and attention details
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 27 (motion tokens, press states, `DESIGN.md` › Motion), SPEC 21 (Yo profile card and balance), SPEC 12 (live question detail, threads, contact box), SPEC 10 (question cards), SPEC 05 (Hoy tiles and Guardar). Board card: T44 (issue #82).
 > **Date:** 2026-11-22
 > **Objective:** Make the moments that matter (earning yapitas, saving, things that arrive or change by themselves, moving between tabs) feel alive with short motion, without changing any flow, text or rule.
@@ -87,27 +87,27 @@ New CSS, all in existing files: keyframes `balance-pulse`, `save-settle`, `arriv
 
 ## Acceptance criteria
 
-- [ ] When the balance goes up with the app open, the top bar number cross-fades and the ★ pulses once (about 420 ms, back to scale 1, no smaller than 1).
-- [ ] Loading the app, a balance going down, or a balance going from loading to a number never pulses.
-- [ ] The bar toward 100 grows and shrinks smoothly with `scaleX`; on first render it shows its value without animating.
-- [ ] «A N les sirvió» cross-fades when the count changes with the sheet open.
-- [ ] Saving shows the bookmark settling from 0.85 to 1 in the tile, the letrero sheet, a question and an answer; unsaving and a failed save only change color.
-- [ ] The offline banner slides in and out, and the content under it moves with it without a jump.
-- [ ] An answer or comment that arrives while the question is open rises in once with a fading highlight; nothing animates on open, reopen or reload.
-- [ ] «Copiar» and «✓ Copiado» cross-fade both ways.
-- [ ] A status that changes to «Solucionada» or «Cerrada» while on screen fades in, in the card and in the detail; on first render it does not.
-- [ ] An active «Urgente» tag shows a coral dot that breathes with opacity only; an expired urgency shows no dot.
-- [ ] Tapping a tab shows its pill at once, with no fade or slide, in the bottom nav, the rail and the sidebar; the tab bar does not fade between tabs (it still fades to and from a standalone page).
-- [ ] While a tab change plays, tapping another tab does nothing; once the new screen has arrived (~330 ms, at once with reduced motion), every tab answers again.
-- [ ] Closing a hint fades and collapses it, and the content below moves up smoothly; it does not come back after a reload.
-- [ ] With «reducir movimiento» on, nothing moves (the dot is still) and every screen works the same.
-- [ ] Tapping anything while one of these animations runs responds at once.
-- [ ] No flow, text, screen or button order changed.
-- [ ] Works at 360 px, 768 px and 1280 px, in light and dark, with text at 130 %.
-- [ ] Yo's balance coin glints every ~4 s with twinkling sparks; the top-bar coin glints every ~3.5 s with smaller sparks; Movimientos coins float every 1.8 s out of step and glint faintly; «✓ Solucionada» tags in the list glint every ~6 s, not all at once.
-- [ ] With «reducir movimiento» none of the block 4 decoration moves or shows.
-- [ ] `DESIGN.md` › Motion describes the new details.
-- [ ] `npm run typecheck` and `npm run build` pass; `git grep -i "SECRET\|SERVICE_ROLE"` shows no values.
+- [x] When the balance goes up with the app open, the top bar number cross-fades and the ★ pulses once (about 420 ms, back to scale 1, no smaller than 1).
+- [x] Loading the app, a balance going down, or a balance going from loading to a number never pulses.
+- [x] The bar toward 100 grows and shrinks smoothly with `scaleX`; on first render it shows its value without animating.
+- [x] «A N les sirvió» cross-fades when the count changes with the sheet open.
+- [x] Saving shows the bookmark settling from 0.85 to 1 in the tile, the letrero sheet, a question and an answer; unsaving and a failed save only change color.
+- [x] The offline banner slides in and out, and the content under it moves with it without a jump.
+- [x] An answer or comment that arrives while the question is open rises in once with a fading highlight; nothing animates on open, reopen or reload.
+- [x] «Copiar» and «✓ Copiado» cross-fade both ways.
+- [x] A status that changes to «Solucionada» or «Cerrada» while on screen fades in, in the card and in the detail; on first render it does not.
+- [x] An active «Urgente» tag shows a coral dot that breathes with opacity only; an expired urgency shows no dot.
+- [x] Tapping a tab shows its pill at once, with no fade or slide, in the bottom nav, the rail and the sidebar; the tab bar does not fade between tabs (it still fades to and from a standalone page).
+- [x] While a tab change plays, tapping another tab does nothing; once the new screen has arrived (~330 ms, at once with reduced motion), every tab answers again.
+- [x] Closing a hint fades and collapses it, and the content below moves up smoothly; it does not come back after a reload.
+- [x] With «reducir movimiento» on, nothing moves (the dot is still) and every screen works the same.
+- [x] Tapping anything while one of these animations runs responds at once.
+- [x] No flow, text, screen or button order changed.
+- [x] Works at 360 px, 768 px and 1280 px, in light and dark, with text at 130 %.
+- [x] Yo's balance coin glints every ~4 s with twinkling sparks; the top-bar coin glints every ~3.5 s with smaller sparks; Movimientos coins float every 1.8 s out of step and glint faintly; «✓ Solucionada» tags in the list glint every ~6 s, not all at once.
+- [x] With «reducir movimiento» none of the block 4 decoration moves or shows.
+- [x] `DESIGN.md` › Motion describes the new details.
+- [x] `npm run typecheck` and `npm run build` pass; `git grep -i "SECRET\|SERVICE_ROLE"` shows no values.
 
 ## Changes during implementation
 
