@@ -84,7 +84,7 @@ Cómo lo validamos: los 5 negocios del piloto tienen el primer mes gratis y al f
 
 ## Equipo CodeBambinos
 
-Tres jóvenes de Cochabamba: **Yaeko** (producto, marca y presentación), **Diego** (líder técnico: código, datos y Stellar) y **Aldrin** (interfaz y pantallas).
+Tres jóvenes de Cochabamba: **Yaeko** (producto, marca y presentación), **Diego** (líder técnico: código, datos y Stellar) y **Aldrin** (desarrollador: pantallas e interfaz).
 
 ## Hecho con
 
