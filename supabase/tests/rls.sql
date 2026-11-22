@@ -1252,6 +1252,125 @@ select pg_temp.expect_error('a browser cannot run the hourly job', 'select publi
 select pg_temp.as_anon();
 select pg_temp.expect_error('a guest cannot run the hourly job', 'select public.run_hourly_push_jobs()', '42501');
 
+-- ---------------------------------------------------------------------------
+-- Avisos (0010, SPEC 22): my notices built and grouped, unread count, marking read. Same people n1..n6.
+-- ---------------------------------------------------------------------------
+select pg_temp.as_postgres();
+delete from public.notifications where user_id in (pg_temp.id_of('n1'), pg_temp.id_of('n2'), pg_temp.id_of('n5'));
+
+insert into public.signs (author_id, title, photo_url, photo_thumb_url, city, zone)
+values (pg_temp.id_of('n1'), 'Letrero de avisos', 'p', 't', 'Oruro', 'Centro');
+insert into test_rows (name, id) select 'av_sign', id from public.signs where title = 'Letrero de avisos';
+insert into public.questions (author_id, text, city, zone) values
+  (pg_temp.id_of('n3'), 'Avisos oculta', 'Oruro', 'Centro'),
+  (pg_temp.id_of('n3'), 'Avisos en revisión', 'Oruro', 'Centro'),
+  (pg_temp.id_of('n1'), 'Avisos mía en revisión', 'Oruro', 'Centro');
+insert into test_rows (name, id)
+select 'av_hidden', id from public.questions where text = 'Avisos oculta'
+union all select 'av_review', id from public.questions where text = 'Avisos en revisión'
+union all select 'av_mine_review', id from public.questions where text = 'Avisos mía en revisión';
+insert into public.hidden_items (user_id, kind, target_id) values (pg_temp.id_of('n1'), 'question', pg_temp.r('av_hidden'));
+insert into public.reports (reporter_id, kind, target_id, reason)
+select pg_temp.id_of(p), 'question', q, 'spam'
+from unnest(array['n2', 'n4', 'n5']) p, unnest(array[pg_temp.r('av_review'), pg_temp.r('av_mine_review')]) q;
+
+-- Three «Me sirvió» on n1's letrero (one notice), a reminder on a gone question, and three urgent ones
+insert into public.notifications (user_id, kind, ref_kind, ref_id, actor_id, created_at, pushed_at) values
+  (pg_temp.id_of('n1'), 'sign_helpful', 'sign', pg_temp.r('av_sign'), pg_temp.id_of('n2'), now() - interval '3 hours', now()),
+  (pg_temp.id_of('n1'), 'sign_helpful', 'sign', pg_temp.r('av_sign'), pg_temp.id_of('n3'), now() - interval '2 hours', now()),
+  (pg_temp.id_of('n1'), 'sign_helpful', 'sign', pg_temp.r('av_sign'), pg_temp.id_of('n4'), now() - interval '1 hour', now()),
+  (pg_temp.id_of('n1'), 'urgent', 'question', -1, pg_temp.id_of('n3'), now() - interval '4 hours', now()),
+  (pg_temp.id_of('n1'), 'urgent', 'question', pg_temp.r('av_hidden'), pg_temp.id_of('n3'), now() - interval '5 hours', now()),
+  (pg_temp.id_of('n1'), 'urgent', 'question', pg_temp.r('av_review'), pg_temp.id_of('n3'), now() - interval '6 hours', now()),
+  (pg_temp.id_of('n1'), 'urgent', 'question', pg_temp.r('av_mine_review'), pg_temp.id_of('n3'), now() - interval '7 hours', now()),
+  (pg_temp.id_of('n2'), 'urgent', 'question', pg_temp.r('av_review'), pg_temp.id_of('n3'), now(), now());
+
+select pg_temp.as_user('n1');
+select pg_temp.expect_text('my_notifications returns only my notices (3 «Me sirvió» are one)',
+  'select jsonb_array_length(public.my_notifications()->''items'')::text', '5');
+select pg_temp.expect_text('the group: newest actor, count 3, unread, opens the letrero',
+  'select (i->>''actor'') || '' '' || (i->>''count'') || '' '' || (i->>''read'') || '' '' || (i->''open''->>''kind'') || '' '' || (i->>''text'')
+   from jsonb_array_elements(public.my_notifications()->''items'') i where i->>''kind'' = ''sign_helpful''',
+  (select display_name from public.profiles_public where id = pg_temp.id_of('n4')) || ' 3 false sign Letrero de avisos');
+select pg_temp.expect_text('newest first: the group leads the list',
+  'select public.my_notifications()->''items''->0->>''kind''', 'sign_helpful');
+select pg_temp.expect_text('a gone, a hidden and an in-review question have no open and no text',
+  'select count(*)::text from jsonb_array_elements(public.my_notifications()->''items'') i
+   where i->>''kind'' = ''urgent'' and i->''open'' = ''null''::jsonb and i->''text'' = ''null''::jsonb', '3');
+select pg_temp.expect_text('my own question in review still opens for me, with its zone',
+  format('select (i->''open''->>''id'') || '' '' || (i->>''zone'') from jsonb_array_elements(public.my_notifications()->''items'') i
+          where i->''open''->>''id'' = ''%s''', pg_temp.r('av_mine_review')),
+  pg_temp.r('av_mine_review') || ' Centro');
+select pg_temp.expect_text('the unread count counts the group once', 'select public.my_unread_notices()::text', '5');
+select pg_temp.expect_text('nextOffset is null on the only page', 'select coalesce(public.my_notifications()->>''nextOffset'', ''null'')', 'null');
+
+-- Marking read: the group at once; someone else's id changes nothing
+select public.mark_notice_read((public.my_notifications()->'items'->0->>'id')::bigint);
+select pg_temp.as_postgres();
+select pg_temp.expect_text('marking the group marks its three rows',
+  format('select count(*)::text from public.notifications where user_id = %s and kind = ''sign_helpful'' and read_at is not null', pg_temp.id_of('n1')), '3');
+select pg_temp.as_user('n1');
+select pg_temp.expect_text('… and the count goes down by one', 'select public.my_unread_notices()::text', '4');
+select public.mark_notice_read((select id from public.notifications where user_id = pg_temp.id_of('n2') limit 1));
+select pg_temp.as_postgres();
+select pg_temp.expect_text('n1 cannot mark n2''s notice',
+  format('select count(*)::text from public.notifications where user_id = %s and read_at is null', pg_temp.id_of('n2')), '1');
+select pg_temp.as_user('n1');
+select public.mark_all_notices_read();
+select pg_temp.expect_text('mark_all_notices_read leaves 0 unread', 'select public.my_unread_notices()::text', '0');
+select pg_temp.expect_text('… and every notice read',
+  'select count(*)::text from jsonb_array_elements(public.my_notifications()->''items'') i where (i->>''read'')::boolean', '5');
+
+-- Contact: the request carries the pending state; the acceptance carries the contact
+select pg_temp.as_postgres();
+insert into public.questions (author_id, text, city, zone) values (pg_temp.id_of('n1'), 'Avisos contacto', 'Oruro', 'Centro');
+insert into test_rows (name, id) select 'av_cq', id from public.questions where text = 'Avisos contacto';
+insert into public.answers (question_id, author_id, text) values (pg_temp.r('av_cq'), pg_temp.id_of('n2'), 'Respuesta de avisos');
+insert into test_rows (name, id) select 'av_ca', id from public.answers where text = 'Respuesta de avisos';
+select pg_temp.as_user('n1');
+select public.request_contact(pg_temp.r('av_ca'), '70000011');
+select pg_temp.as_user('n2');
+select pg_temp.expect_text('the contact_request notice carries status pending and opens the question',
+  'select (i->''contact''->>''status'') || '' '' || (i->''open''->>''kind'') || '' '' || (i->>''text'')
+   from jsonb_array_elements(public.my_notifications()->''items'') i where i->>''kind'' = ''contact_request''',
+  'pending question Avisos contacto');
+select public.respond_contact((select id from public.contact_requests where answer_id = pg_temp.r('av_ca')), true, '70000022');
+select pg_temp.expect_text('… and accepted once answered',
+  'select i->''contact''->>''status'' from jsonb_array_elements(public.my_notifications()->''items'') i where i->>''kind'' = ''contact_request''',
+  'accepted');
+select pg_temp.as_user('n1');
+select pg_temp.expect_text('the requester''s contact_accepted notice carries the other''s phone',
+  'select (i->''contact''->>''status'') || '' '' || (i->''contact''->''other''->>''phone'')
+   from jsonb_array_elements(public.my_notifications()->''items'') i where i->>''kind'' = ''contact_accepted''',
+  'accepted 70000022');
+
+-- Pages of 30 over notices, without repeating
+select pg_temp.as_postgres();
+insert into public.notifications (user_id, kind, ref_kind, ref_id, actor_id, created_at, pushed_at)
+select pg_temp.id_of('n5'), 'urgent', 'question', pg_temp.r('av_review'), pg_temp.id_of('n3'), now() - make_interval(mins => g), now()
+from generate_series(1, 35) g;
+select pg_temp.as_user('n5');
+select pg_temp.expect_text('page 1 has 30 and points to 30',
+  'select jsonb_array_length(p->''items'') || '' '' || (p->>''nextOffset'') from (select public.my_notifications() p) x', '30 30');
+select pg_temp.expect_text('page 2 has the other 5 and no next page',
+  'select jsonb_array_length(p->''items'') || '' '' || coalesce(p->>''nextOffset'', ''null'') from (select public.my_notifications(30) p) x', '5 null');
+select pg_temp.expect_text('no notice repeats between pages',
+  'select count(distinct i->>''id'')::text from (
+     select jsonb_array_elements(public.my_notifications()->''items'') i
+     union all select jsonb_array_elements(public.my_notifications(30)->''items'')) x', '35');
+
+-- Only signed-in people, and Realtime carries notifications
+select pg_temp.as_anon();
+select pg_temp.expect_error('a guest cannot list notices', 'select public.my_notifications()', '42501');
+select pg_temp.expect_error('a guest cannot count notices', 'select public.my_unread_notices()', '42501');
+select pg_temp.expect_error('a guest cannot mark a notice', 'select public.mark_notice_read(1)', '42501');
+select pg_temp.expect_error('a guest cannot mark all', 'select public.mark_all_notices_read()', '42501');
+select pg_temp.as_user('n1');
+select pg_temp.expect_error('a browser cannot call notice_item', 'select public.notice_item(n) from public.notifications n limit 1', '42501');
+select pg_temp.as_postgres();
+select pg_temp.expect_text('notifications is in the supabase_realtime publication',
+  'select count(*)::text from pg_publication_tables where pubname = ''supabase_realtime'' and schemaname = ''public'' and tablename = ''notifications''', '1');
+
 select pg_temp.as_postgres();
 do $$ begin raise notice 'rls ok'; end $$;
 
