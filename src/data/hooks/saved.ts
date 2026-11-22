@@ -6,8 +6,8 @@ import { api } from '../source';
 import type { ContentKind, Id } from '../types';
 
 /** Saved signs, questions and answers (Yo › Mi actividad › Guardados). */
-export function useSaved() {
-  return useQuery({ queryKey: keys.saved(), queryFn: () => api.saved.list() });
+export function useSaved(options: { enabled?: boolean } = {}) {
+  return useQuery({ queryKey: keys.saved(), queryFn: () => api.saved.list(), enabled: options.enabled ?? true });
 }
 
 /** Resolves to true when the item ends up saved, false when it was removed. */

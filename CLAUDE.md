@@ -30,7 +30,6 @@ to get the latest version. Tasks live on the GitHub Projects board "BoliviaSabe 
 - Table IDs are numeric (`bigint identity`): Stellar memos hold at most 28 bytes.
 - A Stellar failure never blocks rating, answering or posting: the reward stays `pending`.
 - Colors and fonts come from CSS variables in `src/styles/tokens.css`. Light and dark always.
-- Tilcho (mascot) appears only in the Yo tab.
 
 ## Stack
 Vite + React + TypeScript (strict), React Router, TanStack Query, Supabase (Auth, Postgres + RLS,

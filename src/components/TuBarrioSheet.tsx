@@ -1,11 +1,13 @@
 // «Tu barrio» (wiki › flujo-final › 0 · Entrada y cuenta, #170, SPEC 08): name, city and zone, once.
 // Closing it without finishing keeps the session; the next action opens it again (#111).
+// Yo › «Editar» reuses it (SPEC 21, #213): title «Editar», the current profile prefilled and «Guardar».
 import { useId, useState } from 'react';
-import { CITIES, DEFAULT_CITY, SUGGESTED_ZONES, useSaveProfile, type City } from '../data';
+import { CITIES, DEFAULT_CITY, SUGGESTED_ZONES, useEditProfile, useSaveProfile, type City, type ProfileInput } from '../data';
 import { ArrowLeftIcon, CloseIcon } from './icons';
 import { errorMessage } from './messages';
 import { Sheet } from './Sheet';
 import './tu-barrio-sheet.css';
+import './upload-sign-sheet.css'; // .upload__spinner, the app's in-button loader
 
 const NAME_MIN = 2;
 const NAME_MAX = 60;
@@ -14,8 +16,10 @@ const ZONE_MAX = 60;
 type TuBarrioSheetProps = {
   /** The name Google already knows, to prefill the field. */
   suggestedName?: string;
+  /** «Editar» from Yo: the current profile. Without it, this is the first «Tu barrio». */
+  initial?: ProfileInput;
   /** Called once the profile is saved, before the sheet leaves. */
-  onSaved: () => void;
+  onSaved: (input: ProfileInput) => void;
   onClose: () => void;
 };
 
@@ -27,13 +31,17 @@ function missingText(name: boolean, zone: boolean): string | null {
   return null;
 }
 
-export function TuBarrioSheet({ suggestedName, onSaved, onClose }: TuBarrioSheetProps) {
+export function TuBarrioSheet({ suggestedName, initial, onSaved, onClose }: TuBarrioSheetProps) {
   const titleId = useId();
   const fieldId = useId();
-  const save = useSaveProfile();
-  const [name, setName] = useState(suggestedName ?? '');
-  const [city, setCity] = useState<City>(DEFAULT_CITY);
-  const [zone, setZone] = useState('');
+  const editing = initial !== undefined;
+  // Both hooks always run (rules of hooks); an edit keeps the person's balance and activity in place
+  const create = useSaveProfile();
+  const edit = useEditProfile();
+  const save = editing ? edit : create;
+  const [name, setName] = useState(initial?.fullName ?? suggestedName ?? '');
+  const [city, setCity] = useState<City>(initial?.city ?? DEFAULT_CITY);
+  const [zone, setZone] = useState(initial?.zone ?? '');
   // A zone tapped from the chips is cleared when the city changes; one the person typed is kept
   const [zoneFromChip, setZoneFromChip] = useState(false);
 
@@ -58,15 +66,13 @@ export function TuBarrioSheet({ suggestedName, onSaved, onClose }: TuBarrioSheet
       {(close, forceClose) => {
         const submit = () => {
           if (!canSave) return;
-          save.mutate(
-            { fullName: cleanName, city, zone: cleanZone },
-            {
-              onSuccess: () => {
-                onSaved();
-                forceClose();
-              },
+          const input = { fullName: cleanName, city, zone: cleanZone };
+          save.mutate(input, {
+            onSuccess: () => {
+              onSaved(input);
+              forceClose();
             },
-          );
+          });
         };
         return (
           <>
@@ -75,7 +81,7 @@ export function TuBarrioSheet({ suggestedName, onSaved, onClose }: TuBarrioSheet
                 <ArrowLeftIcon className="sheet__icon-phone" />
                 <CloseIcon className="sheet__icon-desk" />
               </button>
-              <h2 id={titleId} className="sheet__bar-title">Tu barrio</h2>
+              <h2 id={titleId} className="sheet__bar-title">{editing ? 'Editar' : 'Tu barrio'}</h2>
             </header>
 
             <form
@@ -163,11 +169,20 @@ export function TuBarrioSheet({ suggestedName, onSaved, onClose }: TuBarrioSheet
                 ) : null}
                 <button
                   type="submit"
-                  className="btn sheet__full"
+                  className="btn sheet__full barrio__save"
                   disabled={!canSave}
+                  aria-busy={save.isPending || undefined}
                   aria-describedby={blocker ? `${fieldId}-blocker` : undefined}
                 >
-                  {save.isPending ? 'Guardando…' : 'Listo'}
+                  {save.isPending ? (
+                    <>
+                      <span className="upload__spinner" aria-hidden="true" /> Guardando…
+                    </>
+                  ) : editing ? (
+                    'Guardar'
+                  ) : (
+                    'Listo'
+                  )}
                 </button>
               </div>
             </form>

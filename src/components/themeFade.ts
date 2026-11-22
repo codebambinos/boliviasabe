@@ -28,3 +28,36 @@ export function withThemeFade(change: () => void): void {
   window.clearTimeout(timer);
   timer = window.setTimeout(() => root.classList.remove('theme-fade'), FADE_MS + 60);
 }
+
+/**
+ * Ajustes › Tema (SPEC 21): the new theme switches on like a light. A circle of the new theme grows from the option
+ * that was tapped until it covers the screen. Browsers without View Transitions get the cross-fade above; reduced
+ * motion gets the change at once.
+ *
+ * Smoothness: the whole animation is CSS (`html.theme-reveal` in app.css), so it starts on the very first frame of
+ * the transition (no frame of the new theme before a script animation is attached) and only `clip-path` moves.
+ * The circle's center and radius go in as custom properties, which the transition's pseudo-elements inherit.
+ */
+export function withThemeReveal(change: () => void, from: { x: number; y: number }): void {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    change();
+    return;
+  }
+  if (typeof document.startViewTransition !== 'function') {
+    withThemeFade(change);
+    return;
+  }
+  const root = document.documentElement;
+  // Far enough to reach the farthest corner of the screen from the tapped point
+  const radius = Math.ceil(Math.hypot(Math.max(from.x, window.innerWidth - from.x), Math.max(from.y, window.innerHeight - from.y)));
+  root.style.setProperty('--reveal-x', `${Math.round(from.x)}px`);
+  root.style.setProperty('--reveal-y', `${Math.round(from.y)}px`);
+  root.style.setProperty('--reveal-r', `${radius}px`);
+  root.classList.add('theme-vt', 'theme-reveal');
+  const transition = document.startViewTransition(change);
+  const done = () => {
+    root.classList.remove('theme-vt', 'theme-reveal');
+    for (const name of ['--reveal-x', '--reveal-y', '--reveal-r']) root.style.removeProperty(name);
+  };
+  transition.finished.then(done, done);
+}

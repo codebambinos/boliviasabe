@@ -179,7 +179,9 @@ export const supabaseAuth: DataApi['auth'] = {
         : await supabase.from('profiles').insert({ auth_id: data.user.id, ...fields });
       if (saveError) throw mapError(saveError);
 
-      ensureWallet(); // not awaited on purpose: the screen shows «Preparando tu cuenta» meanwhile
+      // Only a new profile prepares the account; an edit from Yo never calls Friendbot again (SPEC 21).
+      // Not awaited on purpose: the screen shows «Preparando tu cuenta» meanwhile.
+      if (!existing) ensureWallet();
       return await readSession();
     } catch (error) {
       throw mapError(error);
