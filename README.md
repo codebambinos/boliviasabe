@@ -142,7 +142,7 @@ Los topes contra el abuso (10 letreros con premio por día, 3 «Me sirvió» con
 
 ## Qué mejoramos después del primer análisis de Atlas
 
-El primer análisis (22 de noviembre) dio 67/100. Lo que cambiamos a partir de él:
+El primer análisis de Atlas dio 67/100. Lo que cambiamos a partir de él:
 
 - **La demo ahora se puede leer sin JavaScript:** la página trae un texto fijo con qué es, qué funciona y los enlaces para comprobarlo (`index.html`).
 - **La emisión, dicha con precisión:** la sección «Quién controla la emisión» reemplaza la frase «nadie puede inventar yapitas».
