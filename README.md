@@ -52,6 +52,17 @@ Para verificarlo:
 
 En la distribuidora se ven todos los pagos con su memo, y cada cuenta de usuario tiene el suyo.
 
+### Quién controla la emisión (y qué cambia antes de la red principal)
+
+Hoy todo es **custodiado**, y lo decimos tal cual:
+
+- **Se emitió una sola vez un fondo fijo de 1.000.000 de YAPITA** a la distribuidora. Cada premio sale de ese fondo y cada gasto vuelve a él. El servidor de la app **no tiene la clave de la emisora** (solo la distribuidora, cifrada en las variables de Vercel), así que la app no puede crear yapitas nuevas.
+- **El equipo sí guarda la clave de la emisora**, fuera del servidor, y técnicamente podría emitir más. Stellar garantiza que cada pago es público y no se puede borrar; no garantiza, por sí solo, un tope de emisión.
+- Las cuentas de los vecinos también son custodiadas: la app guarda su clave cifrada (AES-256-GCM) y firma por ellos. Hoy **86 cuentas** tienen la línea de confianza de YAPITA (las de prueba del equipo y del seed incluidas).
+- `npm run stellar:reset` solo sirve si testnet se borra: recrea las mismas cuentas y vuelve a pagar, con el mismo memo, cada premio que ya estaba confirmado en la base. No crea premios nuevos.
+
+**Antes de la red principal:** cerramos la emisora (su clave queda con peso 0, así el total no puede crecer nunca), cada vecino pasa a su propia billetera con Pollar y el canje se paga desde el fondo que llenan los negocios.
+
 ## Qué construimos en este hackathon
 
 Antes del hackathon no existía nada: empezamos de cero el **20 de noviembre**. Durante el hackathon armamos el prototipo visual, la wiki con las reglas del producto, una prueba del flujo de Stellar en testnet y todo el código de este repositorio. Cada cambio entró por pull request, con verificación de tipos y compilación automáticas.
@@ -72,6 +83,21 @@ Ese ingreso llena el fondo del **canje**: el vecino cambia sus yapitas por un de
 
 Cómo lo validamos: los 5 negocios del piloto tienen el primer mes gratis y al final se les pregunta si pagarían Bs 50; la meta del día 30 es que **3 negocios paguen**.
 
+**Cuántos pueden pagar:** en el departamento de Cochabamba hay **66.170 empresas registradas** ([SEPREC, noviembre de 2025](https://www.seprec.gob.bo/wp-content/uploads/2025/12/Informacion-ESTADISTICA-WEB-NOV_v1.pdf)). Muchos negocios de barrio son informales y no están en ese registro, así que es un piso, no un techo.
+
+**La economía del canje (hipótesis para validar):**
+
+| Supuesto | Valor |
+|---|---|
+| Valor de canje | 10 yapitas = Bs 1 de descuento en un negocio aliado (nunca se muestra en la app) |
+| Lo que gana un vecino activo al mes con las reglas actuales | ~19 yapitas: sube 4 letreros (+4), a 4 personas les sirven (+4), 2 respuestas suyas sirven (+10) y cierra 1 pregunta (+1) |
+| Costo de canje por vecino activo | ~Bs 1,90 al mes, si canjea todo |
+| Vecinos activos que cubre un negocio a Bs 50 | ~26 |
+| Meta del día 30 | 45 activos por semana ≈ Bs 86 al mes de canje → la cubren 2 negocios; la meta es 3 |
+
+Los topes contra el abuso (10 letreros con premio por día, 3 «Me sirvió» con premio por pregunta, 3 premios por día entre las mismas dos personas) evitan que una sola cuenta vacíe el fondo.
+
+
 ## Plan de 30 días
 
 | Fechas | Objetivo | Qué hacemos | Cómo lo medimos |
@@ -83,6 +109,17 @@ Cómo lo validamos: los 5 negocios del piloto tienen el primer mes gratis y al f
 **Cómo llegamos a los primeros usuarios:** sin publicidad pagada. Respondemos preguntas reales en los grupos «¿Alguien sabe?» de Cochabamba y pedimos permiso a sus administradores para presentar la app (sus reglas prohíben la publicidad). En grupos de compra y venta como [«Cala Cala - Ciudad Cochabamba»](https://www.facebook.com/groups/calacala/) (633 miembros) compartimos letreros con su enlace. Antes cargamos letreros reales para que nadie encuentre la app vacía, y cada cuenta nueva recibe 5 yapitas de bienvenida.
 
 **Metas al día 30:** 150 cuentas, 45 activas por semana y menos de 30 minutos hasta la primera respuesta.
+
+## Qué mejoramos después del primer análisis de Atlas
+
+El primer análisis (22 de noviembre) dio 67/100. Lo que cambiamos a partir de él:
+
+- **La demo ahora se puede leer sin JavaScript:** la página trae un texto fijo con qué es, qué funciona y los enlaces para comprobarlo (`index.html`).
+- **La emisión, dicha con precisión:** la sección «Quién controla la emisión» reemplaza la frase «nadie puede inventar yapitas».
+- **Quién paga, contado:** 66.170 empresas registradas en Cochabamba (SEPREC) y la tabla de la economía del canje.
+- **Las 10 ciudades, sin exagerar:** el selector ya las tiene, pero el contenido real hoy es de Cochabamba.
+- **Modelo de ingresos:** publicidad local para negocios (antes decía también «freemium», y no hay un nivel pago para vecinos).
+- **Una sola meta de piloto:** 30 cuentas y 5 negocios en la primera semana. Un título de commit (#72) dice 50 porque fue el primer borrador del mismo cambio; el contenido final dice 30.
 
 ## Equipo CodeBambinos
 

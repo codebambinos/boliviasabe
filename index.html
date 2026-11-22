@@ -51,7 +51,28 @@
     <title>BoliviaSabe</title>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Plain text for readers that do not run JavaScript (the Atlas AI, link bots). React replaces it on load. -->
+    <div id="root">
+      <main style="max-width:40rem;margin:0 auto;padding:1.5rem 1rem;font-family:system-ui,sans-serif;line-height:1.5">
+        <h1>BoliviaSabe</h1>
+        <p>Una app para que los vecinos de Bolivia compartan precios del barrio y respondan preguntas, ganando yapitas en Stellar.</p>
+        <h2>Qué funciona hoy</h2>
+        <ul>
+          <li><strong>Hoy:</strong> letreros con foto, precio, zona y fecha (almuerzos, ofertas, servicios), con búsqueda por texto y etiquetas. Se ven sin crear una cuenta.</li>
+          <li><strong>¿Alguien sabe?:</strong> preguntas que responden los vecinos, con comentarios en tiempo real; las urgentes salen primero 24 horas.</li>
+          <li><strong>Yapitas:</strong> si un letrero o una respuesta le sirve a alguien, quien ayudó gana yapitas, un activo propio (YAPITA) en la red de pruebas de Stellar. Cada premio es un pago con memo que se ve en el explorador.</li>
+          <li><strong>Yo:</strong> saldo leído de Stellar y cada movimiento con su enlace al explorador.</li>
+          <li>Cuenta con Google o correo, que crea una cuenta en Stellar con 5 yapitas de bienvenida; notificaciones al celular, contacto solo con permiso, vista previa al compartir en WhatsApp e instalación como app.</li>
+        </ul>
+        <h2>Compruébalo</h2>
+        <ul>
+          <li>Pagos de yapitas en Stellar (cuenta distribuidora): <a href="https://stellar.expert/explorer/testnet/account/GDOSWRMZMWPSDJ26YBSWUDF527QEXXXAIUAUAKFDAXXTY5QUMLUZHFEY">stellar.expert</a></li>
+          <li>Código y cómo probarla: <a href="https://github.com/codebambinos/boliviasabe">github.com/codebambinos/boliviasabe</a></li>
+          <li>Pitch deck (PDF): <a href="https://drive.google.com/file/d/1c6a5ZMkokjHeDHesX-xzRb4C6Wp_vK6l/view?usp=sharing">Google Drive</a></li>
+        </ul>
+        <p>Hecha por CodeBambinos en el National Startups Hackathon by Stellar. Red de pruebas de Stellar: sin dinero real.</p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
