@@ -16,7 +16,7 @@ En Bolivia, para saber dónde hay almuerzo barato, quién repara una laptop o si
 
 ## Lo que nos dijeron 24 personas
 
-Encuesta por WhatsApp del 22 de noviembre de 2026 a 24 personas de Cochabamba: 8 estudiantes, 11 vecinos y 5 dueños de negocio (Centro 8, Sarco 7, Cala Cala 5, otras zonas 4). Es una muestra por conveniencia: sirve para orientar el piloto, no para generalizar.
+Encuesta por WhatsApp a 24 personas de Cochabamba: 8 estudiantes, 11 vecinos y 5 dueños de negocio (Centro 8, Sarco 7, Cala Cala 5, otras zonas 4). Es una muestra por conveniencia: sirve para orientar el piloto, no para generalizar.
 
 | Pregunta | Resultado |
 |---|---|
