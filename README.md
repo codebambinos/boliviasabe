@@ -64,9 +64,11 @@ Antes del hackathon no existía nada: empezamos de cero el **20 de noviembre**. 
 
 | Fechas | Objetivo | Qué hacemos | Cómo lo medimos |
 |---|---|---|---|
-| 23 nov al 6 dic | Piloto en Cochabamba | Aplicar lo que diga el jurado. Visitar 8 negocios de Cala Cala, Sarco y el Centro para que suban sus ofertas, y publicar preguntas reales en los grupos de WhatsApp y Facebook de esos barrios | 30 cuentas activas y 8 negocios con letreros |
+| 23 nov al 6 dic | Piloto en Cochabamba | Aplicar lo que diga el jurado. Visitar 8 negocios de Cala Cala, Sarco y el Centro para que suban sus ofertas, y responder preguntas reales en los grupos «¿Alguien sabe?» de Cochabamba | 30 cuentas activas y 8 negocios con letreros |
 | 7 al 13 dic | Confianza | Confirmación de correo, verificación con terceros, normativa de datos y reglas de moderación | 20 perfiles verificados |
-| 14 al 22 dic | Siguientes implementaciones | Billeteras propias con Pollar, canje de yapitas con negocios aliadossin publicidad pagada. Respondemos preguntas reales en los grupos «¿Alguien sabe?» de Cochabamba y pedimos permiso a sus administradores para presentar la app (sus reglas prohíben la publicidad). En grupos de compra y venta como [«Cala Cala - Ciudad Cochabamba»](https://www.facebook.com/groups/calacala/) (633 miembros) compartimos letreros con su enlace. Antes cargamos letreros reales para que nadie encuentre la app vacía, y cada cuenta nueva recibe 5 yapitas de bienvenida.de WhatsApp de las OTB de esos barrios. Antes cargamos letreros reales para que nadie encuentre la app vacía, y cada cuenta nueva recibe 5 yapitas de bienvenida.
+| 14 al 22 dic | Siguientes implementaciones | Billeteras propias con Pollar, canje de yapitas con negocios aliados, paso a la red principal de Stellar y las primeras ciudades del eje troncal | 1 canje real y 3 negocios que pagan |
+
+**Cómo llegamos a los primeros usuarios:** sin publicidad pagada. Respondemos preguntas reales en los grupos «¿Alguien sabe?» de Cochabamba y pedimos permiso a sus administradores para presentar la app (sus reglas prohíben la publicidad). En grupos de compra y venta como [«Cala Cala - Ciudad Cochabamba»](https://www.facebook.com/groups/calacala/) (633 miembros) compartimos letreros con su enlace. Antes cargamos letreros reales para que nadie encuentre la app vacía, y cada cuenta nueva recibe 5 yapitas de bienvenida.
 
 **Metas al día 30:** 200 cuentas, 60 activas por semana y menos de 30 minutos hasta la primera respuesta.
 
