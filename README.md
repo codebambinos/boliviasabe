@@ -30,7 +30,7 @@ Hay topes contra el abuso (por ejemplo, 10 letreros con premio por día y 3 «Me
 
 ## Cómo usa Stellar
 
-- **Activo `YAPITA`** emitido en testnet. Cada premio es un pago de la cuenta distribuidora a la persona; gastar es un pago de la persona a la distribuidora. Todos llevan un memo que dice de qué acción vienen (por ejemplo `ayuda:q123`).
+- **Activo `YAPITA`** emitido en testnet. Cada premio es un pago de la cuenta distribuidora a la persona; gastar es un pago de la persona a la distribuidora. Todos llevan un memo que dice de qué acción vienen (por ejemplo `letrero:5` o `ayuda:5`).
 - **Una cuenta por vecino**, creada al terminar «Tu barrio»: se fondea con Friendbot, se le agrega la línea de confianza de YAPITA y recibe la bienvenida. Es una cuenta de prueba custodiada por la app: su clave se guarda cifrada (AES-256-GCM) y solo el servidor la usa.
 - **El saldo es el de la cadena.** El navegador lo lee directamente de Horizon, no de nuestra base de datos.
 - **Si Stellar falla, la persona no se queda sin hacer lo suyo.** Publicar, responder y calificar siguen funcionando y el premio queda pendiente hasta que se paga.
@@ -43,6 +43,31 @@ Para verificarlo:
 | Distribuidora (paga los premios) | [GDOSWRMZ…UHFEY](https://stellar.expert/explorer/testnet/account/GDOSWRMZMWPSDJ26YBSWUDF527QEXXXAIUAUAKFDAXXTY5QUMLUZHFEY) |
 
 En la distribuidora se ven todos los pagos con su memo, y cada cuenta de usuario tiene el suyo.
+
+## Qué construimos en este hackathon
+
+Todo el código de este repositorio se escribió durante el hackathon: el repositorio empezó el **20 de noviembre** y cada cambio entró por pull request (36 hasta ahora), con verificación de tipos y compilación automáticas en cada uno. Antes del código, también durante el hackathon, armamos el prototipo visual, la wiki con las reglas del producto y una prueba del flujo de Stellar en testnet.
+
+- **Producto:** Hoy (letreros con foto, búsqueda y etiquetas), ¿Alguien sabe? (preguntas, urgentes, conversación por respuesta, «Me sirvió»), Yo (saldo, movimientos con enlace al explorador, actividad, ajustes), contacto con permiso, avisos push, vistas previas al compartir en WhatsApp y app instalable que muestra lo último visto sin señal.
+- **Stellar:** activo YAPITA, una cuenta de prueba por vecino, un pago con memo por cada premio o gasto, reintentos si la red falla y `npm run stellar:reset` por si testnet se reinicia.
+- **Datos y seguridad:** Postgres con permisos por fila y pruebas (`supabase/tests/rls.sql`), límites contra el abuso aplicados en la base y claves de Stellar cifradas, solo en el servidor.
+- **Cómo trabajamos:** cada tarea tiene su especificación en `specs/` (qué entra, qué no, plan y criterios de aceptación) y su tarjeta en el tablero del equipo.
+- **Lo que falta:** canje de yapitas con negocios, billeteras propias con Pollar y la red principal de Stellar (ver el plan).
+
+## Plan de 30 días
+
+| Semana | Objetivo | Qué hacemos | Cómo lo medimos |
+|---|---|---|---|
+| 23 al 29 nov | Estabilizar | Corregir, aplicar lo que diga el jurado y un piloto con 30 personas y 8 negocios de Cochabamba | 30 cuentas activas |
+| 30 nov al 6 dic | Confianza | Confirmación de correo, verificación con terceros, normativa de datos y reglas de moderación | 20 perfiles verificados |
+| 7 al 13 dic | Uso diario | 100 letreros cargados, más ciudades del eje troncal y avisos mejorados | 100 preguntas, la mitad solucionadas |
+| 14 al 22 dic | Dinero real | Billeteras propias con Pollar, red principal de Stellar y canje con negocios | 1 canje real y 3 negocios que pagan |
+
+**Metas al día 30:** 200 cuentas, 60 activas por semana y menos de 30 minutos hasta la primera respuesta.
+
+## Equipo CodeBambinos
+
+Tres jóvenes de Cochabamba: **Yaeko** (producto, marca y presentación), **Diego** (líder técnico: código, datos y Stellar) y **Aldrin** (interfaz y pantallas).
 
 ## Hecho con
 
