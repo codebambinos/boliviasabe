@@ -59,7 +59,7 @@ En Bolivia, para saber dónde hay almuerzo barato, quién repara una laptop o si
 
 1. **Mira el recorrido completo** en el [video de la demo](https://youtu.be/44REBISBVZg) (2:45).
 2. **Abre la app:** [boliviasabe.vercel.app](https://boliviasabe.vercel.app) entra directo a Hoy; en «¿Alguien sabe?» está la pregunta del video («¿Quién arregla una tubería hoy en Queru Queru?»), Solucionada, con la respuesta que sirvió.
-3. **Verifica ese premio en Stellar:** el [pago de 5 YAPITA](https://stellar.expert/explorer/testnet/tx/acce574fd925033d79a87bc03e3c9b6766ecd43d0be4bc58b102d8309ce89a47) a quien respondió, con el memo `ayuda:55` (stellar.expert lo muestra codificado como `YXl1ZGE6NTU=`).
+3. **Verifica ese premio en Stellar:** el [pago de 5 YAPITA](https://stellar.expert/explorer/testnet/tx/b80fecb1727ce232c0ed889563c54cd7d833ee4a152c4a8846e5af54aa80eca3) a quien respondió, con el memo `ayuda:56` (stellar.expert lo muestra codificado como `YXl1ZGE6NTY=`).
 4. **Mira el canje de prueba:** [10 YAPITA de un vecino a un negocio de ejemplo](https://stellar.expert/explorer/testnet/tx/e0342ea4571fa493bc9ba7c6a5126f0e74f46d4af2f71ef80823640ac9cc9767), con el memo `canje:10`.
 5. **Mira todos los pagos** de la [cuenta distribuidora](https://stellar.expert/explorer/testnet/account/GDOSWRMZMWPSDJ26YBSWUDF527QEXXXAIUAUAKFDAXXTY5QUMLUZHFEY) y la [emisora de YAPITA](https://stellar.expert/explorer/testnet/account/GDNTFTPY6D36V2OH4S2UTZ6OK6UW7PEGJZP7MIHY27JFKZDHUDFYNLGW).
 
