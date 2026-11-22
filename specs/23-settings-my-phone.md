@@ -1,6 +1,6 @@
 # SPEC 23 — Ajustes: Mi celular and the final order
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 12 (`contact.myPhone`, `PhoneField`, `clean_phone`), SPEC 15 (`NotificationSettings`), SPEC 16 (`InstallRow`), SPEC 21 (Yo cards, `withThemeReveal`, spinner and motion). Board card: T29 (issue #22).
 > **Date:** 2026-11-21
 > **Objective:** Finish Yo › Ajustes: add «Mi celular» (add, change or delete the phone shared on «Pedir contacto») and put the card in the wiki order.
@@ -68,21 +68,21 @@ setMyPhone(phone: string | null): Promise<string | null>;
 
 ## Acceptance criteria
 
-- [ ] Ajustes shows, in this order: Instalar la app, Notificaciones, Mi celular, Tema, Acerca de, Privacidad, Cerrar sesión.
-- [ ] The Mi celular row shows the saved number, or «Sin agregar» when there is none.
-- [ ] Tapping the row opens the «Mi celular» sheet with the sharing line and the field prefilled.
-- [ ] Guardar is off until the value differs from the saved one; while saving it shows the spinner and «Guardando…».
-- [ ] Saving a valid number closes the sheet, shows «Guardado» and the row shows the new number without a reload; after a reload it is still there (mock: same visit; Supabase: in `profiles.phone`).
-- [ ] Borrar (or saving an empty field) deletes it, closes the sheet, shows «Celular borrado» and the row says «Sin agregar».
-- [ ] «abc», «12» or a 25-digit number shows «Revisa el número: solo números, espacios y un + al inicio» and nothing is saved.
-- [ ] Without signal the sheet stays open with what was typed and shows the usual offline message.
-- [ ] After changing the phone in Ajustes, «Pedir contacto» and «Aceptar» prefill the new value.
-- [ ] «Cerrar sesión» still signs out in one tap and returns to Hoy as a guest.
-- [ ] Tema still switches on in a circle from the tapped option (SPEC 21).
-- [ ] The row value cross-fades, the sheet and toast animate; with «reducir movimiento» nothing moves.
-- [ ] Works at 360 px in light and dark with text at 130 %; touch targets ≥ 44 px; the keyboard does not hide Guardar.
-- [ ] The wiki has the new huecos row and the log entry.
-- [ ] `npm run typecheck` and `npm run build` pass; `git grep -i "SECRET\|SERVICE_ROLE"` shows no values.
+- [x] Ajustes shows, in this order: Instalar la app, Notificaciones, Mi celular, Tema, Acerca de, Privacidad, Cerrar sesión.
+- [x] The Mi celular row shows the saved number, or «Sin agregar» when there is none.
+- [x] Tapping the row opens the «Mi celular» sheet with the sharing line and the field prefilled.
+- [x] Guardar is off until the value differs from the saved one; while saving it shows the spinner and «Guardando…».
+- [x] Saving a valid number closes the sheet, shows «Guardado» and the row shows the new number without a reload; after a reload it is still there (mock: same visit; Supabase: in `profiles.phone`).
+- [x] Borrar (or saving an empty field) deletes it, closes the sheet, shows «Celular borrado» and the row says «Sin agregar».
+- [x] «abc», «12» or a 25-digit number shows «Revisa el número: solo números, espacios y un + al inicio» and nothing is saved.
+- [x] Without signal the sheet stays open with what was typed and shows the usual offline message.
+- [x] After changing the phone in Ajustes, «Pedir contacto» and «Aceptar» prefill the new value.
+- [x] «Cerrar sesión» still signs out in one tap and returns to Hoy as a guest.
+- [x] Tema still switches on in a circle from the tapped option (SPEC 21).
+- [x] The row value cross-fades, the sheet and toast animate; with «reducir movimiento» nothing moves.
+- [x] Works at 360 px in light and dark with text at 130 %; touch targets ≥ 44 px; the keyboard does not hide Guardar.
+- [x] The wiki has the new huecos row and the log entry.
+- [x] `npm run typecheck` and `npm run build` pass; `git grep -i "SECRET\|SERVICE_ROLE"` shows no values.
 
 ## Changes during implementation
 
