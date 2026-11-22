@@ -6,6 +6,12 @@ BoliviaSabe es la guía viva de tu ciudad. Los vecinos suben la foto de un **let
 
 Hecha por **CodeBambinos** para el hackathon National Startups by Stellar 2026. Todo corre en la **red de pruebas** de Stellar: no hay dinero real.
 
+## El problema
+
+En Bolivia, para saber dónde hay almuerzo barato, quién repara una laptop o si hay agua, la gente pregunta en grupos de WhatsApp y Facebook, que usan el 91% y el 94% de los internautas del país (AGETIC, 2016). Pasa todos los días y lo vivimos en Cochabamba: preguntamos en cinco grupos y la respuesta llega tarde o nunca, se pierde entre cientos de mensajes y nadie sabe si un precio sigue vigente. Quien sabe no gana nada por ayudar y calla. Los más afectados son estudiantes y vecinos con poco presupuesto, y los negocios de barrio que nadie encuentra.
+
+**Cómo lo resuelve BoliviaSabe:** cada pregunta se comparte en grupos de WhatsApp con un enlace que abre la app y las urgentes salen primero 24 horas; todo queda por ciudad y zona y se busca por texto; cada letrero muestra su fecha y lo viejo avisa que puede estar desactualizado; y quien ayuda gana yapitas. A diferencia de WhatsApp y Facebook, ordena y premia; a diferencia de Marketplace y Google Maps, tiene datos del día y ayuda entre vecinos.
+
 ## Pruébala
 
 **https://boliviasabe.vercel.app**: está pensada para el celular y también funciona en computador.
@@ -46,9 +52,9 @@ En la distribuidora se ven todos los pagos con su memo, y cada cuenta de usuario
 
 ## Qué construimos en este hackathon
 
-Todo el código de este repositorio se escribió durante el hackathon: el repositorio empezó el **20 de noviembre** y cada cambio entró por pull request (36 hasta ahora), con verificación de tipos y compilación automáticas en cada uno. Antes del código, también durante el hackathon, armamos el prototipo visual, la wiki con las reglas del producto y una prueba del flujo de Stellar en testnet.
+Antes del hackathon no existía nada: empezamos de cero el **20 de noviembre**. Durante el hackathon armamos el prototipo visual, la wiki con las reglas del producto, una prueba del flujo de Stellar en testnet y todo el código de este repositorio. Cada cambio entró por pull request, con verificación de tipos y compilación automáticas.
 
-- **Producto:** Hoy (letreros con foto, búsqueda y etiquetas), ¿Alguien sabe? (preguntas, urgentes, conversación por respuesta, «Me sirvió»), Yo (saldo, movimientos con enlace al explorador, actividad, ajustes), contacto con permiso, avisos push, vistas previas al compartir en WhatsApp y app instalable que muestra lo último visto sin señal.
+- **Producto:** Hoy (letreros con foto, búsqueda y etiquetas), ¿Alguien sabe? (preguntas, urgentes, comentarios en tiempo real en cada respuesta, «Me sirvió»), Yo (saldo, movimientos con enlace al explorador, actividad, ajustes), contacto solo con permiso, notificaciones al celular, vista previa al compartir en WhatsApp y app instalable que muestra lo último visto sin señal.
 - **Stellar:** activo YAPITA, una cuenta de prueba por vecino, un pago con memo por cada premio o gasto, reintentos si la red falla y `npm run stellar:reset` por si testnet se reinicia.
 - **Datos y seguridad:** Postgres con permisos por fila y pruebas (`supabase/tests/rls.sql`), límites contra el abuso aplicados en la base y claves de Stellar cifradas, solo en el servidor.
 - **Cómo trabajamos:** cada tarea tiene su especificación en `specs/` (qué entra, qué no, plan y criterios de aceptación) y su tarjeta en el tablero del equipo.
@@ -56,12 +62,13 @@ Todo el código de este repositorio se escribió durante el hackathon: el reposi
 
 ## Plan de 30 días
 
-| Semana | Objetivo | Qué hacemos | Cómo lo medimos |
+| Fechas | Objetivo | Qué hacemos | Cómo lo medimos |
 |---|---|---|---|
-| 23 al 29 nov | Estabilizar | Corregir, aplicar lo que diga el jurado y un piloto con 30 personas y 8 negocios de Cochabamba | 30 cuentas activas |
-| 30 nov al 6 dic | Confianza | Confirmación de correo, verificación con terceros, normativa de datos y reglas de moderación | 20 perfiles verificados |
-| 7 al 13 dic | Uso diario | 100 letreros cargados, más ciudades del eje troncal y avisos mejorados | 100 preguntas, la mitad solucionadas |
-| 14 al 22 dic | Dinero real | Billeteras propias con Pollar, red principal de Stellar y canje con negocios | 1 canje real y 3 negocios que pagan |
+| 23 nov al 6 dic | Piloto en Cochabamba | Aplicar lo que diga el jurado. Visitar 8 negocios de Cala Cala, Sarco y el Centro para que suban sus ofertas, y publicar preguntas reales en los grupos de WhatsApp y Facebook de esos barrios | 30 cuentas activas y 8 negocios con letreros |
+| 7 al 13 dic | Confianza | Confirmación de correo, verificación con terceros, normativa de datos y reglas de moderación | 20 perfiles verificados |
+| 14 al 22 dic | Siguientes implementaciones | Billeteras propias con Pollar, canje de yapitas con negocios aliados, paso a la red principal de Stellar y las primeras ciudades del eje troncal | 1 canje real y 3 negocios que pagan |
+
+**Cómo llegamos a los primeros usuarios:** sin publicidad pagada. Vamos a los grupos de WhatsApp y Facebook de esos barrios, donde la gente ya pregunta, y cargamos letreros reales antes para que nadie encuentre la app vacía. Cada pregunta compartida lleva un enlace que abre la app, y cada cuenta nueva recibe 5 yapitas de bienvenida.
 
 **Metas al día 30:** 200 cuentas, 60 activas por semana y menos de 30 minutos hasta la primera respuesta.
 
