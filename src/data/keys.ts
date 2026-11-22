@@ -24,4 +24,7 @@ export const keys = {
   myQuestions: () => ['data', 'activity', 'questions'] as const,
   myAnswers: () => ['data', 'activity', 'answers'] as const,
   mySigns: () => ['data', 'activity', 'signs'] as const,
+  notices: () => ['data', 'notices'] as const,
+  noticeList: () => ['data', 'notices', 'list'] as const,
+  unreadNotices: () => ['data', 'notices', 'unread'] as const,
 };

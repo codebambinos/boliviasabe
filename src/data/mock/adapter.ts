@@ -2,9 +2,9 @@
 import { DEFAULT_NOTIF_PREFS, type DataApi } from '../api';
 import { CITIES, DEFAULT_CITY, PAGE_SIZE } from '../catalog';
 import { DataError } from '../errors';
-import type { Answer, City, Comment, ContactState, ContentKind, Id, Movement, Page, Question, ReportKind, Session, Sign } from '../types';
+import type { Answer, City, Comment, ContactState, ContentKind, Id, Movement, Notice, Page, Question, ReportKind, Session, Sign } from '../types';
 import { mockMode, simulate } from './behavior';
-import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type CommentRec, type ContactRec, type MovementRec, type QuestionRec, type SignRec } from './fixtures';
+import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type CommentRec, type ContactRec, type MovementRec, type NoticeRec, type QuestionRec, type SignRec } from './fixtures';
 import {
   assertCanAsk,
   assertCanComment,
@@ -664,6 +664,10 @@ export const mockLive: DataApi['live'] = {
     onStatus?.(false);
     return () => undefined;
   },
+  notices: (_onChange, onStatus) => {
+    onStatus?.(false);
+    return () => undefined;
+  },
 };
 
 function toMovement(rec: MovementRec): Movement {
@@ -787,6 +791,109 @@ export const mockActivity: DataApi['activity'] = {
     }),
 };
 
+// ---------- Avisos (SPEC 22) ----------
+
+const NOTICE_PAGE = 30;
+
+/** The contact request seen by the viewer, like `contact_json` in SQL. */
+function contactByRequest(requestId: Id, viewer: Id): ContactState | null {
+  const rec = store.contacts.find((c) => c.id === requestId && (c.requesterId === viewer || c.ownerId === viewer));
+  if (!rec) return null;
+  const mine = rec.requesterId === viewer;
+  const other = store.users.find((u) => u.id === (mine ? rec.ownerId : rec.requesterId));
+  return {
+    requestId: rec.id,
+    status: rec.status,
+    requestedByMe: mine,
+    other: rec.status === 'accepted' && other ? { email: other.email, phone: mine ? rec.ownerPhone : rec.requesterPhone } : null,
+  };
+}
+
+/** What a row points to, with the same rules per kind as `notice_item` in SQL. Null when it is gone or hidden. */
+function noticeItem(n: NoticeRec, viewer: Id): Pick<Notice, 'text' | 'zone' | 'open'> {
+  const gone = { text: null, zone: null, open: null };
+  const visible = (kind: ReportKind, id: Id, authorId: Id) => !isHiddenFor(viewer, kind, id, authorId);
+  const question = (id: Id) => store.questions.find((q) => q.id === id);
+  if (n.kind === 'answer') {
+    const a = store.answers.filter((x) => x.questionId === n.refId && x.authorId === n.actorId).sort(newestFirst)[0];
+    return a && question(a.questionId) && visible('answer', a.id, a.authorId) ? { text: a.text, zone: null, open: { kind: 'question', id: a.questionId } } : gone;
+  }
+  if (n.kind === 'comment') {
+    const c = store.comments.find((x) => x.id === n.refId);
+    const a = c && store.answers.find((x) => x.id === c.answerId);
+    return c && a && visible('comment', c.id, c.authorId) ? { text: c.text, zone: null, open: { kind: 'question', id: a.questionId } } : gone;
+  }
+  if (n.kind === 'helpful') {
+    const a = store.answers.find((x) => x.id === n.refId);
+    return a && visible('answer', a.id, a.authorId) ? { text: a.text, zone: null, open: { kind: 'question', id: a.questionId } } : gone;
+  }
+  if (n.kind === 'sign_helpful') {
+    const sign = store.signs.find((x) => x.id === n.refId);
+    return sign && visible('sign', sign.id, sign.authorId) ? { text: sign.title, zone: null, open: { kind: 'sign', id: sign.id } } : gone;
+  }
+  let questionId: Id | undefined = n.refId;
+  if (n.kind === 'contact_request' || n.kind === 'contact_accepted') {
+    const rec = store.contacts.find((c) => c.id === n.refId);
+    questionId = rec && store.answers.find((a) => a.id === rec.answerId)?.questionId;
+  }
+  const q = questionId === undefined ? undefined : question(questionId);
+  return q && visible('question', q.id, q.authorId)
+    ? { text: q.text, zone: n.kind === 'urgent' ? q.zone : null, open: { kind: 'question', id: q.id } }
+    : gone;
+}
+
+/** The viewer's notices, one per row except «Me sirvió» of the same letrero (one group), newest first. */
+function buildNotices(viewer: Id): Notice[] {
+  const groups = new Map<string, NoticeRec[]>();
+  for (const n of store.notices.filter((x) => x.userId === viewer)) {
+    const key = n.kind === 'sign_helpful' ? `sign:${n.refId}` : `n:${n.id}`;
+    groups.set(key, [...(groups.get(key) ?? []), n]);
+  }
+  return [...groups.values()]
+    .map((rows) => {
+      const newest = [...rows].sort((a, b) => newestFirst(a, b) || b.id - a.id)[0];
+      const contact = newest.kind === 'contact_request' || newest.kind === 'contact_accepted' ? contactByRequest(newest.refId, viewer) : null;
+      return {
+        id: newest.id,
+        kind: newest.kind,
+        createdAt: newest.createdAt,
+        read: rows.every((r) => r.readAt !== null),
+        actor: newest.actorId === null ? null : authorOf(newest.actorId).displayName,
+        count: rows.length,
+        ...noticeItem(newest, viewer),
+        contact,
+      };
+    })
+    .sort((a, b) => newestFirst(a, b) || b.id - a.id);
+}
+
+export const mockNotices: DataApi['notices'] = {
+  list: (offset = 0) =>
+    simulate(() => {
+      const all = buildNotices(requireUser().id);
+      const end = offset + NOTICE_PAGE;
+      return { items: all.slice(offset, end), nextOffset: end < all.length ? end : null };
+    }),
+  unreadCount: () => simulate(() => buildNotices(requireUser().id).filter((n) => !n.read).length),
+  markRead: (id) =>
+    simulate(() => {
+      const user = requireUser();
+      const rec = store.notices.find((n) => n.id === id && n.userId === user.id);
+      if (!rec) return;
+      const now = new Date().toISOString();
+      for (const n of store.notices) {
+        const same = n.id === rec.id || (rec.kind === 'sign_helpful' && n.kind === 'sign_helpful' && n.refId === rec.refId);
+        if (same && n.userId === user.id && n.readAt === null) n.readAt = now;
+      }
+    }),
+  markAllRead: () =>
+    simulate(() => {
+      const user = requireUser();
+      const now = new Date().toISOString();
+      for (const n of store.notices) if (n.userId === user.id && n.readAt === null) n.readAt = now;
+    }),
+};
+
 /** The mock has no push service: preferences live on the user, subscriptions in memory, nothing is ever sent. */
 const mockSubscriptions = new Map<string, Id>();
 
@@ -820,5 +927,6 @@ export const mockAdapter: DataApi = {
   reports: mockReports,
   wallet: mockWallet,
   activity: mockActivity,
+  notices: mockNotices,
   push: mockPush,
 };

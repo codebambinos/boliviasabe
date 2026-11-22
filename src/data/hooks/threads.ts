@@ -28,7 +28,8 @@ export function useRequestContact() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: ({ answerId, phone }: { answerId: Id; questionId: Id; phone?: string }) => api.contact.request(answerId, phone),
-    onSuccess: (_state, { questionId }) => invalidate(client, keys.question(questionId), keys.myPhone()),
+    // The notice of that request changes too (Aceptar / Ahora no leave Avisos)
+    onSuccess: (_state, { questionId }) => invalidate(client, keys.question(questionId), keys.myPhone(), keys.notices()),
   });
 }
 
@@ -38,7 +39,8 @@ export function useRespondContact() {
   return useMutation({
     mutationFn: ({ requestId, accept, phone }: { requestId: Id; questionId: Id; accept: boolean; phone?: string }) =>
       api.contact.respond(requestId, accept, phone),
-    onSuccess: (_state, { questionId }) => invalidate(client, keys.question(questionId), keys.myPhone()),
+    // The notice of that request changes too (Aceptar / Ahora no leave Avisos)
+    onSuccess: (_state, { questionId }) => invalidate(client, keys.question(questionId), keys.myPhone(), keys.notices()),
   });
 }
 

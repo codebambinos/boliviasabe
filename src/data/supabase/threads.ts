@@ -61,7 +61,7 @@ type Row = { answer_id?: number; question_id?: number };
  * ratings only name their answer, so they are passed on with `answerId` and the hook keeps the ones it shows.
  * Events only trigger a refetch: their payload is not trusted or merged.
  */
-export const supabaseLive: DataApi['live'] = {
+export const supabaseLive: Pick<DataApi['live'], 'question'> = {
   question(questionId, onChange, onStatus) {
     const byQuestion = { schema: 'public', filter: `question_id=eq.${questionId}` } as const;
     const byAnswer = (payload: { new: Row; old: Row }) => onChange(payload.new?.answer_id ?? payload.old?.answer_id ?? null);

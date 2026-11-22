@@ -1,6 +1,6 @@
 // Seed data for the mock adapter. Internal records, not the public types:
 // the adapter turns them into Sign, Question, etc. (authors, stars, isMine...).
-import type { City, Id, ReportKind, ReportReason, RewardReason, Tag } from '../types';
+import type { City, Id, NoticeKind, ReportKind, ReportReason, RewardReason, Tag } from '../types';
 import { placeholderPhoto } from './svg';
 
 export type UserRec = {
@@ -87,6 +87,9 @@ export type ContactRec = {
   requesterPhone: string | null;
   ownerPhone: string | null;
 };
+
+/** A row of `notifications` (SPEC 22): who gets it, what caused it and when it was read. */
+export type NoticeRec = { id: Id; userId: Id; kind: NoticeKind; refId: Id; actorId: Id | null; createdAt: string; readAt: string | null };
 
 export type ContentRef = { userId: Id; kind: ReportKind; itemId: Id };
 export type ReportRec = ContentRef & { reason: ReportReason };
@@ -259,3 +262,37 @@ export const movements: MovementRec[] = [
 export const saved: ContentRef[] = [{ userId: LUCIA, kind: 'sign', itemId: 2 }];
 export const reports: ReportRec[] = [];
 export const hidden: ContentRef[] = [];
+
+/** Ana commented on Lucía's answer in «natación» (question 4, answer 6). */
+export const comments: CommentRec[] = [{ id: 1, answerId: 6, authorId: ANA, text: 'Gracias, ¿sabes desde qué edad aceptan?', createdAt: ago(3) }];
+
+/** Ana asks Lucía for her contact (pending); Lucía asked Jorge for the gasfitero's and he accepted. */
+export const contacts: ContactRec[] = [
+  { id: 1, answerId: 6, requesterId: ANA, ownerId: LUCIA, status: 'pending', requesterPhone: '70011223', ownerPhone: null },
+  { id: 2, answerId: 12, requesterId: LUCIA, ownerId: JORGE, status: 'accepted', requesterPhone: null, ownerPhone: '71234567' },
+];
+
+/**
+ * Lucía's Avisos: one notice of each of the 8 kinds, three «Me sirvió» on letrero 1 (one group), and one answer on a
+ * question that no longer exists («Esto ya no está disponible»). The rest of the neighbors have none.
+ */
+let noticeId = 0;
+const nt = (kind: NoticeKind, refId: Id, actorId: Id | null, hoursAgo: number, read = false): NoticeRec => {
+  noticeId += 1;
+  return { id: noticeId, userId: LUCIA, kind, refId, actorId, createdAt: ago(hoursAgo), readAt: read ? ago(hoursAgo / 2) : null };
+};
+
+export const notices: NoticeRec[] = [
+  nt('answer', 2, MARCO, 4.5),
+  nt('answer', 2, JORGE, 4),
+  nt('comment', 1, ANA, 3),
+  nt('helpful', 6, ANA, 12),
+  nt('sign_helpful', 1, JORGE, 40, true),
+  nt('sign_helpful', 1, ANA, 30),
+  nt('sign_helpful', 1, MARCO, 2),
+  nt('contact_request', 1, ANA, 1),
+  nt('contact_accepted', 2, JORGE, 20, true),
+  nt('urgent', 1, JORGE, 2, true),
+  nt('reminder', 3, null, 0.5),
+  nt('answer', 999, ROSA, 50),
+];

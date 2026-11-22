@@ -87,6 +87,11 @@ function supabaseAdapter(): DataApi {
           stop?.();
         };
       },
+      // The Supabase channel arrives with the migration (SPEC 22 step 4): until then the bell asks every 60 s
+      notices: (_onChange, onStatus) => {
+        onStatus?.(false);
+        return () => undefined;
+      },
     },
     saved: {
       toggle: (kind, id) => loadData().then((data) => data.saved.toggle(kind, id)),
@@ -106,6 +111,12 @@ function supabaseAdapter(): DataApi {
       myQuestions: () => read(loadData().then((data) => data.activity.myQuestions())),
       myAnswers: () => read(loadData().then((data) => data.activity.myAnswers())),
       mySigns: () => read(loadData().then((data) => data.activity.mySigns())),
+    },
+    notices: {
+      list: () => Promise.reject(new DataError('server', 'Notices are not ready yet')),
+      unreadCount: () => Promise.reject(new DataError('server', 'Notices are not ready yet')),
+      markRead: () => Promise.reject(new DataError('server', 'Notices are not ready yet')),
+      markAllRead: () => Promise.reject(new DataError('server', 'Notices are not ready yet')),
     },
     push: {
       getPrefs: () => read(loadData().then((data) => data.push.getPrefs())),
