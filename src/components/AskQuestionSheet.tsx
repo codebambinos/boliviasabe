@@ -22,7 +22,7 @@ import { PhotoError, preparePhoto } from './photo';
 import { QuestionCard } from './QuestionCard';
 import { QuestionDetail } from './QuestionDetail';
 import { askLimit, urgentBlocker, URGENT_COST } from './questionLimits';
-import { Sheet } from './Sheet';
+import { EXIT_MS, Sheet } from './Sheet';
 import './upload-sign-sheet.css';
 import './ask-question-sheet.css';
 
@@ -95,7 +95,7 @@ export function AskQuestionSheet({ viewingCity, initialText = '', onClose, onPub
     window.setTimeout(() => {
       setView('form');
       setConfirmLeaving(false);
-    }, reduced ? 0 : 160);
+    }, reduced ? 0 : EXIT_MS);
   };
 
   const onFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -342,7 +342,7 @@ export function AskQuestionSheet({ viewingCity, initialText = '', onClose, onPub
                   >
                     {create.isPending ? (
                       <>
-                        <span className="upload__spinner" aria-hidden="true" /> Publicando…
+                        <span className="spinner" aria-hidden="true" /> Publicando…
                       </>
                     ) : create.isError && !limitText ? (
                       'Reintentar'

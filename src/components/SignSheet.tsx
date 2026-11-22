@@ -20,7 +20,7 @@ import {
   CheckIcon,
 } from './icons';
 import { errorMessage, firstName, helpedText, rewardCapMessage } from './messages';
-import { Sheet } from './Sheet';
+import { EXIT_MS, Sheet } from './Sheet';
 import { isStale, timeAgo } from './time';
 import { Yapita } from './Yapita';
 import './sign-sheet.css';
@@ -328,7 +328,7 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onSave }: SignSh
                 // Close the menu first (it owns a history entry), then act on the detail
                 const then = (act: () => void) => {
                   closeMenu();
-                  window.setTimeout(act, 180);
+                  window.setTimeout(act, EXIT_MS);
                 };
                 return (
                   <>

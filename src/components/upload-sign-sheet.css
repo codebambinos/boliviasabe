@@ -196,25 +196,6 @@
   }
 }
 
-/* «Publicando…»: a small turning ring inside the button */
-.upload__spinner {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  margin-right: var(--s-2);
-  vertical-align: -0.15em;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: upload-spin 700ms linear infinite;
-}
-
-@keyframes upload-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* «¿Descartar el letrero?»: a card rises over the dimmed form, which stays as it was behind it */
 .upload__confirm {
   position: absolute;
@@ -318,11 +299,5 @@
 
   .upload__pick[aria-busy] {
     animation: none;
-  }
-
-  /* The spinner is the only sign of work: it keeps turning, slower */
-  .upload__spinner {
-    animation-duration: 1.6s !important;
-    animation-iteration-count: infinite !important;
   }
 }

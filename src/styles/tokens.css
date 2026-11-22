@@ -37,6 +37,11 @@
   --color-on-brand: #ffffff;
   --color-danger: #b3261e; /* Borrar: the one destructive action (fill) */
   --color-danger-text: #b3261e; /* red as text: lighter on the dark ground */
+  --color-on-danger: #fff; /* text on Borrar */
+  --color-on-fill: #1f1a17; /* ink on green and orange fills («Solucionada», the yapita): dark in both themes */
+  --color-info-text: var(--color-info); /* blue as text: lighter on the dark ground */
+  --color-photo-backdrop: #0d0b0a; /* behind a photo shown full screen */
+  --color-logo-tile: #f5f2ef; /* the dark logo's light tile on the dark ground (DESIGN.md › Open items) */
   --color-focus: #c2185b;
   --color-scrim: rgb(31 26 23 / 0.5);
 
@@ -81,6 +86,7 @@
   --hairline: 1px solid var(--color-line);
   --shadow-float: 0 6px 20px rgb(31 26 23 / 0.16), 0 1px 3px rgb(31 26 23 / 0.12);
   --shadow-hover: 0 8px 24px rgb(31 26 23 / 0.08);
+  --shadow-on-photo: 0 1px 3px rgb(0 0 0 / 0.18); /* a control over a photo (the tile's Guardar) */
 
   /* Motion: one ease-out, no overshoot */
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -91,6 +97,8 @@
   --m-panel: 200ms;
   --m-image: 600ms;
   --m-theme: 260ms; /* light ↔ dark: the colors cross-fade (themeFade.ts) */
+  --m-sheet-in: 260ms; /* a sheet rises in */
+  --m-exit: 160ms; /* sheets and toasts leave; EXIT_MS in Sheet.tsx is the same value */
 
   /* Layout */
   --touch: 2.75rem; /* 44 px minimum touch target */
@@ -122,6 +130,7 @@
     --color-focus: #f6a3c3;
     --color-scrim: rgb(0 0 0 / 0.62);
     --color-danger-text: #ff8a80;
+    --color-info-text: #9cc0f0;
     --shadow-float: 0 6px 20px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
     --shadow-hover: 0 8px 24px rgb(0 0 0 / 0.35);
     color-scheme: dark;
@@ -145,6 +154,7 @@
   --color-focus: #f6a3c3;
   --color-scrim: rgb(0 0 0 / 0.62);
   --color-danger-text: #ff8a80;
+  --color-info-text: #9cc0f0;
   --shadow-float: 0 6px 20px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
   --shadow-hover: 0 8px 24px rgb(0 0 0 / 0.35);
   color-scheme: dark;

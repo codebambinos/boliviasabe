@@ -69,14 +69,14 @@
   :root:not([data-theme='light']) .page__logo {
     padding: 0.1875rem;
     border-radius: var(--r-sm);
-    background: #f5f2ef;
+    background: var(--color-logo-tile);
   }
 }
 
 :root[data-theme='dark'] .page__logo {
   padding: 0.1875rem;
   border-radius: var(--r-sm);
-  background: #f5f2ef;
+  background: var(--color-logo-tile);
 }
 
 @keyframes page-stripe {

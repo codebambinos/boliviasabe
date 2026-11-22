@@ -14,11 +14,12 @@
   --clear-end: 0px;
   --fade-start: 0px;
   --fade-end: 0px;
+  /* A mask only reads alpha: `black` means «fully shown», not a color on screen */
   mask-image: linear-gradient(
     to right,
     transparent var(--clear-start),
-    #000 calc(var(--clear-start) + var(--fade-start)),
-    #000 calc(100% - var(--clear-end) - var(--fade-end)),
+    black calc(var(--clear-start) + var(--fade-start)),
+    black calc(100% - var(--clear-end) - var(--fade-end)),
     transparent calc(100% - var(--clear-end))
   );
 }

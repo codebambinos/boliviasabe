@@ -32,7 +32,7 @@
 }
 
 .toast[data-leaving] .toast__box {
-  animation: toast-out 180ms var(--ease) both;
+  animation: toast-out var(--m-exit) var(--ease) both;
 }
 
 @keyframes toast-in {

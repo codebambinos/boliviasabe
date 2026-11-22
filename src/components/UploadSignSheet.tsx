@@ -7,7 +7,7 @@ import { MAX_TAGS, SUGGESTED_ZONES, TAGS, isDataError, useCreateSign, useSession
 import { ArrowLeftIcon, ChevronDownIcon, CloseIcon } from './icons';
 import { errorMessage } from './messages';
 import { PhotoError, preparePhoto } from './photo';
-import { Sheet } from './Sheet';
+import { EXIT_MS, Sheet } from './Sheet';
 import './upload-sign-sheet.css';
 
 const TITLE_MIN = 3;
@@ -90,7 +90,7 @@ export function UploadSignSheet({ viewingCity, onClose, onPublished }: UploadSig
     window.setTimeout(() => {
       setView('form');
       setConfirmLeaving(false);
-    }, reduced ? 0 : 160);
+    }, reduced ? 0 : EXIT_MS);
   };
 
   const set = <K extends keyof Fields>(key: K, value: Fields[K]) => setText((t) => ({ ...t, [key]: value }));
@@ -325,7 +325,7 @@ export function UploadSignSheet({ viewingCity, onClose, onPublished }: UploadSig
               >
                 {create.isPending ? (
                   <>
-                    <span className="upload__spinner" aria-hidden="true" /> Publicando…
+                    <span className="spinner" aria-hidden="true" /> Publicando…
                   </>
                 ) : create.isError ? (
                   'Reintentar'

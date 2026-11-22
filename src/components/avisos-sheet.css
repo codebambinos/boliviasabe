@@ -52,6 +52,12 @@
   cursor: pointer;
 }
 
+/* A full-width row only darkens when pressed (SPEC 26) */
+.aviso:has(.aviso__open:active) {
+  background: var(--color-sunken);
+  transition-duration: var(--m-press);
+}
+
 .aviso__open:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;

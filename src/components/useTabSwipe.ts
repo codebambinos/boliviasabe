@@ -28,7 +28,8 @@ const IN_MS = 240;
 const BACK_MS = 320;
 const EASE_OUT = 'cubic-bezier(0.4, 0, 1, 1)';
 const EASE_IN = 'cubic-bezier(0.22, 1, 0.36, 1)';
-const SPRING = 'cubic-bezier(0.34, 1.4, 0.64, 1)';
+// Released half-way, the screen settles back with --ease-enter: no overshoot (DESIGN.md › Motion, SPEC 26)
+const SETTLE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -111,7 +112,7 @@ export function useTabSwipe<T extends string>(
       const from = { transform: el.style.transform || 'none', opacity: el.style.opacity || '1', transformOrigin: el.style.transformOrigin || 'center' };
       clear(el);
       if (from.transform === 'none' || reducedMotion()) return;
-      el.animate([from, { transform: 'none', opacity: 1, transformOrigin: from.transformOrigin }], { duration: BACK_MS, easing: SPRING });
+      el.animate([from, { transform: 'none', opacity: 1, transformOrigin: from.transformOrigin }], { duration: BACK_MS, easing: SETTLE });
     };
 
     // Pointer events, not touch events: a touch stays tied to the element it started on, and when that element is

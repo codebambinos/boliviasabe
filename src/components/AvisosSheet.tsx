@@ -12,7 +12,6 @@ import { Sheet } from './Sheet';
 import { timeAgo } from './time';
 import './avisos-sheet.css';
 import './contact-request.css';
-import './upload-sign-sheet.css'; // .upload__spinner, the app's in-button loader
 
 const KIND_ICON: Record<NoticeKind, (props: { size?: number }) => ReactNode> = {
   answer: QuestionIcon,
@@ -246,7 +245,7 @@ function NoticeContact({ notice, onAnswered }: { notice: Notice; onAnswered: () 
     );
   };
   const busy = respond.isPending;
-  const spinner = <span className="upload__spinner" aria-hidden="true" />;
+  const spinner = <span className="spinner" aria-hidden="true" />;
 
   return (
     <div className="aviso__contact contact__incoming">

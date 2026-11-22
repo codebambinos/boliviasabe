@@ -355,7 +355,15 @@
   color: var(--color-muted);
   font: 500 var(--t-label) / 1.2 var(--font-body);
   cursor: pointer;
-  transition: color var(--m-out) var(--ease);
+  transition:
+    transform var(--m-out) var(--ease),
+    color var(--m-out) var(--ease);
+}
+
+/* Press: 1 px down and .985, like every small target (SPEC 26) */
+.tabs__item:active {
+  transform: translateY(1px) scale(0.985);
+  transition-duration: var(--m-press);
 }
 
 /* The icon sits in a pill that fills when the tab is current */
@@ -584,10 +592,10 @@
   animation: vt-out 110ms var(--ease) both;
 }
 
-/* Fade-through: the new screen starts only once the old one is almost gone, so the two never
+/* Fade-through: the new screen starts only once the old one is gone (110 ms), so the two never
    show at the same time. */
 ::view-transition-new(root) {
-  animation: vt-in 220ms var(--ease-enter) 90ms both;
+  animation: vt-in 220ms var(--ease-enter) 110ms both;
 }
 
 ::view-transition-old(tabbar),
@@ -609,14 +617,14 @@
 }
 
 ::view-transition-new(detail):only-child {
-  animation: vt-fade-in 220ms var(--ease-enter) 90ms both;
+  animation: vt-fade-in 220ms var(--ease-enter) 110ms both;
 }
 
 /* The bars settle faster than the content: while they were half clear the list showed through the tab bar */
 ::view-transition-new(topbar):only-child,
 ::view-transition-new(tabbar):only-child,
 ::view-transition-new(sidebar):only-child {
-  animation: vt-fade-in 110ms var(--ease) 90ms both;
+  animation: vt-fade-in 110ms var(--ease) 110ms both;
 }
 
 @keyframes vt-fade-in {
@@ -750,7 +758,7 @@
   :root:not([data-theme='light']) .shell__brand img {
     padding: 0.1875rem;
     border-radius: var(--r-sm);
-    background: #f5f2ef;
+    background: var(--color-logo-tile);
   }
 }
 
@@ -758,7 +766,7 @@
 :root[data-theme='dark'] .shell__brand img {
   padding: 0.1875rem;
   border-radius: var(--r-sm);
-  background: #f5f2ef;
+  background: var(--color-logo-tile);
 }
 
 /* Lupa (wiki #140): only while the screen's own search is off screen. Hidden, it takes no room,
