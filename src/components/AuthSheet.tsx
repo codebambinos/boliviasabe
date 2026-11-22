@@ -38,7 +38,7 @@ export function AuthSheet({ reason, title = 'Crea tu cuenta para seguir', start,
   // The e-mail is kept here so it survives going to «¿La olvidaste?» and back
   const [emailValue, setEmailValue] = useState('');
   const google = useSignInWithGoogle();
-  // Saving the pending action can take a moment: the button already says «Entrando…» meanwhile
+  // Saving the pending action can take a moment: the button already says «Iniciando sesión…» meanwhile
   const [saving, setSaving] = useState(false);
   const googleBusy = google.isPending || saving;
   const email = useSignInWithEmail();
@@ -78,7 +78,7 @@ export function AuthSheet({ reason, title = 'Crea tu cuenta para seguir', start,
                   {mode === 'choose' && (
                     <div className="auth__choices">
                       <button type="button" className="btn btn--secondary btn--full auth__google" disabled={googleBusy} onClick={withGoogle}>
-                        <GoogleIcon /> {googleBusy ? 'Entrando…' : 'Continuar con Google'}
+                        <GoogleIcon /> {googleBusy ? 'Iniciando sesión…' : 'Continuar con Google'}
                       </button>
                       <button type="button" className="btn btn--secondary btn--full" onClick={() => setMode('email')}>
                         <MailIcon size={20} /> Usar mi correo
@@ -200,7 +200,7 @@ function EmailForm({ email, onEmailChange, pending, error, googlePending, onEdit
         <div className="auth__choices">
           <p className="auth__error" role="alert">Esta cuenta entra con Google</p>
           <button type="button" className="btn btn--full auth__google" disabled={googlePending} onClick={onGoogle}>
-            <GoogleIcon /> {googlePending ? 'Entrando…' : 'Continuar con Google'}
+            <GoogleIcon /> {googlePending ? 'Iniciando sesión…' : 'Continuar con Google'}
           </button>
         </div>
       ) : (
@@ -238,7 +238,7 @@ function EmailForm({ email, onEmailChange, pending, error, googlePending, onEdit
           </div>
           {general && <p className="auth__error" role="alert">{general}</p>}
           <button type="submit" className="btn btn--full" disabled={pending}>
-            {pending ? 'Entrando…' : 'Continuar'}
+            {pending ? 'Iniciando sesión…' : 'Continuar'}
           </button>
         </>
       )}
