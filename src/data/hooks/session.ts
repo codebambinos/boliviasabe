@@ -7,11 +7,14 @@ import { keys } from '../keys';
 import { disablePushOnThisDevice } from '../../push/device';
 import { persister } from '../persist';
 import { invalidate, isPersonalKey, PERSONAL_KEYS } from '../query';
+import { DataError } from '../errors';
 import { api } from '../source';
 import type { Session } from '../types';
 
 export function useSession() {
-  return useQuery({ queryKey: keys.session(), queryFn: () => api.auth.getSession() });
+  // With networkMode 'always' TanStack turns refetchOnReconnect off by default. The session is turned back on: one that
+  // could not load without signal reloads by itself when the network returns, so the next tap works (#218, SPEC 25).
+  return useQuery({ queryKey: keys.session(), queryFn: () => api.auth.getSession(), refetchOnReconnect: true });
 }
 
 function useSessionMutation<TInput>(run: (input: TInput) => Promise<Session>, after?: () => void) {
@@ -51,10 +54,12 @@ export function useRecoveryReady() {
 export const useUpdatePassword = () => useSessionMutation<string>((password) => api.auth.updatePassword(password));
 
 // Signing out first forgets this device's push subscription (#207), then drops the copy kept on the device for
-// offline use (#197).
+// offline use (#197). Without signal it fails at once and changes nothing (#218, SPEC 25): Supabase would keep the
+// session anyway, and the device would be left signed in with push off.
 export const useSignOut = () =>
   useSessionMutation<void>(
     async () => {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new DataError('offline', 'No connection');
       await disablePushOnThisDevice();
       return api.auth.signOut();
     },

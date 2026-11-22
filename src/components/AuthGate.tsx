@@ -3,10 +3,14 @@
 // Google reloads the page, so before leaving the action is saved as data (`resume`, see
 // pendingAction.ts) and run once when the person is back signed in (SPEC 07). A person signed in
 // without a profile goes through «Tu barrio» first, and then the action runs (SPEC 08).
+// A tap before the session is known waits for it (only the last one); if the session could not load, a short
+// notice says why instead of the wall (#218, SPEC 25).
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useSession } from '../data';
 import { AuthSheet } from './AuthSheet';
+import { errorMessage } from './messages';
+import { Toast } from './Toast';
 import { TuBarrioSheet } from './TuBarrioSheet';
 import { saveDraft, type DraftRecord } from './draftStore';
 import { clearPending, peekPending, savePending, type PendingAction, type PendingHandlers } from './pendingAction';
@@ -24,6 +28,8 @@ const EmailSignInContext = createContext<(reason: string, title?: string) => voi
 const RegistryContext = createContext<Registry>({ setHandlers: () => undefined, addDraftSaver: () => () => undefined });
 
 type Pending = { reason: string; action: () => void; title?: string; start?: 'email' | 'forgot'; resume?: PendingAction };
+/** A tap that needs an account, made before the session is known. */
+type Waiting = { reason: string; action: () => void; title?: string; resume?: PendingAction };
 
 /** A save that never blocks the redirect for long: after this the person goes to Google anyway. */
 const SAVE_BUDGET_MS = 1500;
@@ -40,8 +46,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const current = session.data;
   const currentRef = useRef(current);
   currentRef.current = current;
-  const ready = current?.status === 'signed-in' && current.profile !== null;
-  const needsProfile = current?.status === 'signed-in' && current.profile === null;
+  // No session and an error: it could not load (no signal, server). Old data with a failed refetch still counts.
+  const sessionError = current === undefined && session.isError ? session.error : null;
+  const sessionErrorRef = useRef<unknown>(sessionError);
+  sessionErrorRef.current = sessionError;
+  // The one tap waiting for the session; a new tap replaces it
+  const waiting = useRef<Waiting | null>(null);
+  const [sessionFailed, setSessionFailed] = useState<{ id: number; message: string } | null>(null);
   const suggestedName = current?.status === 'signed-in' ? current.suggestedName : undefined;
 
   /** Runs `action` now, or after «Tu barrio» if the person has an account but no profile yet. */
@@ -58,17 +69,41 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [restore] = useState(() => peekPending());
   const restored = useRef(false);
 
-  const require = useCallback<Require>(
-    (reason, action, title, resume) => {
-      if (ready) action();
-      else if (needsProfile) afterProfile(action);
+  /** The normal path once the session is known: run, «Tu barrio» first, or the wall. */
+  const decide = useCallback(
+    ({ reason, action, title, resume }: Waiting) => {
+      const now = currentRef.current;
+      if (now?.status === 'signed-in' && now.profile !== null) action();
+      else if (now?.status === 'signed-in') afterProfile(action);
       else {
         signedIn.current = false;
         setPending({ reason, action, title, resume });
       }
     },
-    [ready, needsProfile, afterProfile],
+    [afterProfile],
   );
+
+  const require = useCallback<Require>(
+    (reason, action, title, resume) => {
+      if (currentRef.current !== undefined) decide({ reason, action, title, resume });
+      else if (sessionErrorRef.current !== null) setSessionFailed({ id: Date.now(), message: errorMessage(sessionErrorRef.current) });
+      else waiting.current = { reason, action, title, resume };
+    },
+    [decide],
+  );
+
+  // The session arrived (or failed) while a tap was waiting: follow the normal path, or say why and drop it
+  useEffect(() => {
+    const next = waiting.current;
+    if (!next) return;
+    if (current !== undefined) {
+      waiting.current = null;
+      decide(next);
+    } else if (sessionError !== null) {
+      waiting.current = null;
+      setSessionFailed({ id: Date.now(), message: errorMessage(sessionError) });
+    }
+  }, [current, sessionError, decide]);
 
   // «Pedir otro» on /nueva-contrasena lands on Hoy with the sheet open on «¿La olvidaste?»
   const openRecovery = useCallback(() => {
@@ -152,6 +187,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
                   if (signedIn.current) afterProfile(action);
                 }}
               />
+            )}
+            {sessionFailed && (
+              <Toast key={sessionFailed.id} message={sessionFailed.message} onDone={() => setSessionFailed(null)} />
             )}
             {barrio && (
               <TuBarrioSheet

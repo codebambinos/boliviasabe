@@ -171,7 +171,12 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
         <div className="empty" role="alert">
           <Heading ref={heading} tabIndex={-1} className="empty__title">{gone ? 'Esto ya no está disponible' : errorMessage(detail.error)}</Heading>
           {gone ? (
-            variant === 'page' && <Link className="btn" to="/" replace>Ir a Hoy</Link>
+            variant === 'page' ? (
+              <Link className="btn" to="/" replace>Ir a Hoy</Link>
+            ) : (
+              // Desktop panel (#218): it leaves the list and the panel goes back to empty, like after deleting it
+              <button type="button" className="btn btn--secondary" onClick={onGone}>Volver a la lista</button>
+            )
           ) : (
             <button type="button" className="btn btn--secondary" onClick={() => detail.refetch()}>Reintentar</button>
           )}

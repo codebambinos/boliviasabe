@@ -1,5 +1,6 @@
 // Yo › Ajustes (SPEC 23, wiki › 3 · Yo › Ajustes, #215), in this order: Instalar la app · Notificaciones ·
-// Mi celular · Tema · Acerca de · Privacidad · Cerrar sesión. «Cerrar sesión» is one tap (#152).
+// Mi celular · Tema · Acerca de · Privacidad · Cerrar sesión. «Cerrar sesión» is one tap (#152); without signal it
+// says so under the button and changes nothing (#218, SPEC 25).
 import { useState, type MouseEvent } from 'react';
 import { useMyPhone, useSignOut } from '../data';
 import { ChevronRightIcon, EyeIcon, PhoneIcon, QuestionIcon } from './icons';
@@ -7,6 +8,7 @@ import { InstallRow } from './InstallRow';
 import { MyPhoneSheet, type PhoneSaved } from './MyPhoneSheet';
 import { NotificationSettings } from './NotificationSettings';
 import { withThemeReveal } from './themeFade';
+import { errorMessage } from './messages';
 import { Toast } from './Toast';
 
 type SettingsCardProps = { onAbout: () => void; onPrivacy: () => void };
@@ -42,9 +44,21 @@ export function SettingsCard({ onAbout, onPrivacy }: SettingsCardProps) {
       </ul>
       <ThemeSetting />
       <LegalRows onAbout={onAbout} onPrivacy={onPrivacy} />
-      <button type="button" className="link-btn link-btn--ink setting__signout" disabled={signOut.isPending} onClick={() => signOut.mutate()}>
+      <button
+        type="button"
+        className="link-btn link-btn--ink setting__signout"
+        disabled={signOut.isPending}
+        onClick={() => {
+          // The last message goes away as soon as the person tries again (#218)
+          signOut.reset();
+          signOut.mutate();
+        }}
+      >
         {signOut.isPending ? 'Cerrando sesión…' : 'Cerrar sesión'}
       </button>
+      {signOut.error && (
+        <p className="field__error setting__signout-error" role="alert">{errorMessage(signOut.error)}</p>
+      )}
       {editingPhone && (
         <MyPhoneSheet
           saved={phone}
