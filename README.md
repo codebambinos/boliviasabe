@@ -119,14 +119,14 @@ El primer análisis (22 de noviembre) dio 67/100. Lo que cambiamos a partir de �
 - **Quién paga, contado:** 66.170 empresas registradas en Cochabamba (SEPREC) y la tabla de la economía del canje.
 - **Las 10 ciudades, sin exagerar:** el selector ya las tiene, pero el contenido real hoy es de Cochabamba.
 - **Modelo de ingresos:** publicidad local para negocios (antes decía también «freemium», y no hay un nivel pago para vecinos).
-- **El aporte de todo el equipo, visible:** la carpeta pública de Yaeko y el LinkedIn de Aldrin en «Equipo».
+- **El aporte de todo el equipo, visible:** la carpeta pública de Yaeko y los LinkedIn de Yaeko y Aldrin en «Equipo».
 - **Una sola meta de piloto:** 30 cuentas y 5 negocios en la primera semana. Un título de commit (#72) dice 50 porque fue el primer borrador del mismo cambio; el contenido final dice 30.
 
 ## Equipo CodeBambinos
 
 Tres jóvenes de Cochabamba:
 
-- **Yaeko** (product owner): investigación del problema, la paleta aguayo y los logos que usa la app, y los prototipos que inspiraron el diseño (la interfaz final la definió el equipo). [Su carpeta pública de investigación y diseño](https://drive.google.com/drive/folders/10XihD2gUAucDTkXqopMcYlusaX0EGjXb?usp=sharing).
+- **Yaeko** (product owner): investigación del problema, la paleta aguayo y los logos que usa la app, y los prototipos que inspiraron el diseño (la interfaz final la definió el equipo). [Su carpeta pública de investigación y diseño](https://drive.google.com/drive/folders/10XihD2gUAucDTkXqopMcYlusaX0EGjXb?usp=sharing) · [LinkedIn](https://www.linkedin.com/in/yaeko-norma-cuevas-dalence-345195451/)
 - **Diego** (líder técnico): código, datos y Stellar.
 - **Aldrin** (desarrollador): pantallas e interfaz. [LinkedIn](https://www.linkedin.com/in/aldrin-oliver-choque-ramirez-6aa193451)
 
