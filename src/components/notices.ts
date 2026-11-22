@@ -16,15 +16,17 @@ export function noticeFocus(notice: Notice): NoticeFocus | undefined {
 /** «Ana respondió tu pregunta» · «A 4 vecinos les sirvió tu letrero» · «¿Alguna respuesta te sirvió?» */
 export function noticeLine(notice: Notice): string {
   const who = notice.actor?.trim() || 'Un vecino';
+  // Mid-sentence («A un vecino le sirvió…») the fallback is lowercase
+  const toWhom = notice.actor?.trim() || 'un vecino';
   switch (notice.kind) {
     case 'answer':
       return `${who} respondió tu pregunta`;
     case 'comment':
       return `${who} comentó en un hilo`;
     case 'helpful':
-      return `A ${who} le sirvió tu respuesta`;
+      return `A ${toWhom} le sirvió tu respuesta`;
     case 'sign_helpful':
-      return notice.count > 1 ? `A ${notice.count} vecinos les sirvió tu letrero` : `A ${who} le sirvió tu letrero`;
+      return notice.count > 1 ? `A ${notice.count} vecinos les sirvió tu letrero` : `A ${toWhom} le sirvió tu letrero`;
     case 'contact_request':
       return `${who} te pide tu contacto`;
     case 'contact_accepted':
