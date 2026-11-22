@@ -97,11 +97,11 @@ En la distribuidora se ven todos los pagos con su memo, y cada cuenta de usuario
 Hoy todo es **custodiado**, y lo decimos tal cual:
 
 - **Se emitió una sola vez un fondo fijo de 1.000.000 de YAPITA** a la distribuidora. Cada premio sale de ese fondo y cada gasto vuelve a él. El servidor de la app **no tiene la clave de la emisora** (solo la distribuidora, cifrada en las variables de Vercel), así que la app no puede crear yapitas nuevas.
-- **El equipo sí guarda la clave de la emisora**, fuera del servidor, y técnicamente podría emitir más. Stellar garantiza que cada pago es público y no se puede borrar; no garantiza, por sí solo, un tope de emisión.
+- **La emisora está cerrada:** el 22 de noviembre le pusimos peso 0 a su clave ([la transacción](https://stellar.expert/explorer/testnet/tx/5bd2581b7a0cadadce8f3961611a722ada08620e3e429aea49c33ccab3d7ebbc), memo `emisora:cerrada`). Desde entonces nadie, tampoco el equipo, puede emitir más YAPITA: el total quedó fijo en 1.000.000, y cualquiera lo comprueba en la cuenta de la emisora (su firmante tiene peso 0).
 - Las cuentas de los vecinos también son custodiadas: la app guarda su clave cifrada (AES-256-GCM) y firma por ellos. Hoy **86 cuentas** tienen la línea de confianza de YAPITA (las de prueba del equipo y del seed incluidas).
 - `npm run stellar:reset` solo sirve si testnet se borra: recrea las mismas cuentas y vuelve a pagar, con el mismo memo, cada premio que ya estaba confirmado en la base. No crea premios nuevos.
 
-**Antes de la red principal:** cerramos la emisora (su clave queda con peso 0, así el total no puede crecer nunca), cada vecino pasa a su propia billetera con Pollar y el canje se paga desde el fondo que llenan los negocios.
+**Antes de la red principal:** cada vecino pasa a su propia billetera con Pollar y el canje se paga desde el fondo que llenan los negocios. La emisora ya está cerrada en la red de pruebas, y en la principal se cierra igual desde el primer día.
 
 ## Qué construimos en este hackathon
 
@@ -161,6 +161,7 @@ El primer análisis de Atlas dio 67/100 y el segundo, 73/100. Después del segun
 - **La encuesta, contada sin sumar los «tal vez»:** 11 sí, 9 tal vez y 4 no; entre los estudiantes, 5 sí y 3 tal vez.
 - **El nicho, con su propia cifra:** 15 mil miembros en el grupo de la UMSS, y el techo de ingresos calculado sobre las 66.170 empresas de SEPREC, sin inventar un dato por zona.
 - **Una ruta de 60 segundos para jueces** en «Pruébala», y el video enlazado también en la página en vivo.
+- **La emisora, cerrada y verificable:** su clave tiene peso 0 ([transacción](https://stellar.expert/explorer/testnet/tx/5bd2581b7a0cadadce8f3961611a722ada08620e3e429aea49c33ccab3d7ebbc)), así que «fondo fijo» ya no es una promesa.
 - **Un canje de prueba en testnet:** 10 YAPITA de un vecino de ejemplo a un negocio de ejemplo, con el memo `canje:10` (ver «La economía del canje»).
 
 Después del primero:
@@ -209,7 +210,7 @@ Las funciones `/api` solo corren en Vercel (o con `vercel dev`).
 
 ### Si Stellar reinicia testnet
 
-Stellar borra testnet cada cierto tiempo. La base sigue intacta, pero en la red desaparecen la emisora, la distribuidora y las cuentas de los vecinos. Para recuperarlo todo:
+Stellar borra testnet cada cierto tiempo. La base sigue intacta, pero en la red desaparecen la emisora, la distribuidora y las cuentas de los vecinos. Para recuperarlo todo (el script recrea la emisora, emite el fondo inicial; después hay que volver a cerrarla con peso 0):
 
 ```bash
 npm run stellar:reset -- --dry-run   # muestra qué falta, sin escribir nada
