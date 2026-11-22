@@ -1,6 +1,6 @@
 # SPEC 22 — Avisos: the data (SQL, Realtime and `src/data`)
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 01 (`src/data/` interface, mock and hooks), SPEC 11 (Supabase adapter, `rpc`, `item_visible`), SPEC 12 (`contact_requests`, `contact_json`, the question's live channel), SPEC 15 (the `notifications` rows and their triggers), SPEC 18 (`reminder` rows). Board card: T40 (issue #62). Unblocks T24 (issue #17, Aldrin, interface only).
 > **Date:** 2026-11-21
 > **Objective:** Give the Avisos sheet everything it needs from `src/data`: the person's notices already built (who, what, where it opens, whether it still exists, the contact state), grouped «Me sirvió» per letrero, the unread count live, and marking read, with the same contract in the mock and in Supabase.
