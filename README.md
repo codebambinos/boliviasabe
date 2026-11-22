@@ -8,7 +8,7 @@ Hecha por **CodeBambinos** para el hackathon National Startups by Stellar 2026. 
 
 **Pitch deck (PDF):** https://drive.google.com/file/d/1c6a5ZMkokjHeDHesX-xzRb4C6Wp_vK6l/view?usp=sharing
 
-**Video de la demo (2:45):** https://youtu.be/44REBISBVZg · el recorrido completo en la página real: abrir sin cuenta, crear la cuenta y recibir 5 yapitas, preguntar, otra cuenta responde, «Me sirvió» y el pago con su memo en stellar.expert.
+**Video de la demo (2:58):** https://youtu.be/yh8rJxL-n_w · el recorrido completo en la página real: abrir sin cuenta, crear la cuenta y recibir 5 yapitas, preguntar, otra cuenta responde, «Me sirvió» y el pago con su memo en stellar.expert.
 
 ## El problema
 
@@ -57,7 +57,7 @@ En Bolivia, para saber dónde hay almuerzo barato, quién repara una laptop o si
 
 **Para jueces, en 60 segundos (sin crear cuenta):**
 
-1. **Mira el recorrido completo** en el [video de la demo](https://youtu.be/44REBISBVZg) (2:45).
+1. **Mira el recorrido completo** en el [video de la demo](https://youtu.be/yh8rJxL-n_w) (2:58).
 2. **Abre la app:** [boliviasabe.vercel.app](https://boliviasabe.vercel.app) entra directo a Hoy; en «¿Alguien sabe?» está la pregunta del video («¿Quién arregla una tubería hoy en Queru Queru?»), Solucionada, con la respuesta que sirvió.
 3. **Verifica ese premio en Stellar:** el [pago de 5 YAPITA](https://stellar.expert/explorer/testnet/tx/b80fecb1727ce232c0ed889563c54cd7d833ee4a152c4a8846e5af54aa80eca3) a quien respondió, con el memo `ayuda:56` (stellar.expert lo muestra codificado como `YXl1ZGE6NTY=`).
 4. **Mira el canje de prueba:** [10 YAPITA de un vecino a un negocio de ejemplo](https://stellar.expert/explorer/testnet/tx/e0342ea4571fa493bc9ba7c6a5126f0e74f46d4af2f71ef80823640ac9cc9767), con el memo `canje:10`.
@@ -166,7 +166,7 @@ El primer análisis de Atlas dio 67/100 y el segundo, 73/100. Después del segun
 
 Después del primero:
 
-- **Video de la demo:** el recorrido completo que pidió el análisis, de abrir sin cuenta al pago con memo en stellar.expert ([YouTube](https://youtu.be/44REBISBVZg)).
+- **Video de la demo:** el recorrido completo que pidió el análisis, de abrir sin cuenta al pago con memo en stellar.expert ([YouTube](https://youtu.be/yh8rJxL-n_w)).
 - **La demo ahora se puede leer sin JavaScript:** la página trae un texto fijo con qué es, qué funciona y los enlaces para comprobarlo (`index.html`).
 - **La emisión, dicha con precisión:** la sección «Quién controla la emisión» reemplaza la frase «nadie puede inventar yapitas».
 - **Quién paga, contado:** 66.170 empresas registradas en Cochabamba (SEPREC) y la tabla de la economía del canje.
