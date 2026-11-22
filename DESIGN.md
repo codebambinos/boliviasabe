@@ -156,6 +156,27 @@ Familiar patterns win over novelty; craft is in spacing, type and the states.
     (only Movimientos «Ver más» / «Ver menos»).
   - **Exception (bounce):** the new-notice celebration (the bell rings, the bubble bounces, sparkles; wiki #216)
     is the one bounce in the app.
+  - **Exception (height), also:** the «Sin conexión» banner sliding in and out, and a hint collapsing when closed
+    (SPEC 28): without it the page jumps.
+- **Attention details** (SPEC 28) play only on a change after the screen opened (`useChangeTick`,
+  `useArrivedIds` in `src/components/motion.ts`), never on load, so they mark news:
+  - **Pulse:** grows and settles back to its resting size, never below it. The ★ of the top-bar balance when it
+    goes up (to 1.15, with a fading orange glow, ~420 ms); the Guardar bookmark when it becomes saved (from 0.85 to
+    1).
+  - **Swap:** a value or tag that changes in place cross-fades (`yo-fade`, `tag-in`): balances, «A N les sirvió»,
+    «Copiar» ↔ «Copiado», «Solucionada» / «Cerrada».
+  - **Arrival:** an answer or comment that comes in while the question is open rises 8 px and starts on the brand's
+    soft tint, fading to its own fill in about 2 s.
+  - **Breathing dot:** an active «Urgente» carries a small coral dot that breathes with opacity only (1.6 s). It is
+    a loop like skeletons and spinners (see «Cosmetic glint» for the others); still with reduced motion.
+- **Cosmetic glint** (SPEC 28, block 4): the only decorative loops besides the urgent dot. Never tied to a flow;
+  transform and opacity only; at rest with reduced motion.
+  - A light band (`--color-shine`) crosses the coin, then rests: Yo's balance every 4 s with three twinkling sparks
+    (`shine="strong"`), the top-bar balance every 3.5 s with three smaller sparks (`medium`), each Movimientos coin
+    every 7 s and faint (`soft`, no sparks).
+  - Movimientos coins also float 2 px up and back every 1.8 s, each row out of step.
+  - «✓ Solucionada» in ¿Alguien sabe? cards: the same band every 6 s, each card at its own time.
+  - Nowhere else: a glint on every yapita or tag would stop meaning anything.
 - Timings are tokens in `tokens.css`: `--m-press` 90, `--m-out` 120, `--m-in` 150, `--m-panel` 200,
   `--m-sheet-in` 260 (a sheet rises), `--m-exit` 160 (sheets and toasts leave; `EXIT_MS` in `Sheet.tsx` is the
   same value for waits in code), `--m-image` 600, `--m-theme` 260. Loops (skeleton, spinner) keep their own.
@@ -164,7 +185,8 @@ Familiar patterns win over novelty; craft is in spacing, type and the states.
   Disabled controls do not move.
 - Hover (fine pointer only): buttons step 1 px up and darken 14 %; a linked card lifts 2 px and its
   photo zooms to 1.03 inside its frame over 600 ms.
-- Panels and the tab pill: 200 ms. Nothing fades or rises in on scroll; no parallax, carousels or
+- Panels: 200 ms. The current tab's pill has no motion: it appears at once on the tap, and the tab bar does not fade
+  between tabs. Nothing fades or rises in on scroll; no parallax, carousels or
   auto-advancing anything.
 - **Navigation** (`src/components/transition.ts`, View Transitions API): every screen change goes
   through `navigateWithTransition(update, direction)`. The top bar, bottom nav and FAB stay put;

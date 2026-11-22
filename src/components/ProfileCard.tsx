@@ -1,5 +1,6 @@
 // Yo › profile card (wiki › 3 · Yo, SPEC 21): name, city and zone, stars, badge, balance, the bar toward the
 // exchange and «Editar». While the balance loads it shows the pulsing bar, never an old number (#195).
+import { useEffect, useState } from 'react';
 import type { Profile, Wallet } from '../data';
 import { StarIcon } from './icons';
 import { CANJE_GOAL, formatStars } from './movements';
@@ -14,6 +15,11 @@ type ProfileCardProps = {
 export function ProfileCard({ profile, wallet, onEdit }: ProfileCardProps) {
   const balance = wallet?.balance ?? null;
   const progress = Math.min(100, Math.round(((balance ?? 0) / CANJE_GOAL) * 100));
+  // The bar animates only once a balance has been shown: loading → first number lands in place (SPEC 28, A2)
+  const [barLive, setBarLive] = useState(false);
+  useEffect(() => {
+    if (balance !== null) setBarLive(true);
+  }, [balance]);
   const place = profile ? `${profile.city} · ${profile.zone}` : '';
 
   return (
@@ -40,7 +46,7 @@ export function ProfileCard({ profile, wallet, onEdit }: ProfileCardProps) {
         </p>
       )}
       <div className="profile__balance">
-        <Yapita size="lg" />
+        <Yapita size="lg" shine="strong" />
         <div>
           <p className="profile__amount num">
             {balance === null ? (
@@ -53,14 +59,14 @@ export function ProfileCard({ profile, wallet, onEdit }: ProfileCardProps) {
         </div>
       </div>
       <div
-        className="progress"
+        className={barLive ? 'progress progress--live' : 'progress'}
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={CANJE_GOAL}
         aria-valuenow={balance ?? 0}
         aria-label="Yapitas hacia el canje"
       >
-        <span style={{ width: `${progress}%` }} />
+        <span style={{ transform: `scaleX(${progress / 100})` }} />
       </div>
       <p className="meta profile__goal">
         {balance ?? 0} de {CANJE_GOAL} · Canje con negocios, próximamente

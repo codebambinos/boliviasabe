@@ -2,11 +2,14 @@
 // floating action button and the ¿Alguien sabe? conversation panel (desktop only).
 // It holds no data of its own: ShellLayout (SPEC 04) passes everything in and renders the route.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { CITIES, useRefresh, type City } from '../data';
 import { BellButton } from './BellButton';
 import { ChevronDownIcon, HomeIcon, PlusIcon, QuestionIcon, SearchIcon, UserIcon } from './icons';
 import { OfflineBanner } from './OfflineBanner';
+import { NAV_SETTLE_MS } from './transition';
 import { useTabSwipe } from './useTabSwipe';
+import { useChangeTick } from './motion';
 import { Yapita } from './Yapita';
 import './app-shell.css';
 
@@ -167,10 +170,7 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
                   <BellButton unread={account.unread} onClick={account.onBell} />
                   {/* On Yo the profile card already shows the balance: never twice on one screen */}
                   {tab !== 'yo' && (
-                    <button type="button" className="shell__balance" onClick={account.onBalance} aria-label={`Tienes ${account.balance ?? '…'} yapitas, ver movimientos`}>
-                      <Yapita />
-                      {account.balance === null ? <span className="num-wait" aria-hidden="true" /> : <span>{account.balance}</span>}
-                    </button>
+                    <BalanceButton balance={account.balance} onClick={account.onBalance} />
                   )}
                 </>
               )}
@@ -210,16 +210,80 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
   );
 }
 
-function TabList({ tab, onTabChange }: { tab: Tab; onTabChange: (tab: Tab) => void }) {
+/**
+ * ★ saldo in the top bar (SPEC 28, A1). The number cross-fades when it changes; when it goes up with the app open, the
+ * disc pulses once. Its own component so the baseline is taken when it appears (it is hidden on Yo).
+ */
+function BalanceButton({ balance, onClick }: { balance: number | null; onClick: () => void }) {
+  const { tick, direction } = useChangeTick(balance);
+  const rose = tick > 0 && direction === 'up';
   return (
-    <ul className="tabs">
+    <button type="button" className="shell__balance" onClick={onClick} aria-label={`Tienes ${balance ?? '…'} yapitas, ver movimientos`}>
+      <span key={rose ? `up-${tick}` : 'still'} className={rose ? 'shell__balance-star shell__balance-star--pulse' : 'shell__balance-star'}>
+        <Yapita shine="medium" />
+      </span>
+      {balance === null ? (
+        <span className="num-wait" aria-hidden="true" />
+      ) : (
+        <span key={tick} className={tick > 0 ? 'yo-fade' : undefined}>{balance}</span>
+      )}
+    </button>
+  );
+}
+
+/** A tab change that never reaches its route frees the tabs after this long. */
+const BUSY_FALLBACK_MS = 1500;
+
+/** The tabs. The tapped tab shows as current on the tap itself, before the route (and the screen's transition) catches
+ *  up about 200 ms later; nothing fades or slides (SPEC 28). While a change plays, the other tabs take no tap: a second
+ *  tap would cut the running transition short and start another, which reads as a stutter. */
+function TabList({ tab, onTabChange }: { tab: Tab; onTabChange: (tab: Tab) => void }) {
+  const [tapped, setTapped] = useState<Tab | null>(null);
+  const [busy, setBusy] = useState(false);
+  const current = tapped ?? tab;
+
+  // The route reached the tab: let the screen finish arriving, then take taps again
+  useEffect(() => {
+    setTapped(null);
+    if (!busy) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const free = window.setTimeout(() => setBusy(false), reduced ? 0 : NAV_SETTLE_MS);
+    return () => window.clearTimeout(free);
+  }, [tab]);
+
+  // Never stuck: if the route does not change (a blocked navigation), the tabs free themselves anyway
+  useEffect(() => {
+    if (!busy) return;
+    const fallback = window.setTimeout(() => {
+      setBusy(false);
+      setTapped(null);
+    }, BUSY_FALLBACK_MS);
+    return () => window.clearTimeout(fallback);
+  }, [busy]);
+
+  return (
+    <ul className="tabs" data-busy={busy || undefined}>
       {TABS.map(({ id, label, Icon }) => (
         <li key={id}>
           <button
             type="button"
             className="tabs__item"
-            aria-current={tab === id ? 'page' : undefined}
-            onClick={() => onTabChange(id)}
+            aria-current={current === id ? 'page' : undefined}
+            aria-disabled={(busy && id !== current) || undefined}
+            onClick={() => {
+              if (busy) return;
+              // The current tab only scrolls back to the top: no screen change, nothing to wait for
+              if (id === tab) {
+                onTabChange(id);
+                return;
+              }
+              // Painted before navigating, so the pill is already there when the transition takes its picture
+              flushSync(() => {
+                setTapped(id);
+                setBusy(true);
+              });
+              onTabChange(id);
+            }}
           >
             <span className="tabs__icon">
               <Icon />

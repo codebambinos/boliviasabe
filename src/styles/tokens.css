@@ -41,6 +41,7 @@
   --color-on-fill: #1f1a17; /* ink on green and orange fills («Solucionada», the yapita): dark in both themes */
   --color-info-text: var(--color-info); /* blue as text: lighter on the dark ground */
   --color-photo-backdrop: #0d0b0a; /* behind a photo shown full screen */
+  --color-shine: rgb(255 255 255 / 0.85); /* the glint that crosses a yapita or «Solucionada» (SPEC 28, block 4) */
   --color-logo-tile: #f5f2ef; /* the dark logo's light tile on the dark ground (DESIGN.md › Open items) */
   --color-focus: #c2185b;
   --color-scrim: rgb(31 26 23 / 0.5);

@@ -307,6 +307,44 @@
   transform: scale(0.985);
 }
 
+/* The balance went up with the app open (SPEC 28, A1): the disc grows to 1.15 and settles back to 1 while an orange
+   glow spreads and fades behind it. Never below its resting size. */
+.shell__balance-star {
+  position: relative;
+  display: inline-flex;
+}
+
+.shell__balance-star--pulse {
+  animation: balance-pulse 420ms var(--ease) both;
+}
+
+.shell__balance-star--pulse::after {
+  content: '';
+  position: absolute;
+  inset: -0.25rem;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--color-yapita);
+  animation: balance-glow 420ms var(--ease) both;
+}
+
+@keyframes balance-pulse {
+  40% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes balance-glow {
+  from {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
   .shell__balance:hover {
     border-color: var(--color-line-strong);
@@ -355,9 +393,8 @@
   color: var(--color-muted);
   font: 500 var(--t-label) / 1.2 var(--font-body);
   cursor: pointer;
-  transition:
-    transform var(--m-out) var(--ease),
-    color var(--m-out) var(--ease);
+  /* Only the press moves; becoming the current tab is instant (SPEC 28) */
+  transition: transform var(--m-out) var(--ease);
 }
 
 /* Press: 1 px down and .985, like every small target (SPEC 27) */
@@ -366,7 +403,16 @@
   transition-duration: var(--m-press);
 }
 
-/* The icon sits in a pill that fills when the tab is current */
+/* While a tab change plays, the other tabs take no tap (TabList): they do not answer the press either */
+.tabs[data-busy] .tabs__item[aria-disabled='true'] {
+  cursor: default;
+}
+
+.tabs[data-busy] .tabs__item[aria-disabled='true']:active {
+  transform: none;
+}
+
+/* The icon sits in a pill that fills when the tab is current: it appears at once on the tap, no fade (SPEC 28) */
 .tabs__icon {
   display: inline-flex;
   align-items: center;
@@ -374,7 +420,6 @@
   width: 3.5rem;
   height: 2rem;
   border-radius: var(--r-pill);
-  transition: background-color var(--m-panel) var(--ease);
 }
 
 .tabs__item[aria-current='page'] {
@@ -598,12 +643,23 @@
   animation: vt-in 220ms var(--ease-enter) 110ms both;
 }
 
-::view-transition-old(tabbar),
-::view-transition-new(tabbar),
 ::view-transition-old(detail),
 ::view-transition-new(detail) {
   animation-duration: var(--m-panel);
   animation-timing-function: var(--ease);
+}
+
+/* Tab to tab, the bars are there before and after: no fade between a still image of the old bar and the new one. The
+   live bar shows at once, with the new tab's pill already in place (SPEC 28). The fades to and from a standalone page
+   (:only-child, below) stay. */
+::view-transition-old(tabbar):not(:only-child),
+::view-transition-old(sidebar):not(:only-child) {
+  display: none;
+}
+
+::view-transition-new(tabbar):not(:only-child),
+::view-transition-new(sidebar):not(:only-child) {
+  animation: none;
 }
 
 /* Between the shell and a standalone page (/p/:id, /privacidad) the bars exist on one side only. They follow the
@@ -787,7 +843,49 @@
   }
 }
 
-/* «Sin conexión» banner, under the top bar, inside the sticky header */
+/* «Sin conexión» banner, under the top bar, inside the sticky header. Its row grows and shrinks (0fr ↔ 1fr) so the
+   page below moves with it instead of jumping, and the bar slides down from under the top bar (SPEC 28, A4). */
+.offline {
+  display: grid;
+  grid-template-rows: 0fr;
+}
+
+.offline[data-shown] {
+  grid-template-rows: 1fr;
+}
+
+.offline__clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Only a change after load animates: offline from the start, the banner is simply there */
+.offline--animate {
+  transition: grid-template-rows var(--m-panel) var(--ease);
+}
+
+.offline--animate[data-shown] .offline__bar {
+  animation: offline-in var(--m-panel) var(--ease-enter) both;
+}
+
+.offline--animate:not([data-shown]) .offline__bar {
+  animation: offline-out var(--m-panel) var(--ease) both;
+}
+
+@keyframes offline-in {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes offline-out {
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
 .offline__bar {
   display: flex;
   align-items: center;

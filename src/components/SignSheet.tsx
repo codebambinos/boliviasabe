@@ -7,7 +7,6 @@ import { REPORT_REASONS, useHideForMe, useRemoveSign, useReport, useSign, useVot
 import { useRequireAccount } from './AuthGate';
 import {
   ArrowLeftIcon,
-  BookmarkIcon,
   CloseIcon,
   FlagIcon,
   MapIcon,
@@ -20,6 +19,8 @@ import {
   CheckIcon,
 } from './icons';
 import { errorMessage, firstName, helpedText, rewardCapMessage } from './messages';
+import { useChangeTick } from './motion';
+import { SavedMark } from './SavedMark';
 import { EXIT_MS, Sheet } from './Sheet';
 import { isStale, timeAgo } from './time';
 import { Yapita } from './Yapita';
@@ -67,6 +68,7 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onSave }: SignSh
   const vote = useVoteSign();
   const requireAccount = useRequireAccount();
   const author = firstName(sign.author.displayName);
+  const helpedChange = useChangeTick(sign.helpfulCount);
 
   // The server's copy wins once it arrives (after signing in, «isMine» and «myVote» change)
   useEffect(() => {
@@ -157,10 +159,12 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onSave }: SignSh
         // The star turns at once; it turns back if the save fails (the shell says why). No second tap meanwhile.
         if (!onSave || saving.current) return;
         saving.current = true;
-        setSign((s) => ({ ...s, savedByMe: !s.savedByMe }));
+        // Back to this value on failure, not a second flip: the cached copy (useToggleSaved) may already be back
+        const was = sign.savedByMe;
+        setSign((s) => ({ ...s, savedByMe: !was }));
         void onSave(sign.id)
           .then((changed) => {
-            if (!changed) setSign((s) => ({ ...s, savedByMe: !s.savedByMe }));
+            if (!changed) setSign((s) => ({ ...s, savedByMe: was }));
           })
           .finally(() => {
             saving.current = false;
@@ -199,7 +203,7 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onSave }: SignSh
                 aria-pressed={sign.savedByMe}
                 onClick={toggleSave}
               >
-                <BookmarkIcon fill={sign.savedByMe ? 'currentColor' : 'none'} />
+                <SavedMark saved={sign.savedByMe} />
               </button>
               <button type="button" className="icon-btn" aria-label="Más opciones" aria-haspopup="dialog" onClick={() => setMenu(true)}>
                 <MoreIcon />
@@ -274,7 +278,10 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onSave }: SignSh
                 <p className="meta">
                   {sign.isMine ? 'Lo subiste tú' : `Subido por ${sign.author.displayName}`} · {timeAgo(sign.createdAt)}
                 </p>
-                {sign.helpfulCount > 0 && <p className="meta">{helpedText(sign.helpfulCount)}</p>}
+                {sign.helpfulCount > 0 && (
+                  // Changed with the sheet open (after «Me sirvió»): the line cross-fades (SPEC 28, A6)
+                  <p key={helpedChange.tick} className={helpedChange.tick > 0 ? 'meta yo-fade' : 'meta'}>{helpedText(sign.helpfulCount)}</p>
+                )}
                 {isStale(sign.createdAt) && <p className="notice">Puede estar desactualizado</p>}
                 {sign.tags.length > 0 && (
                   <p className="sheet__tags">

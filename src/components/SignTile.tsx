@@ -1,7 +1,8 @@
 // Letrero tile for the Hoy grid (wiki #138-139): photo with the price on it, Guardar on the photo,
 // title, zone · time and «A N les sirvió». The whole tile opens the detail; other actions live there.
 import type { Sign } from '../data';
-import { BookmarkIcon, ThumbIcon } from './icons';
+import { ThumbIcon } from './icons';
+import { SavedMark } from './SavedMark';
 import { helpedText } from './messages';
 import { timeAgo } from './time';
 import './sign-tile.css';
@@ -48,7 +49,7 @@ export function SignTile({ sign, onOpen, onToggleSave }: SignTileProps) {
         aria-pressed={sign.savedByMe}
         onClick={() => onToggleSave?.(sign)}
       >
-        <BookmarkIcon size={18} fill={sign.savedByMe ? 'currentColor' : 'none'} />
+        <SavedMark size={18} saved={sign.savedByMe} />
       </button>
     </article>
   );

@@ -3,6 +3,7 @@
 // typed is kept as a draft that survives the Google redirect (SPEC 07, draftStore), as «Tu respuesta» does.
 import { useEffect, useId, useRef, useState } from 'react';
 import { useCreateComment, type Answer, type Comment, type Id } from '../data';
+import { useArrivedIds } from './motion';
 import { useDraftSaver, useRequireAccount } from './AuthGate';
 import { clearDraft, loadDraft } from './draftStore';
 import { CommentIcon, MoreIcon } from './icons';
@@ -52,6 +53,8 @@ export function AnswerThread({ questionId, answer, onMenu, idPrefix = 'qd', spot
   const requireAccount = useRequireAccount();
   const create = useCreateComment();
   const [expanded, setExpanded] = useState(false);
+  // Comments that came in while the question was open rise in once (SPEC 28, B2)
+  const arrived = useArrivedIds(answer.comments.map((c) => c.id));
   // A framed comment among the older, hidden ones: show them all
   useEffect(() => {
     if (spotlightId === null) return;
@@ -132,6 +135,7 @@ export function AnswerThread({ questionId, answer, onMenu, idPrefix = 'qd', spot
               id={`${idPrefix}-comment-${comment.id}`}
               className="comment"
               data-spotlight={comment.id === spotlightId || undefined}
+              data-arrived={arrived.has(comment.id) || undefined}
             >
               <div className="comment__body">
                 <p className="comment__meta">

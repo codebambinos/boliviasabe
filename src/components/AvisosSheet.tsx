@@ -1,5 +1,5 @@
-// Avisos (SPEC 24, wiki › 3 · Yo › Avisos, #110, #126, #203, #214, #216): one sheet, from the bell on every tab and
-// from the Avisos card in Yo. Newest first, 30 at a time with «Ver más». Tapping a notice marks it read and opens its
+// Notificaciones, formerly «Avisos» (SPEC 24, wiki › 3 · Yo, #110, #126, #203, #214, #216, #219): one sheet, from the
+// bell on every tab and from the Notificaciones card in Yo. Newest first, 30 at a time with «Ver más». Tapping a notice marks it read and opens its
 // question or letrero once the sheet has closed; one that is gone shows «Esto ya no está disponible» inside the
 // sheet, with a way back to the list. A pending contact request is answered right in the notice.
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
@@ -74,11 +74,11 @@ export function AvisosSheet({ onClose, onOpenQuestion, onOpenSign, onGoHoy }: Av
           <>
             <header className="sheet__bar">
               {gone ? (
-                <button type="button" className="icon-btn" aria-label="Volver a Avisos" onClick={() => setGone(false)}>
+                <button type="button" className="icon-btn" aria-label="Volver a Notificaciones" onClick={() => setGone(false)}>
                   <ArrowLeftIcon />
                 </button>
               ) : null}
-              <h2 id={titleId} className="sheet__bar-title">Avisos</h2>
+              <h2 id={titleId} className="sheet__bar-title">Notificaciones</h2>
               <div className="sheet__bar-actions">
                 {!gone && anyUnread && (
                   <button type="button" className="link-btn avisos__all" disabled={markAll.isPending} onClick={() => markAll.mutate()}>
@@ -109,7 +109,7 @@ export function AvisosSheet({ onClose, onOpenQuestion, onOpenSign, onGoHoy }: Av
                       Ir a Hoy
                     </button>
                     <button type="button" className="btn btn--secondary" onClick={() => setGone(false)}>
-                      Volver a Avisos
+                      Volver a Notificaciones
                     </button>
                   </div>
                 </div>
@@ -131,7 +131,7 @@ export function AvisosSheet({ onClose, onOpenQuestion, onOpenSign, onGoHoy }: Av
                 </div>
               ) : items.length === 0 ? (
                 <div className="sheet__content empty">
-                  <h3 className="empty__title">Sin avisos por ahora</h3>
+                  <h3 className="empty__title">Sin notificaciones por ahora</h3>
                   <p className="empty__text">Aquí verás cuando alguien te responda o le sirva tu letrero.</p>
                 </div>
               ) : (

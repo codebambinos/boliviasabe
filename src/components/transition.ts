@@ -8,6 +8,10 @@ export type NavDirection = 'forward' | 'back' | 'up' | 'remove';
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/** When a screen change has fully played: the old screen leaves in 110 ms, the new one enters over 220 ms from 110 ms
+ *  (app-shell.css, `vt-out` / `vt-in`). The tabs wait this long before taking another tap. */
+export const NAV_SETTLE_MS = 330;
+
 /**
  * A route change (React Router) with the same fade-through. `go` receives whether to pass
  * `viewTransition: true` to `navigate`; React Router runs the transition and plays it again in
