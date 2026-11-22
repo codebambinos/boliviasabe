@@ -49,6 +49,8 @@ export function snippet(text: string | null): string {
 
 export function buildMessage(facts: PushFacts): PushMessage {
   const who = facts.actor?.trim() || 'Un vecino';
+  // Mid-sentence («A un vecino le sirvió…») the fallback is lowercase
+  const toWhom = facts.actor?.trim() || 'un vecino';
   const quote = snippet(facts.text);
   const tag = `${facts.kind}-${facts.refId}`;
   const message = (title: string, body: string): PushMessage => ({ title, body, url: facts.url, tag });
@@ -58,9 +60,9 @@ export function buildMessage(facts: PushFacts): PushMessage {
     case 'comment':
       return message(`${who} comentó en un hilo`, quote);
     case 'helpful':
-      return message(`A ${who} le sirvió tu respuesta`, quote);
+      return message(`A ${toWhom} le sirvió tu respuesta`, quote);
     case 'sign_helpful':
-      return message(`A ${who} le sirvió tu letrero`, quote);
+      return message(`A ${toWhom} le sirvió tu letrero`, quote);
     case 'contact_request':
       return message(`${who} te pide tu contacto`, quote);
     case 'contact_accepted':
