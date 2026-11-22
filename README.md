@@ -28,7 +28,7 @@ Encuesta por WhatsApp a 24 personas de Cochabamba: 8 estudiantes, 11 vecinos y 5
 | Responde cuando sabe algo | Casi siempre 9 · A veces 12 · Casi nunca 3 |
 | Respondería más a cambio de puntos | Sí 11 · Tal vez 10 · No 3 |
 | Usaría la app | Sí 11 · Tal vez 9 · No 4 |
-| Estudiantes que usarían la app | **8 de 8** (5 sí, 3 tal vez, ninguno no) |
+| Estudiantes que usarían la app (8) | Sí 5 · Tal vez 3 · No 0 |
 
 | Dueños de negocio (5) | Resultado |
 |---|---|
@@ -54,6 +54,14 @@ Encuesta por WhatsApp a 24 personas de Cochabamba: 8 estudiantes, 11 vecinos y 5
 2. **Crea tu cuenta al participar.** Subir un letrero, preguntar, responder o dar «Me sirvió» te pide entrar. Usa Google o cualquier correo con una contraseña de 6 caracteres o más (no hace falta confirmar el correo).
 3. **«Tu barrio».** La primera vez pide tu nombre, tu ciudad y tu zona. Después vuelves a lo que ibas a hacer.
 4. **Tu cuenta Stellar.** En unos segundos aparece tu saldo: **5 yapitas de bienvenida**, pagadas desde la cuenta distribuidora de BoliviaSabe a la cuenta que se acaba de crear para ti.
+
+**Para jueces, en 60 segundos (sin crear cuenta):**
+
+1. **Mira el recorrido completo** en el [video de la demo](https://youtu.be/44REBISBVZg) (2:45).
+2. **Abre la app:** [boliviasabe.vercel.app](https://boliviasabe.vercel.app) entra directo a Hoy; en «¿Alguien sabe?» está la pregunta del video («¿Quién arregla una tubería hoy en Queru Queru?»), Solucionada, con la respuesta que sirvió.
+3. **Verifica ese premio en Stellar:** el [pago de 5 YAPITA](https://stellar.expert/explorer/testnet/tx/acce574fd925033d79a87bc03e3c9b6766ecd43d0be4bc58b102d8309ce89a47) a quien respondió, con el memo `ayuda:55` (stellar.expert lo muestra codificado como `YXl1ZGE6NTU=`).
+4. **Mira el canje de prueba:** [10 YAPITA de un vecino a un negocio de ejemplo](https://stellar.expert/explorer/testnet/tx/e0342ea4571fa493bc9ba7c6a5126f0e74f46d4af2f71ef80823640ac9cc9767), con el memo `canje:10`.
+5. **Mira todos los pagos** de la [cuenta distribuidora](https://stellar.expert/explorer/testnet/account/GDOSWRMZMWPSDJ26YBSWUDF527QEXXXAIUAUAKFDAXXTY5QUMLUZHFEY) y la [emisora de YAPITA](https://stellar.expert/explorer/testnet/account/GDNTFTPY6D36V2OH4S2UTZ6OK6UW7PEGJZP7MIHY27JFKZDHUDFYNLGW).
 
 ## Cómo se ganan y se gastan las yapitas
 
@@ -115,7 +123,9 @@ Ese ingreso llena el fondo del **canje**: el vecino cambia sus yapitas por un de
 
 Cómo lo validamos: los 5 negocios del piloto tienen el primer mes gratis (4 de los 5 dueños encuestados ya aceptaron probar) y al final se les pregunta si pagarían Bs 20; la meta del día 30 es que **5 negocios paguen**.
 
-**Cuántos pueden pagar:** en el departamento de Cochabamba hay **66.170 empresas registradas** ([SEPREC, noviembre de 2025](https://www.seprec.gob.bo/wp-content/uploads/2025/12/Informacion-ESTADISTICA-WEB-NOV_v1.pdf)). Muchos negocios de barrio son informales y no están en ese registro, así que es un piso, no un techo.
+**Cuántos pueden pagar:** en el departamento de Cochabamba hay **66.170 empresas registradas** ([SEPREC, noviembre de 2025](https://www.seprec.gob.bo/wp-content/uploads/2025/12/Informacion-ESTADISTICA-WEB-NOV_v1.pdf)). Muchos negocios de barrio son informales y no están en ese registro, así que es un piso, no un techo. No encontramos un dato oficial de negocios por zona (Sarco y el Centro), así que no lo inventamos: el techo que sí se puede calcular es el del departamento. Si pagara el 1 % de esas empresas a Bs 20, serían unos Bs 13.200 al mes; con el 5 %, unos Bs 66.200 al mes, antes de pagar el canje.
+
+**El nicho del piloto:** estudiantes y negocios cerca de las universidades, en Sarco y el Centro. La cifra más cercana a ese nicho es el grupo «¿Alguien sabe?» de la UMSS, con **15 mil miembros**; los 209 mil del grupo de todo Cochabamba muestran el tamaño del hábito, no el del nicho (y los miembros se repiten entre grupos).
 
 **La economía del canje (hipótesis para validar):**
 
@@ -126,6 +136,8 @@ Cómo lo validamos: los 5 negocios del piloto tienen el primer mes gratis (4 de 
 | Costo de canje por vecino activo | ~Bs 1,90 al mes, si canjea todo |
 | Vecinos activos que cubre un negocio a Bs 20 | ~10 |
 | Meta del día 30 | 45 activos por semana ≈ Bs 86 al mes de canje → lo cubren 5 negocios a Bs 20 |
+
+**Un canje de prueba, en la cadena:** un vecino de ejemplo (Jorge, de Sarco) pagó 10 YAPITA a una cuenta de negocio de ejemplo, «Cafetería de Sarco (demo)», con el memo `canje:10`: [la transacción](https://stellar.expert/explorer/testnet/tx/e0342ea4571fa493bc9ba7c6a5126f0e74f46d4af2f71ef80823640ac9cc9767) y [la cuenta del negocio](https://stellar.expert/explorer/testnet/account/GAY3M4NJLVGY34ANWDKJAFBLW5TFJBJYGJW5QCYOTMIF2VWT4URI5ESB). Es el ciclo vecino → negocio que tendrá el canje (10 yapitas = Bs 1 de descuento); todavía no hay negocios reales ni pantalla de canje en la app.
 
 Los topes contra el abuso (10 letreros con premio por día, 3 «Me sirvió» con premio por pregunta, 3 premios por día entre las mismas dos personas) evitan que una sola cuenta vacíe el fondo.
 
@@ -142,9 +154,16 @@ Los topes contra el abuso (10 letreros con premio por día, 3 «Me sirvió» con
 
 **Metas al día 30:** 150 cuentas, 45 activas por semana y menos de 30 minutos hasta la primera respuesta.
 
-## Qué mejoramos después del primer análisis de Atlas
+## Qué mejoramos después de los análisis de Atlas
 
-El primer análisis de Atlas dio 67/100. Lo que cambiamos a partir de él:
+El primer análisis de Atlas dio 67/100 y el segundo, 73/100. Después del segundo:
+
+- **La encuesta, contada sin sumar los «tal vez»:** 11 sí, 9 tal vez y 4 no; entre los estudiantes, 5 sí y 3 tal vez.
+- **El nicho, con su propia cifra:** 15 mil miembros en el grupo de la UMSS, y el techo de ingresos calculado sobre las 66.170 empresas de SEPREC, sin inventar un dato por zona.
+- **Una ruta de 60 segundos para jueces** en «Pruébala», y el video enlazado también en la página en vivo.
+- **Un canje de prueba en testnet:** 10 YAPITA de un vecino de ejemplo a un negocio de ejemplo, con el memo `canje:10` (ver «La economía del canje»).
+
+Después del primero:
 
 - **Video de la demo:** el recorrido completo que pidió el análisis, de abrir sin cuenta al pago con memo en stellar.expert ([YouTube](https://youtu.be/44REBISBVZg)).
 - **La demo ahora se puede leer sin JavaScript:** la página trae un texto fijo con qué es, qué funciona y los enlaces para comprobarlo (`index.html`).
