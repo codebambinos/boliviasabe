@@ -8,6 +8,8 @@ Hecha por **CodeBambinos** para el hackathon National Startups by Stellar 2026. 
 
 **Pitch deck (PDF):** https://drive.google.com/file/d/1c6a5ZMkokjHeDHesX-xzRb4C6Wp_vK6l/view?usp=sharing
 
+**Video de la demo (2:45):** https://youtu.be/44REBISBVZg · el recorrido completo en la página real: abrir sin cuenta, crear la cuenta y recibir 5 yapitas, preguntar, otra cuenta responde, «Me sirvió» y el pago con su memo en stellar.expert.
+
 ## El problema
 
 En Bolivia, para saber dónde hay almuerzo barato, quién repara una laptop o si hay agua, la gente pregunta en grupos de WhatsApp y Facebook. Solo en Cochabamba hay al menos 20 grupos públicos «¿Alguien sabe?» en Facebook; el mayor, [«¿Alguien Sabe? - Cochabamba»](https://www.facebook.com/groups/alguien.sabe.cbba/), tiene 209 mil miembros y más de 90 publicaciones al día, y el de la UMSS, 15 mil. Hay grupos así en 8 de los 9 departamentos. Pasa todos los días, y lo confirmamos con una encuesta (ver «Lo que nos dijeron 24 personas»): lo que más molesta no es que tarde, sino que **la pregunta se pierde** entre mensajes y que **nadie sabe si la información sigue vigente**. Quien sabe no gana nada por ayudar. Los más afectados son los estudiantes y los negocios de barrio que nadie encuentra.
@@ -144,6 +146,7 @@ Los topes contra el abuso (10 letreros con premio por día, 3 «Me sirvió» con
 
 El primer análisis de Atlas dio 67/100. Lo que cambiamos a partir de él:
 
+- **Video de la demo:** el recorrido completo que pidió el análisis, de abrir sin cuenta al pago con memo en stellar.expert ([YouTube](https://youtu.be/44REBISBVZg)).
 - **La demo ahora se puede leer sin JavaScript:** la página trae un texto fijo con qué es, qué funciona y los enlaces para comprobarlo (`index.html`).
 - **La emisión, dicha con precisión:** la sección «Quién controla la emisión» reemplaza la frase «nadie puede inventar yapitas».
 - **Quién paga, contado:** 66.170 empresas registradas en Cochabamba (SEPREC) y la tabla de la economía del canje.
