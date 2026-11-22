@@ -94,7 +94,7 @@ function GuestYo({
         </p>
         <div className="profile__actions">
           <button type="button" className="btn btn--secondary btn--full auth__google" disabled={signingIn} onClick={onSignIn}>
-            <GoogleIcon /> {signingIn ? 'Entrando…' : 'Continuar con Google'}
+            <GoogleIcon /> {signingIn ? 'Iniciando sesión…' : 'Continuar con Google'}
           </button>
           <button
             type="button"
