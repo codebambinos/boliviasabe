@@ -2,6 +2,7 @@
 import { DEFAULT_NOTIF_PREFS, type DataApi } from '../api';
 import { CITIES, DEFAULT_CITY, PAGE_SIZE } from '../catalog';
 import { DataError } from '../errors';
+import { cleanPhone } from '../phone';
 import type { Answer, City, Comment, ContactState, ContentKind, Id, Movement, Notice, Page, Question, ReportKind, Session, Sign } from '../types';
 import { mockMode, simulate } from './behavior';
 import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type CommentRec, type ContactRec, type MovementRec, type NoticeRec, type QuestionRec, type SignRec } from './fixtures';
@@ -577,16 +578,6 @@ function findVisibleComment(id: Id): CommentRec {
   return rec;
 }
 
-const PHONE = /^\+?[0-9][0-9 ()-]{5,19}$/;
-
-/** Empty → null; a phone that does not look like one → validation (same rule as the database). */
-function cleanPhone(phone?: string): string | null {
-  const value = phone?.trim() ?? '';
-  if (!value) return null;
-  if (!PHONE.test(value)) throw new DataError('validation', 'Invalid phone', { field: 'phone' });
-  return value;
-}
-
 export const mockComments: DataApi['comments'] = {
   create: (answerId, text) =>
     simulate(() => {
@@ -656,6 +647,13 @@ export const mockContact: DataApi['contact'] = {
     }),
 
   myPhone: () => simulate(() => requireUser().phone ?? null),
+
+  setMyPhone: (phone) =>
+    simulate(() => {
+      const user = requireUser();
+      user.phone = cleanPhone(phone);
+      return user.phone;
+    }),
 };
 
 /** The mock has no other devices: the channel never connects and the screen keeps its 15 s refresh. */

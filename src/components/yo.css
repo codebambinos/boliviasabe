@@ -165,6 +165,44 @@
   padding: var(--s-3) 0 var(--s-1);
 }
 
+/* ---------- Ajustes › Mi celular (SPEC 23) ---------- */
+
+/* Right under the notification switches, which already draw the line above it */
+.settings__phone {
+  margin-top: 0;
+  border-top: 0;
+}
+
+.settings__phone > li:last-child {
+  border-bottom: var(--hairline);
+}
+
+.settings__phone + .setting {
+  margin-top: var(--s-3);
+}
+
+.phone-sheet {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.phone-sheet__content {
+  display: grid;
+  gap: var(--s-3);
+}
+
+.phone-sheet__why {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--t-small);
+}
+
+/* While it saves the button keeps its color and shows the spinner: dimmed, it read as «turned off» */
+.phone-sheet .btn[aria-busy='true']:disabled {
+  opacity: 1;
+}
+
 /* ---------- motion ---------- */
 
 /* Something that changed in place (balance, name, a state chip, «Copiado»): a short cross-fade */

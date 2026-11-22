@@ -121,6 +121,11 @@ export interface DataApi {
     respond(requestId: Id, accept: boolean, phone?: string): Promise<ContactState>;
     /** The phone saved in the caller's profile, to prefill the field. */
     myPhone(): Promise<string | null>;
+    /**
+     * Ajustes › Mi celular (SPEC 23, wiki #215): saves the caller's phone; null or blank deletes it. Resolves to what
+     * was saved. Rejects with `validation` (field `phone`) when it does not look like a phone.
+     */
+    setMyPhone(phone: string | null): Promise<string | null>;
   };
   live: {
     /**
