@@ -1048,6 +1048,11 @@ textarea {
   padding-left: 0;
 }
 
+/* «Cerrar sesión» without signal or with an error (#218): the reason under the button */
+.setting__signout-error {
+  margin-top: var(--s-1);
+}
+
 /* Acerca de · Privacidad (SPEC 02): quiet links under the guest card, rows in Ajustes */
 .legal-links {
   display: flex;
