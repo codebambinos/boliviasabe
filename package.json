@@ -14,6 +14,7 @@
     "stellar:setup": "node --env-file-if-exists=.env scripts/stellar/setup.ts",
     "stellar:e2e": "node --env-file-if-exists=.env scripts/stellar/e2e.ts",
     "stellar:reset": "node scripts/stellar/reset.ts",
+    "stellar:mainnet-setup": "node --env-file-if-exists=.env scripts/stellar/mainnet-setup.ts",
     "seed": "node --env-file-if-exists=.env scripts/seed/seed.ts",
     "cleanup": "node --env-file-if-exists=.env scripts/cleanup/cleanup.ts",
     "partner:add": "node --env-file-if-exists=.env scripts/seed/partner.ts",
