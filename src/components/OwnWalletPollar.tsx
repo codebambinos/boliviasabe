@@ -48,6 +48,7 @@ function Connect({ issuer, onDone }: Props & { issuer: string }) {
   const [step, setStep] = useState<'login' | 'creating' | 'linking'>('login');
   const opened = useRef(false);
   const running = useRef(false);
+  const creating = useRef(false);
   const provisioning = pollar.wallet?.provisioning;
 
   // Open Pollar's login once; the person may close it and use «Reintentar»
@@ -57,6 +58,19 @@ function Connect({ issuer, onDone }: Props & { issuer: string }) {
       pollar.openLoginModal();
     }
   }, [pollar, pollar.isAuthenticated, pollar.configStatus]);
+
+  // An app set to create wallets «on demand» (or to let the user choose custody) gives no wallet at login:
+  // ask for it. createWallet is idempotent, so a user who already has one gets it back.
+  useEffect(() => {
+    if (!pollar.isAuthenticated || pollar.wallet || creating.current) return;
+    creating.current = true;
+    setStep('creating');
+    void pollar.createWallet().catch((error: unknown) => {
+      console.error('Pollar createWallet failed', error);
+      setError(CONNECT_ERROR);
+      creating.current = false;
+    });
+  }, [pollar, pollar.isAuthenticated, pollar.wallet]);
 
   useEffect(() => {
     if (!pollar.isAuthenticated || !pollar.wallet || running.current) return;
@@ -78,7 +92,8 @@ function Connect({ issuer, onDone }: Props & { issuer: string }) {
         if (!token) throw new Error('no token');
         const result = await link.mutateAsync(token);
         onDone(result.welcomeTxHash ? 'Billetera conectada: +5 yapitas de bienvenida' : 'Billetera conectada');
-      } catch {
+      } catch (error) {
+        console.error('Own wallet link failed', error);
         setError(CONNECT_ERROR);
         running.current = false;
       }
