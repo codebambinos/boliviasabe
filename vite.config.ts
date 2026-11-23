@@ -19,7 +19,12 @@ export default defineConfig({
       injectRegister: false,
       devOptions: { enabled: false },
       includeAssets: ['logo.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
-      injectManifest: { globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'] },
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // Pollar's SDK (SPEC 31) is only for invited accounts: never precached for every pilot user. Vite puts it in the
+        // lazy OwnWalletPollar chunk and its packages' `dist-*` chunk; both still load normally when the card opens.
+        globIgnores: ['**/OwnWalletPollar-*', '**/dist-*'],
+      },
       manifest: {
         name: 'BoliviaSabe',
         short_name: 'BoliviaSabe',

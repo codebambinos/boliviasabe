@@ -3,6 +3,7 @@
 // shows only that receipt (from Movimientos). Paying is all or nothing: on any failure nothing was charged, and
 // the sheet says why. While it pays, the sheet cannot be closed and the button takes no second tap.
 import { useId, useState } from 'react';
+import type { UseQueryResult } from '@tanstack/react-query';
 import { BOLIVIA_TIME_ZONE, isDataError, useOffers, useRedeem, useRedemption, type Id, type Offer, type Redemption } from '../data';
 import { ArrowLeftIcon, CloseIcon, ExternalIcon } from './icons';
 import { formatAmount } from './movements';
@@ -10,7 +11,7 @@ import { Sheet } from './Sheet';
 import { Yapita } from './Yapita';
 import './redeem-sheet.css';
 
-const EXPLORER_TX = 'https://stellar.expert/explorer/testnet/tx/';
+export const EXPLORER_TX = 'https://stellar.expert/explorer/testnet/tx/';
 
 /** «23 nov 2026, 15:42», in Bolivian time. */
 const WHEN = new Intl.DateTimeFormat('es-BO', { dateStyle: 'medium', timeStyle: 'short', timeZone: BOLIVIA_TIME_ZONE });
@@ -18,7 +19,7 @@ const WHEN = new Intl.DateTimeFormat('es-BO', { dateStyle: 'medium', timeStyle: 
 const yapitas = (n: number) => `${n} ${n === 1 ? 'yapita' : 'yapitas'}`;
 
 /** What a failed redemption says (wiki › Canjear › Si falla). Nothing was charged in any case. */
-function redeemError(error: unknown): { text: string; retry: boolean } {
+export function redeemError(error: unknown): { text: string; retry: boolean } {
   if (isDataError(error)) {
     if (error.code === 'limit' && error.limit === 'insufficient_balance') return { text: 'Te faltan yapitas para este canje', retry: false };
     if (error.code === 'limit' && error.limit === 'redeem_per_day') return { text: 'Ya la canjeaste hoy', retry: false };
@@ -155,7 +156,11 @@ export function RedeemSheet({ balance, receiptId = null, onClose }: RedeemSheetP
 }
 
 function OfferList({ balance, onPick }: { balance: number | null; onPick: (offer: Offer) => void }) {
-  const offers = useOffers();
+  return <OfferListView offers={useOffers()} balance={balance} onPick={onPick} />;
+}
+
+/** The offers of a query (testnet, or the own wallet's in SPEC 31), with the same states and rules. */
+export function OfferListView({ offers, balance, onPick }: { offers: UseQueryResult<Offer[]>; balance: number | null; onPick: (offer: Offer) => void }) {
 
   if (offers.isPending) {
     return (
@@ -253,7 +258,18 @@ function StoredReceipt({ id, titleId, onClose }: { id: Id; titleId: string; onCl
 }
 
 /** The receipt, large enough to read across a counter. */
-function ReceiptView({ receipt, titleId, onClose }: { receipt: Redemption; titleId: string; onClose: () => void }) {
+export function ReceiptView({
+  receipt,
+  titleId,
+  onClose,
+  explorerTx = EXPLORER_TX,
+}: {
+  receipt: Redemption;
+  titleId: string;
+  onClose: () => void;
+  /** Where «Ver en el explorador» points: testnet by default, the public network for SPEC 31. */
+  explorerTx?: string;
+}) {
   return (
     <>
       <header className="sheet__bar">
@@ -277,7 +293,7 @@ function ReceiptView({ receipt, titleId, onClose }: { receipt: Redemption; title
             <p className="meta">{WHEN.format(new Date(receipt.createdAt))}</p>
             <p className="receipt__code num">Código #{receipt.id}</p>
             <p className="receipt__amount num">{formatAmount(receipt.side === 'paid' ? -receipt.cost : receipt.cost)}</p>
-            <a className="receipt__link" href={EXPLORER_TX + receipt.txHash} target="_blank" rel="noreferrer">
+            <a className="receipt__link" href={explorerTx + receipt.txHash} target="_blank" rel="noreferrer">
               Ver en el explorador <ExternalIcon size={14} />
             </a>
           </section>
