@@ -156,6 +156,19 @@ Familiar patterns win over novelty; craft is in spacing, type and the states.
     (only Movimientos «Ver más» / «Ver menos»).
   - **Exception (bounce):** the new-notice celebration (the bell rings, the bubble bounces, sparkles; wiki #216)
     is the one bounce in the app.
+  - **Exception (height), also:** the «Sin conexión» banner sliding in and out, and a hint collapsing when closed
+    (SPEC 28): without it the page jumps.
+- **Attention details** (SPEC 28) play only on a change after the screen opened (`useChangeTick`,
+  `useArrivedIds` in `src/components/motion.ts`), never on load, so they mark news:
+  - **Pulse:** grows and settles back to its resting size, never below it. The ★ of the top-bar balance when it
+    goes up (to 1.15, with a fading orange glow, ~420 ms); the Guardar bookmark when it becomes saved (from 0.85 to
+    1).
+  - **Swap:** a value or tag that changes in place cross-fades (`yo-fade`, `tag-in`): balances, «A N les sirvió»,
+    «Copiar» ↔ «Copiado», «Solucionada» / «Cerrada».
+  - **Arrival:** an answer or comment that comes in while the question is open rises 8 px and starts on the brand's
+    soft tint, fading to its own fill in about 2 s.
+  - **Breathing dot:** an active «Urgente» carries a small coral dot that breathes with opacity only (1.6 s). It is
+    a loop like skeletons and spinners, and the only decorative one; still with reduced motion.
 - Timings are tokens in `tokens.css`: `--m-press` 90, `--m-out` 120, `--m-in` 150, `--m-panel` 200,
   `--m-sheet-in` 260 (a sheet rises), `--m-exit` 160 (sheets and toasts leave; `EXIT_MS` in `Sheet.tsx` is the
   same value for waits in code), `--m-image` 600, `--m-theme` 260. Loops (skeleton, spinner) keep their own.

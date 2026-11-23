@@ -2,6 +2,7 @@
 // while it is active, the answer count and the status. The whole card opens the detail.
 import type { Question } from '../data';
 import { CheckIcon } from './icons';
+import { useChangeTick } from './motion';
 import { timeAgo } from './time';
 import './question-card.css';
 import { FadeImage } from './FadeImage';
@@ -23,6 +24,9 @@ export function QuestionCard({ question, selected, spotlight, onOpen }: Question
   const urgent = question.status === 'open' && isUrgentActive(question);
   const when = timeAgo(question.createdAt);
   const status = question.status === 'solved' ? 'Solucionada' : question.status === 'closed' ? 'Cerrada' : null;
+  // A status that changes while the card is on screen fades in (SPEC 28, B4)
+  const statusChange = useChangeTick(question.status);
+  const statusClass = statusChange.tick > 0 ? ' tag-in' : '';
   const label = [urgent ? 'Urgente' : null, question.text, question.zone, when, answersText(question.answerCount), status]
     .filter(Boolean)
     .join(', ');
@@ -40,13 +44,13 @@ export function QuestionCard({ question, selected, spotlight, onOpen }: Question
           {question.zone} · {when}
         </p>
         <p className="qcard__tags" aria-hidden="true">
-          {urgent && <span className="tag tag--urgent">Urgente</span>}
+          {urgent && <UrgentTag />}
           {status === 'Solucionada' && (
-            <span className="tag tag--ok">
+            <span key={statusChange.tick} className={`tag tag--ok${statusClass}`}>
               <CheckIcon size={14} /> Solucionada
             </span>
           )}
-          {status === 'Cerrada' && <span className="tag tag--muted">Cerrada</span>}
+          {status === 'Cerrada' && <span key={statusChange.tick} className={`tag tag--muted${statusClass}`}>Cerrada</span>}
           <span className="qcard__count">{answersText(question.answerCount)}</span>
         </p>
       </div>
@@ -68,5 +72,15 @@ export function QuestionCardSkeleton() {
         <div className="skeleton" style={{ height: '0.875rem', marginTop: 'var(--s-3)', width: '40%' }} />
       </div>
     </div>
+  );
+}
+
+/** «Urgente» while the urgency is active: a small coral dot breathes in it, opacity only (SPEC 28, B5). */
+export function UrgentTag() {
+  return (
+    <span className="tag tag--urgent">
+      <span className="tag__dot" aria-hidden="true" />
+      Urgente
+    </span>
   );
 }

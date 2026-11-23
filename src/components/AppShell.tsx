@@ -7,6 +7,7 @@ import { BellButton } from './BellButton';
 import { ChevronDownIcon, HomeIcon, PlusIcon, QuestionIcon, SearchIcon, UserIcon } from './icons';
 import { OfflineBanner } from './OfflineBanner';
 import { useTabSwipe } from './useTabSwipe';
+import { useChangeTick } from './motion';
 import { Yapita } from './Yapita';
 import './app-shell.css';
 
@@ -167,10 +168,7 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
                   <BellButton unread={account.unread} onClick={account.onBell} />
                   {/* On Yo the profile card already shows the balance: never twice on one screen */}
                   {tab !== 'yo' && (
-                    <button type="button" className="shell__balance" onClick={account.onBalance} aria-label={`Tienes ${account.balance ?? '…'} yapitas, ver movimientos`}>
-                      <Yapita />
-                      {account.balance === null ? <span className="num-wait" aria-hidden="true" /> : <span>{account.balance}</span>}
-                    </button>
+                    <BalanceButton balance={account.balance} onClick={account.onBalance} />
                   )}
                 </>
               )}
@@ -207,6 +205,27 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
         </section>
       )}
     </div>
+  );
+}
+
+/**
+ * ★ saldo in the top bar (SPEC 28, A1). The number cross-fades when it changes; when it goes up with the app open, the
+ * disc pulses once. Its own component so the baseline is taken when it appears (it is hidden on Yo).
+ */
+function BalanceButton({ balance, onClick }: { balance: number | null; onClick: () => void }) {
+  const { tick, direction } = useChangeTick(balance);
+  const rose = tick > 0 && direction === 'up';
+  return (
+    <button type="button" className="shell__balance" onClick={onClick} aria-label={`Tienes ${balance ?? '…'} yapitas, ver movimientos`}>
+      <span key={rose ? `up-${tick}` : 'still'} className={rose ? 'shell__balance-star shell__balance-star--pulse' : 'shell__balance-star'}>
+        <Yapita />
+      </span>
+      {balance === null ? (
+        <span className="num-wait" aria-hidden="true" />
+      ) : (
+        <span key={tick} className={tick > 0 ? 'yo-fade' : undefined}>{balance}</span>
+      )}
+    </button>
   );
 }
 

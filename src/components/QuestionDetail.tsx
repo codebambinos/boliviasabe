@@ -29,11 +29,13 @@ import { useRequireAccount } from './AuthGate';
 import { AnswerBox } from './AnswerBox';
 import { AnswerThread } from './AnswerThread';
 import { ContactPanel, RequestContactButton, canRequestContact } from './ContactRequest';
-import { BookmarkIcon, CheckIcon, CloseIcon, FlagIcon, MoreIcon, ShareIcon, ThumbDownIcon, ThumbIcon, TrashIcon } from './icons';
+import { CheckIcon, CloseIcon, FlagIcon, MoreIcon, ShareIcon, ThumbDownIcon, ThumbIcon, TrashIcon } from './icons';
 import { errorMessage, firstName, rewardCapMessage } from './messages';
-import { answersText, isUrgentActive } from './QuestionCard';
+import { answersText, isUrgentActive, UrgentTag } from './QuestionCard';
 import { Sheet } from './Sheet';
 import { timeAgo } from './time';
+import { useArrivedIds, useChangeTick } from './motion';
+import { SavedMark } from './SavedMark';
 import { Toast } from './Toast';
 import { Yapita } from './Yapita';
 import type { NoticeFocus } from './notices';
@@ -99,6 +101,10 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
   // reload do not replay it; if nothing matches (deleted, edited), the question just opens at its top.
   const focus = navState?.focus;
   const answersData = detail.data?.answers;
+  // Answers that came in while the question was open rise in once (SPEC 28, B2); what was there on open does not
+  const arrivedAnswers = useArrivedIds(answersData?.map((a) => a.id));
+  // A status that changes with the question open fades in (SPEC 28, B4)
+  const statusChange = useChangeTick(detail.data?.question.status);
   const [spot, setSpot] = useState<{ kind: 'answer' | 'comment'; id: Id } | null>(null);
   const focusHandled = useRef<string | null>(null);
   const focusRetry = useRef<number | undefined>(undefined);
@@ -265,12 +271,14 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
       <header className="qd__head">
         <p className="qd__tags">
           {question.status === 'solved' && (
-            <span className="tag tag--ok">
+            <span key={statusChange.tick} className={`tag tag--ok${statusChange.tick > 0 ? ' tag-in' : ''}`}>
               <CheckIcon size={14} /> Solucionada
             </span>
           )}
-          {question.status === 'closed' && <span className="tag tag--muted">Cerrada</span>}
-          {urgent && <span className="tag tag--urgent">Urgente</span>}
+          {question.status === 'closed' && (
+            <span key={statusChange.tick} className={`tag tag--muted${statusChange.tick > 0 ? ' tag-in' : ''}`}>Cerrada</span>
+          )}
+          {urgent && <UrgentTag />}
           <span className="meta">{question.zone}, {question.city}</span>
         </p>
         <Heading ref={heading} tabIndex={-1} className="qd__text">{question.text}</Heading>
@@ -289,7 +297,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
             disabled={savingQuestion}
             onClick={saveQuestion}
           >
-            <BookmarkIcon size={18} fill={question.savedByMe ? 'currentColor' : 'none'} /> {question.savedByMe ? 'Guardada' : 'Guardar'}
+            <SavedMark size={18} saved={question.savedByMe} /> {question.savedByMe ? 'Guardada' : 'Guardar'}
           </button>
           <a className="btn btn--secondary btn--small" href={whatsappHref(question)} target="_blank" rel="noreferrer" aria-label="Compartir por WhatsApp">
             <ShareIcon size={18} /> Compartir
@@ -331,6 +339,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
                   className="answer"
                   data-helpful={answer.helpful || undefined}
                   data-spotlight={(spot?.kind === 'answer' && spot.id === answer.id) || undefined}
+                  data-arrived={arrivedAnswers.has(answer.id) || undefined}
                 >
                   {/* Guardar and ⋯ sit by the author, so the row under the text keeps only the actions on it */}
                   <div className="answer__head">
@@ -345,7 +354,7 @@ export function QuestionDetail({ id, variant, onGone }: QuestionDetailProps) {
                         disabled={savingAnswer(answer)}
                         onClick={() => saveAnswer(answer)}
                       >
-                        <BookmarkIcon size={20} fill={answer.savedByMe ? 'currentColor' : 'none'} />
+                        <SavedMark size={20} saved={answer.savedByMe} />
                       </button>
                       {hasMenu && (
                         <button type="button" className="icon-btn" aria-label="Más opciones de la respuesta" aria-haspopup="dialog" onClick={() => openMenu({ type: 'answer', answer })}>

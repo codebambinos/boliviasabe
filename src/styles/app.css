@@ -855,6 +855,31 @@ textarea {
   flex: 1;
 }
 
+/* Closing a hint (SPEC 28, A5): it fades while its row collapses 1fr → 0fr, so what is below moves up smoothly.
+   The clip keeps the hint's top margin inside the row, so the margin collapses too. */
+.hint-slot {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--m-panel) var(--ease);
+}
+
+.hint-slot[data-closing] {
+  grid-template-rows: 0fr;
+}
+
+.hint-slot__clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hint-slot .hint {
+  transition: opacity var(--m-out) var(--ease);
+}
+
+.hint-slot[data-closing] .hint {
+  opacity: 0;
+}
+
 /* Filter summary over the results */
 .filter-summary {
   display: flex;
@@ -956,9 +981,16 @@ textarea {
 
 .progress > span {
   display: block;
+  width: 100%;
   height: 100%;
   border-radius: inherit;
   background: var(--color-yapita);
+  transform-origin: left; /* filled with scaleX: transform only (SPEC 28, A2) */
+}
+
+/* Once a balance has been shown, the fill grows or shrinks smoothly */
+.progress--live > span {
+  transition: transform var(--m-panel) var(--ease);
 }
 
 /* Section heading inside a card */
@@ -1311,4 +1343,55 @@ input[role='switch']:focus-visible {
     animation-duration: 1.6s !important;
     animation-iteration-count: infinite !important;
   }
+}
+
+/* ☆ Guardar's bookmark (SavedMark, SPEC 28, B1): settles in from 0.85 to 1 when it becomes saved; no overshoot */
+.saved-mark {
+  display: inline-flex;
+  flex: none;
+}
+
+.saved-mark--settle {
+  animation: save-settle 280ms var(--ease-enter) both;
+}
+
+@keyframes save-settle {
+  from {
+    transform: scale(0.85);
+  }
+}
+
+/* A status tag that changed while on screen («Solucionada», «Cerrada»): it fades in (SPEC 28, B4) */
+.tag-in {
+  animation: tag-in var(--m-panel) var(--ease) both;
+}
+
+@keyframes tag-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* «Urgente» while active: a small coral dot breathes slowly, opacity only, like the skeleton (SPEC 28, B5). With
+   reduced motion the global rule stops it at full opacity. */
+.tag__dot {
+  flex: none;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--color-urgent);
+  animation: urgent-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes urgent-breathe {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Copiar ↔ ✓ Copiado keeps the button's icon-and-label layout */
+.copy-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
 }

@@ -307,6 +307,44 @@
   transform: scale(0.985);
 }
 
+/* The balance went up with the app open (SPEC 28, A1): the disc grows to 1.15 and settles back to 1 while an orange
+   glow spreads and fades behind it. Never below its resting size. */
+.shell__balance-star {
+  position: relative;
+  display: inline-flex;
+}
+
+.shell__balance-star--pulse {
+  animation: balance-pulse 420ms var(--ease) both;
+}
+
+.shell__balance-star--pulse::after {
+  content: '';
+  position: absolute;
+  inset: -0.25rem;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--color-yapita);
+  animation: balance-glow 420ms var(--ease) both;
+}
+
+@keyframes balance-pulse {
+  40% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes balance-glow {
+  from {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
   .shell__balance:hover {
     border-color: var(--color-line-strong);
@@ -787,7 +825,49 @@
   }
 }
 
-/* «Sin conexión» banner, under the top bar, inside the sticky header */
+/* «Sin conexión» banner, under the top bar, inside the sticky header. Its row grows and shrinks (0fr ↔ 1fr) so the
+   page below moves with it instead of jumping, and the bar slides down from under the top bar (SPEC 28, A4). */
+.offline {
+  display: grid;
+  grid-template-rows: 0fr;
+}
+
+.offline[data-shown] {
+  grid-template-rows: 1fr;
+}
+
+.offline__clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Only a change after load animates: offline from the start, the banner is simply there */
+.offline--animate {
+  transition: grid-template-rows var(--m-panel) var(--ease);
+}
+
+.offline--animate[data-shown] .offline__bar {
+  animation: offline-in var(--m-panel) var(--ease-enter) both;
+}
+
+.offline--animate:not([data-shown]) .offline__bar {
+  animation: offline-out var(--m-panel) var(--ease) both;
+}
+
+@keyframes offline-in {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes offline-out {
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
 .offline__bar {
   display: flex;
   align-items: center;

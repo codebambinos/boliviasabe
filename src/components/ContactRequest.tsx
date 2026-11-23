@@ -6,6 +6,7 @@ import { useEffect, useId, useState } from 'react';
 import { isDataError, useMyPhone, useRequestContact, useRespondContact, type Answer, type ContactDetails, type Question } from '../data';
 import { ArrowLeftIcon, CheckIcon, CloseIcon, ContactIcon, CopyIcon, MailIcon, PhoneIcon } from './icons';
 import { errorMessage } from './messages';
+import { useChangeTick } from './motion';
 import { Sheet } from './Sheet';
 import './contact-request.css';
 
@@ -172,15 +173,7 @@ export function ContactBox({ name, details }: { name: string; details: ContactDe
       <span className="contact__value">{value}</span>
       <span className="contact__actions">
         <button type="button" className="btn btn--secondary btn--small" onClick={() => void copy(value)}>
-          {copied === value ? (
-            <>
-              <CheckIcon size={16} /> Copiado
-            </>
-          ) : (
-            <>
-              <CopyIcon size={16} /> Copiar
-            </>
-          )}
+          <CopyLabel done={copied === value} />
         </button>
         <a className="btn btn--small" href={action.href}>
           {action.icon} {action.label}
@@ -198,5 +191,15 @@ export function ContactBox({ name, details }: { name: string; details: ContactDe
       </ul>
       <p className="sr-only" role="status">{copied ? 'Copiado' : ''}</p>
     </section>
+  );
+}
+
+/** Copiar ↔ ✓ Copiado: the icon and label cross-fade both ways once the person has copied (SPEC 28, B3). */
+function CopyLabel({ done }: { done: boolean }) {
+  const { tick } = useChangeTick(done);
+  return (
+    <span key={tick} className={tick > 0 ? 'copy-label yo-fade' : 'copy-label'}>
+      {done ? <CheckIcon size={16} /> : <CopyIcon size={16} />} {done ? 'Copiado' : 'Copiar'}
+    </span>
   );
 }

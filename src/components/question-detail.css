@@ -356,6 +356,28 @@
   animation: spot-ring 1100ms var(--ease) 2 both;
 }
 
+/* An answer or comment that came in while the question was open (SPEC 28, B2): it rises in once and its fill starts
+   on the brand's soft tint, fading to its own in about 2 s. What was there on open never plays this. */
+.answer[data-arrived],
+.comment[data-arrived] {
+  animation:
+    arrive-rise 280ms var(--ease-enter) both,
+    arrive-glow 2s var(--ease) both;
+}
+
+@keyframes arrive-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes arrive-glow {
+  from {
+    background-color: var(--color-brand-soft);
+  }
+}
+
 @keyframes spot-ring {
   0% {
     opacity: 0.55;
