@@ -86,8 +86,14 @@ function Connect({ issuer, onDone }: Props & { issuer: string }) {
     setStep('linking');
     void (async () => {
       try {
-        const trust = await pollar.setTrustline({ code: 'YAPITA', issuer });
-        if (trust.status === 'cosign_pending') throw new Error('cosign');
+        // Pollar adds the app's enabled tokens (YAPITA) when it creates the wallet; asking again may fail because the
+        // trustline already exists. Go on either way: the server checks the trustline on Horizon before paying.
+        try {
+          const trust = await pollar.setTrustline({ code: 'YAPITA', issuer });
+          if (trust.status === 'cosign_pending') console.warn('YAPITA trustline waits for a co-signature');
+        } catch (error) {
+          console.warn('YAPITA trustline request failed; the server will check it', error);
+        }
         const token = accessToken(pollar);
         if (!token) throw new Error('no token');
         const result = await link.mutateAsync(token);
