@@ -64,12 +64,12 @@ export function OwnWalletCard() {
             Ver en el explorador <ExternalIcon size={12} />
           </a>
           <button type="button" className="btn btn--full own-wallet__action" onClick={() => setAction('redeem')}>
-            Canjear en la red principal
+            Canjear en la {networkName}
           </button>
         </>
       ) : (
         <>
-          <p className="empty__text">Tu propia billetera en la red principal de Stellar. Sin claves ni XLM: lo cubre la app.</p>
+          <p className="empty__text">Tu propia billetera en la {networkName} de Stellar. Sin claves ni XLM: lo cubre la app.</p>
           <button type="button" className="btn btn--full own-wallet__action" onClick={() => setAction('connect')}>
             Conectar mi billetera
           </button>

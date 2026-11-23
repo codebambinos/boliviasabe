@@ -181,7 +181,7 @@ function Redeem({ network, balance, onDone }: Props) {
                 <button type="button" className="icon-btn" aria-label="Volver a las ofertas" disabled={paying} onClick={() => setView({ name: 'list' })}>
                   <ArrowLeftIcon />
                 </button>
-                <h2 id={titleId} className="sheet__bar-title">Canjear en la red principal</h2>
+                <h2 id={titleId} className="sheet__bar-title">Canjear en la {network === 'mainnet' ? 'red principal' : 'red de pruebas'}</h2>
               </header>
               <div className="sheet__body">
                 <div className="sheet__content redeem__content">
@@ -223,7 +223,7 @@ function Redeem({ network, balance, onDone }: Props) {
         return (
           <>
             <header className="sheet__bar">
-              <h2 id={titleId} className="sheet__bar-title">Canjear en la red principal</h2>
+              <h2 id={titleId} className="sheet__bar-title">Canjear en la {network === 'mainnet' ? 'red principal' : 'red de pruebas'}</h2>
               <button type="button" className="icon-btn" aria-label="Cerrar" onClick={close}>
                 <CloseIcon />
               </button>
