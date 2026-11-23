@@ -668,6 +668,11 @@ textarea {
   order: 3;
 }
 
+/* «Mi billetera propia» (SPEC 31) right after «Mi cuenta de prueba» */
+.yo-grid__own {
+  order: 3;
+}
+
 .yo-grid__activity {
   order: 4;
 }

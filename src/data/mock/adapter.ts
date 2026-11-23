@@ -859,6 +859,49 @@ export const mockRedemptions: DataApi['redemptions'] = {
     }),
 };
 
+/**
+ * The own Pollar wallet on the mock (SPEC 31): Lucía is invited and already linked with 5 yapitas on «mainnet»; the
+ * partners' offers are all listed as if they had a wallet. Starting and confirming a redemption pay at once.
+ */
+const mockOwn = { linked: new Map<Id, number>([[LUCIA, 5]]) };
+
+export const mockOwnWallet: DataApi['ownWallet'] = {
+  status: () =>
+    simulate(() => {
+      const user = requireUser();
+      const balance = mockOwn.linked.get(user.id);
+      const invited = user.id === LUCIA;
+      return { invited, network: 'mainnet', issuer: invited ? 'GMOCKISSUER' : null, address: invited && balance !== undefined ? fakeAddress(user.id + 100) : null, balance: balance ?? null };
+    }),
+  link: () =>
+    simulate(() => {
+      const user = requireUser();
+      const first = !mockOwn.linked.has(user.id);
+      if (first) mockOwn.linked.set(user.id, 5);
+      return { address: fakeAddress(user.id + 100), welcomeTxHash: first ? fakeTxHash(9000 + user.id) : null };
+    }),
+  offers: () => mockRedemptions.offers(),
+  startRedeem: (offerId) =>
+    simulate(() => {
+      const user = requireUser();
+      const offer = store.offers.find((o) => o.id === offerId && o.active);
+      if (!offer) throw new DataError('forbidden', 'Redemption not available');
+      if ((mockOwn.linked.get(user.id) ?? 0) < offer.cost) throw new DataError('limit', 'Not enough yapitas', { limit: 'insufficient_balance' });
+      const partner = store.partners.find((p) => p.id === offer.partnerId);
+      return { redemptionId: offer.id, destination: fakeAddress((partner?.userId ?? 0) + 100), amount: String(offer.cost), memo: `canje:${offer.id}`, issuer: 'GMOCKISSUER' };
+    }),
+  confirmRedeem: (offerId) =>
+    simulate(() => {
+      const user = requireUser();
+      const offer = store.offers.find((o) => o.id === offerId);
+      const partner = store.partners.find((p) => p.id === offer?.partnerId);
+      if (!offer || !partner) throw new DataError('not_found', 'Redemption not found');
+      mockOwn.linked.set(user.id, (mockOwn.linked.get(user.id) ?? 0) - offer.cost);
+      const id = nextId('redemption');
+      return { id, offerTitle: offer.title, partnerName: partner.name, partnerZone: partner.zone, cost: offer.cost, createdAt: new Date().toISOString(), txHash: fakeTxHash(7000 + id), side: 'paid' };
+    }),
+};
+
 export const mockActivity: DataApi['activity'] = {
   myQuestions: () =>
     simulate(() => {
@@ -1013,6 +1056,7 @@ export const mockAdapter: DataApi = {
   reports: mockReports,
   wallet: mockWallet,
   redemptions: mockRedemptions,
+  ownWallet: mockOwnWallet,
   activity: mockActivity,
   notices: mockNotices,
   push: mockPush,

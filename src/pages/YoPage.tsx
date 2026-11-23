@@ -7,6 +7,7 @@ import { AvisosCard } from '../components/AvisosCard';
 import { useOpenEmailSignIn } from '../components/AuthGate';
 import { InstallRow } from '../components/InstallRow';
 import { MovementsCard } from '../components/MovementsCard';
+import { OwnWalletCard } from '../components/OwnWalletCard';
 import { ProfileCard } from '../components/ProfileCard';
 import { RedeemSheet } from '../components/RedeemSheet';
 import { TestAccountCard } from '../components/TestAccountCard';
@@ -51,6 +52,7 @@ export function YoPage() {
         <div className="yo-col">
           <ProfileCard profile={profile} wallet={wallet.data} onEdit={() => setEditing(true)} onRedeem={() => setRedeem({ receiptId: null })} />
           <TestAccountCard wallet={wallet.data} onRetry={() => wallet.refetch()} />
+          <OwnWalletCard />
           <SettingsCard onAbout={shell.openAbout} onPrivacy={shell.openPrivacy} />
         </div>
         <div className="yo-col">

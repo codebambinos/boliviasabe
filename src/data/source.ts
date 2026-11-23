@@ -121,6 +121,13 @@ function supabaseAdapter(): DataApi {
       redeem: (offerId) => loadData().then((data) => data.redemptions.redeem(offerId)),
       get: (id) => read(loadData().then((data) => data.redemptions.get(id))),
     },
+    ownWallet: {
+      status: () => read(loadData().then((data) => data.ownWallet.status())),
+      link: (token) => loadData().then((data) => data.ownWallet.link(token)),
+      offers: () => read(loadData().then((data) => data.ownWallet.offers())),
+      startRedeem: (offerId) => loadData().then((data) => data.ownWallet.startRedeem(offerId)),
+      confirmRedeem: (id, hash) => loadData().then((data) => data.ownWallet.confirmRedeem(id, hash)),
+    },
     activity: {
       myQuestions: () => read(loadData().then((data) => data.activity.myQuestions())),
       myAnswers: () => read(loadData().then((data) => data.activity.myAnswers())),

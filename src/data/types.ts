@@ -155,6 +155,20 @@ export type Redemption = {
   side: 'paid' | 'received';
 };
 
+/** The own Pollar wallet (SPEC 31). `invited` false hides everything; `address` null means not linked yet. */
+export type OwnWalletStatus = {
+  invited: boolean;
+  network: 'testnet' | 'mainnet';
+  /** The YAPITA issuer of that network. */
+  issuer: string | null;
+  address: string | null;
+  /** YAPITA read from Horizon of that network; null while unknown or without a wallet. */
+  balance: number | null;
+};
+
+/** A mainnet redemption ready to be signed with Pollar. */
+export type OwnRedeemStart = { redemptionId: Id; destination: string; amount: string; memo: string; issuer: string };
+
 /** `balance` counts confirmed movements only (the chain is the source of truth). */
 export type Wallet = {
   status: 'preparing' | 'ready' | 'error';

@@ -4,6 +4,7 @@
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { RedeemFacts, RewardCap, RewardFacts } from '../stellar/rewards.ts';
+import type { OwnWalletStore } from '../stellar/ownWallet.ts';
 import type { EncryptedSecret, RewardRow, WalletStore } from '../stellar/wallet.ts';
 
 function env(name: string): string {
@@ -180,8 +181,8 @@ export function boliviaDayStart(now = Date.now()): string {
   return new Date(Math.floor((now - BOLIVIA_OFFSET_MS) / DAY_MS) * DAY_MS + BOLIVIA_OFFSET_MS).toISOString();
 }
 
-/** `RedeemFacts` on the SPEC 29 tables (service role). */
-export function supabaseRedeemFacts(db: SupabaseClient): RedeemFacts {
+/** `RedeemFacts` on the SPEC 29 tables (service role), for one network (SPEC 31 adds `mainnet`). */
+export function supabaseRedeemFacts(db: SupabaseClient, network: 'testnet' | 'mainnet' = 'testnet'): RedeemFacts {
   return {
     async offer(id) {
       const { data, error } = await db
@@ -200,6 +201,7 @@ export function supabaseRedeemFacts(db: SupabaseClient): RedeemFacts {
         .eq('profile_id', profileId)
         .eq('offer_id', offerId)
         .eq('status', 'confirmed')
+        .eq('network', network)
         .gte('created_at', boliviaDayStart())
         .limit(1);
       fail('redemptions', error);
@@ -209,7 +211,7 @@ export function supabaseRedeemFacts(db: SupabaseClient): RedeemFacts {
     async createRedemption({ offerId, profileId, partnerId, cost }) {
       const { data, error } = await db
         .from('redemptions')
-        .insert({ offer_id: offerId, profile_id: profileId, partner_id: partnerId, cost })
+        .insert({ offer_id: offerId, profile_id: profileId, partner_id: partnerId, cost, network })
         .select('id')
         .single<{ id: number }>();
       fail('redemptions', error);
@@ -219,6 +221,63 @@ export function supabaseRedeemFacts(db: SupabaseClient): RedeemFacts {
     async settleRedemption(id, patch) {
       const { error } = await db.from('redemptions').update({ status: patch.status, tx_hash: patch.txHash ?? null }).eq('id', id);
       fail('redemptions', error);
+    },
+  };
+}
+
+/** `OwnWalletStore` (SPEC 31) on `profiles.mainnet_address`, `mainnet_payments` and `redemptions` (service role). */
+export function supabaseOwnWalletStore(db: SupabaseClient): OwnWalletStore {
+  const addressOf = async (profileId: number) => {
+    const { data, error } = await db.from('profiles').select('mainnet_address').eq('id', profileId).maybeSingle<{ mainnet_address: string | null }>();
+    fail('profiles', error);
+    return data?.mainnet_address ?? null;
+  };
+  return {
+    address: addressOf,
+    partnerAddress: addressOf,
+
+    async setAddress(profileId, address) {
+      const { error } = await db.from('profiles').update({ mainnet_address: address }).eq('id', profileId);
+      if (error?.code === '23505') throw new Error('taken');
+      fail('profiles', error);
+    },
+
+    async welcomePaid(profileId) {
+      const { data, error } = await db.from('mainnet_payments').select('id').eq('profile_id', profileId).eq('kind', 'bienvenida').limit(1);
+      fail('mainnet_payments', error);
+      return (data ?? []).length > 0;
+    },
+
+    async recordPayment({ profileId, kind, redemptionId, amount, txHash }) {
+      const { error } = await db
+        .from('mainnet_payments')
+        .upsert({ profile_id: profileId, kind, redemption_id: redemptionId ?? null, amount, tx_hash: txHash }, { onConflict: 'tx_hash', ignoreDuplicates: true });
+      fail('mainnet_payments', error);
+    },
+
+    async redemption(id) {
+      const { data, error } = await db
+        .from('redemptions')
+        .select('id, profile_id, cost, status, network, created_at, partners!inner(profile_id)')
+        .eq('id', id)
+        .maybeSingle<{ id: number; profile_id: number; cost: number; status: 'pending' | 'confirmed' | 'error'; network: 'testnet' | 'mainnet'; created_at: string; partners: { profile_id: number } }>();
+      fail('redemptions', error);
+      if (!data) return null;
+      return {
+        id: data.id,
+        profileId: data.profile_id,
+        cost: data.cost,
+        status: data.status,
+        network: data.network,
+        createdAt: new Date(data.created_at).toISOString(),
+        partnerAddress: await addressOf(data.partners.profile_id),
+      };
+    },
+
+    async hashUsed(txHash) {
+      const { data, error } = await db.from('mainnet_payments').select('id').eq('tx_hash', txHash).limit(1);
+      fail('mainnet_payments', error);
+      return (data ?? []).length > 0;
     },
   };
 }

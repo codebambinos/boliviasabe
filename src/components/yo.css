@@ -266,3 +266,39 @@
     transition: none;
   }
 }
+
+/* «Mi billetera propia · Stellar (red principal)» (SPEC 31): its own balance, address and actions */
+.own-wallet__net {
+  margin: calc(var(--s-2) * -1) 0 var(--s-3);
+}
+
+.own-wallet__balance {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+
+.own-wallet__balance .profile__amount {
+  margin: 0;
+}
+
+.own-wallet__address {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin: var(--s-3) 0 var(--s-2);
+}
+
+.own-wallet__action {
+  margin-top: var(--s-4);
+}
+
+.own-wallet__status,
+.own-wallet__loading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  margin: var(--s-3) 0 0;
+}
