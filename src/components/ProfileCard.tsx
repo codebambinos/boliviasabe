@@ -46,7 +46,7 @@ export function ProfileCard({ profile, wallet, onEdit }: ProfileCardProps) {
         </p>
       )}
       <div className="profile__balance">
-        <Yapita size="lg" shine="strong" />
+        <Yapita size="lg" />
         <div>
           <p className="profile__amount num">
             {balance === null ? (

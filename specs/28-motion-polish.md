@@ -28,16 +28,8 @@ Everything here is decoration on top of what exists: same screens, same buttons,
 - **B4 · «✓ Solucionada» / «Cerrada»** in the question card (`QuestionCard.tsx`) and in the detail (`QuestionDetail.tsx`): when the status changes while the card or the detail is on screen, the new tag enters with a fade. On first render it does not animate. The detail's existing «Me sirvió» celebration (`qd-done-*`) stays as it is.
 - **B5 · «Urgente»** in the question card and in the detail, only while the urgency is active: the tag carries a small coral dot that breathes slowly with opacity only, like the skeleton (1.6 s, `ease-in-out`, infinite). The tag text and colors do not change.
 
-**Block 3 · Navigation** (A3 removed after review; only A5 remains)
-- **A3 · Current tab: no animation** (replaces the sliding indicator, removed after review; user's choice). Each tab keeps its own pill, and it appears at once on the tap: no fade of the pill or the label color, and no cross-fade of the tab bar between tabs. `TabList` marks the tapped tab as current before navigating, so the pill does not wait ~200 ms for the route. While a tab change plays (until the new screen has arrived, `NAV_SETTLE_MS` = 330 ms in `transition.ts`), the other tabs take no tap (`aria-disabled`, no press effect), so a second tap cannot cut the running transition short; tapping the current tab never locks, and a change that never arrives frees the tabs after 1.5 s.
+**Block 3 · Navigation** (A3 removed; only A5 remains)
 - **A5 · Closing a hint** (`Hint.tsx`): on ✕ the hint fades and collapses, and the content below moves up smoothly; it is removed after the animation. The «seen» flag is saved at the tap, as today.
-
-**Block 4 · Cosmetic glint** (added on the user's request during implementation; decoration only, no flow depends on it)
-- **Yo's balance coin** (`ProfileCard.tsx`): a light band crosses it every ~4 s, and three tiny sparks twinkle around it, each at its own time («glitter»).
-- **Top-bar balance coin** (`AppShell.tsx`, on Hoy and ¿Alguien sabe?): the same band at full strength every ~3.5 s, and three smaller sparks twinkling around it (more glitter, on the user's request).
-- **Movimientos coins** (`MovementsCard.tsx`): each floats 2 px up and back every 1.8 s (faster, on the user's request), out of step with the row above, and glints faintly every ~7 s («no tanto como la moneda de Yo»).
-- **«✓ Solucionada» in ¿Alguien sabe? cards** (`QuestionCard.tsx`): the same band every ~6 s, each card at its own time.
-- Glints come with pauses, never continuous. With «reducir movimiento» everything rests.
 
 **Everywhere**
 - Only transform, opacity and color, plus the height of the two things that open or close in place: the offline banner (A4) and a closing hint (A5). Timings with `--m-*` tokens; curves `--ease` / `--ease-enter`.
@@ -48,7 +40,9 @@ Everything here is decoration on top of what exists: same screens, same buttons,
 **Out of scope:**
 
 - **A7 · Pull to refresh with the yapita.** Dropped: the spinner stays (user's choice).
-- **A3 · A sliding tab indicator.** Built, then removed after review: it lagged behind the tap and fought the screen's view transition (user's choice).
+- **A3 · Any change to the tabs.** A sliding indicator was built and removed after review. The later version (pill at the tap, tabs locked for 330 ms during a change, no tab-bar fade) was also removed before the final (27 nov): a tap ignored during a live demo looks like a frozen app. The tabs stay as on main.
+- **Block 4 · Cosmetic glint** (glints and sparks on the yapita coins, floating Movimientos coins, the glint on «Solucionada»). Built, then removed before the final: endless decorative loops compete with the ★ pulse, which means «you earned», and `DESIGN.md` keeps the breathing urgent dot as the only decorative loop.
+- **«Avisos» renamed to «Notificaciones».** Built, then removed: it is a text change, the wiki does not have it, and Ajustes already has a «Notificaciones» row.
 - New texts (for example a welcome message for the first +5): they need the wiki first.
 - Illustrations for empty states, sound or vibration.
 - Any change to flows, screens, button order or what a button does.
@@ -81,7 +75,7 @@ New CSS, all in existing files: keyframes `balance-pulse`, `save-settle`, `arriv
 7. **Block 2 · B3, B4 and B5:** Copiado cross-fade; `tag-in` keyed by status via `useChangeTick`; the urgent dot. Check each at 360 px.
 8. ~~**Block 3 · A3:** the sliding tab indicator.~~ Removed after review.
 9. **Block 3 · A5:** the hint's fade and collapse before removal.
-9b. **Block 4:** `shine` on `Yapita` (`strong`, `medium`, `soft`), the sparks, the Movimientos float and `.tag--shine`; the token `--color-shine`.
+9b. ~~**Block 4:** the cosmetic glint.~~ Removed before the final.
 10. **`DESIGN.md` › Motion:** the new details (pulses that rise and settle back to 1, the breathing dot, things that arrive, the two height exceptions A4 and A5) and the rule that they only play on changes after mount.
 11. `npm run typecheck` and `npm run build`.
 
@@ -97,15 +91,11 @@ New CSS, all in existing files: keyframes `balance-pulse`, `save-settle`, `arriv
 - [x] «Copiar» and «✓ Copiado» cross-fade both ways.
 - [x] A status that changes to «Solucionada» or «Cerrada» while on screen fades in, in the card and in the detail; on first render it does not.
 - [x] An active «Urgente» tag shows a coral dot that breathes with opacity only; an expired urgency shows no dot.
-- [x] Tapping a tab shows its pill at once, with no fade or slide, in the bottom nav, the rail and the sidebar; the tab bar does not fade between tabs (it still fades to and from a standalone page).
-- [x] While a tab change plays, tapping another tab does nothing; once the new screen has arrived (~330 ms, at once with reduced motion), every tab answers again.
 - [x] Closing a hint fades and collapses it, and the content below moves up smoothly; it does not come back after a reload.
 - [x] With «reducir movimiento» on, nothing moves (the dot is still) and every screen works the same.
 - [x] Tapping anything while one of these animations runs responds at once.
 - [x] No flow, text, screen or button order changed.
 - [x] Works at 360 px, 768 px and 1280 px, in light and dark, with text at 130 %.
-- [x] Yo's balance coin glints every ~4 s with twinkling sparks; the top-bar coin glints every ~3.5 s with smaller sparks; Movimientos coins float every 1.8 s out of step and glint faintly; «✓ Solucionada» tags in the list glint every ~6 s, not all at once.
-- [x] With «reducir movimiento» none of the block 4 decoration moves or shows.
 - [x] `DESIGN.md` › Motion describes the new details.
 - [x] `npm run typecheck` and `npm run build` pass; `git grep -i "SECRET\|SERVICE_ROLE"` shows no values.
 
@@ -114,7 +104,7 @@ New CSS, all in existing files: keyframes `balance-pulse`, `save-settle`, `arriv
 - **`useArrivedIds` takes its baseline from the first loaded render, even an empty one** (`undefined` = not loaded). With «first non-empty render», as the Data model said, the first answer to a question with none would become the baseline and never animate, which breaks the B2 criterion.
 - **Two small components** carry the «changed after mount» bookkeeping where it is shown: `BalanceButton` in `AppShell.tsx` (A1; its baseline is taken when it appears, since it is hidden on Yo) and `SavedMark` in `src/components/SavedMark.tsx` (B1, used by the tile, the letrero sheet, the question and the answer). `CopyLabel` in `ContactRequest.tsx` (B3) and `UrgentTag` in `QuestionCard.tsx` (B5, also used by the detail).
 - **A2:** the bar animates only after a balance has been shown once (`progress--live`), so the first number lands in place.
-- **A3 removed.** The sliding indicator was built (one element moved by the tab index; icons top-aligned; the sidebar tabs as a grid), then tuned after review: the tab bar's view transition cross-faded a still image of the old bar, and the route reached the tabs ~200 ms after the tap. Even with both fixed, the user found it caused too many problems, so it was removed. Then, on request, the tab change lost all motion: no `background-color`/`color` transition on the tabs, the tab bar's view-transition images hidden between tabs (`::view-transition-old(tabbar|sidebar):not(:only-child)`), and `TabList` sets the tapped tab as current with `flushSync` before navigating. Measured: the pill has its final color right after the tap.
+- **A3 removed, then the tab changes too (before the final).** The sliding indicator was built (one element moved by the tab index; icons top-aligned; the sidebar tabs as a grid), then tuned after review: the tab bar's view transition cross-faded a still image of the old bar, and the route reached the tabs ~200 ms after the tap. Even with both fixed, the user found it caused too many problems, so it was removed. Then, on request, the tab change lost all motion: no `background-color`/`color` transition on the tabs, the tab bar's view-transition images hidden between tabs (`::view-transition-old(tabbar|sidebar):not(:only-child)`), and `TabList` sets the tapped tab as current with `flushSync` before navigating. Measured: the pill has its final color right after the tap. Before the final all of this was taken out and the tabs went back to main.
 - **A4:** the banner's text stays while it leaves (`present`), and offline from the start it is simply there (no animation until the first change).
 - **A5:** the hint is removed when its collapse ends, with a 400 ms fallback; its ✕ is disabled while it closes.
 - **B1 · the Hoy tile answers at the tap.** Found in the review pass: the tile's bookmark changed only after the save and the refetch of three lists (0.8–1 s in the production build, with no sign of the tap), while the letrero sheet changed at once. `useToggleSaved` now turns a letrero's bookmark over in every cached list and sheet at the tap (`onMutate`) and puts it back if the save fails; questions and answers still wait for the server. Measured: 48–75 ms at 360 px and 1280 px. The sheet goes back to its value before the tap on failure, instead of flipping a second time.
@@ -134,7 +124,7 @@ New CSS, all in existing files: keyframes `balance-pulse`, `save-settle`, `arriv
 - **Yes:** the urgent dot in the card and in the detail, only while the urgency is active. (User's choice.)
 - **Yes:** status tags fade in the list and in the detail when they change on screen; the detail's «Me sirvió» celebration is untouched. (User's choice.)
 - **Yes:** «changed after mount» decides every animation here (`useChangeTick`, `useArrivedIds`). A screen that opens never plays them, so they mark news, not loading.
-- **Yes:** block 4, cosmetic glint on the yapita coins (Yo, top bar, Movimientos) and «Solucionada», with pauses between glints, Movimientos coins floating out of step. Added to this spec because the branch had no commit yet; recorded in `DESIGN.md` as the only decorative loops besides the urgent dot. (User's choice.)
+- **No (before the final):** block 4, cosmetic glint on the yapita coins (Yo, top bar, Movimientos) and «Solucionada», with pauses between glints, Movimientos coins floating out of step. Added to this spec because the branch had no commit yet; recorded in `DESIGN.md` as the only decorative loops besides the urgent dot. (Built on the user's request, removed before the final.)
 - **No:** continuous glitter, or every coin floating in step: tiring to read next to, and mechanical.
 - **Yes:** height may animate for the offline banner and a closing hint, as with «Ver más» in SPEC 27. Without it the page jumps, which is what these points fix.
 

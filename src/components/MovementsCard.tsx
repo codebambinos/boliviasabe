@@ -136,7 +136,6 @@ export function MovementsCard() {
             <MovementRow
               key={m.id}
               movement={m}
-              index={i}
               stagger={revealFrom !== null && i >= revealFrom ? Math.min(i - revealFrom, STAGGER_CAP) : null}
               leaving={leaving && i >= first}
               retrying={retry.isPending && retry.variables === m.id}
@@ -170,23 +169,18 @@ type MovementRowProps = {
   stagger: number | null;
   /** «Ver menos» is closing the list over this row: it fades out. */
   leaving: boolean;
-  /** Its place in the list: the coins float out of step (SPEC 28, block 4). */
-  index: number;
   retrying: boolean;
   onRetry: () => void;
 };
 
-function MovementRow({ movement: m, index, stagger, leaving, retrying, onRetry }: MovementRowProps) {
+function MovementRow({ movement: m, stagger, leaving, retrying, onRetry }: MovementRowProps) {
   const stateClass = m.status === 'confirmed' ? 'state' : m.status === 'pending' ? 'state state--pending' : 'state state--error';
   return (
     <li
       className={leaving ? 'yo-sink' : stagger !== null ? 'yo-rise' : undefined}
       style={!leaving && stagger !== null ? { ['--i' as string]: stagger } : undefined}
     >
-      {/* The coin floats 2 px and glints softly; each row out of step with the one above */}
-      <span className="moves__coin" style={{ ['--float-delay' as string]: `${-(index % 5) * 0.35}s` }}>
-        <Yapita shine="soft" />
-      </span>
+      <Yapita />
       <span className="row__main">
         {REASON_LABEL[m.reason]}
         <span className="meta row__sub">

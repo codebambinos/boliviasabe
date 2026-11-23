@@ -1,4 +1,4 @@
-// Yo › Notificaciones (SPEC 24, wiki #216, renamed from «Avisos» in #219): one row with the unread count that opens the same sheet as the bell.
+// Yo › Avisos (SPEC 24, wiki #216): one row with the unread count that opens the same sheet as the bell.
 // Between Mi actividad and Ajustes, the order in which flujo-final lists Yo.
 import { useUnreadNotices } from '../data';
 import { BellIcon, ChevronRightIcon } from './icons';
@@ -13,7 +13,7 @@ export function AvisosCard({ onOpen }: { onOpen: () => void }) {
           <button type="button" className="row__link" onClick={onOpen}>
             <BellIcon size={20} />
             <span className="row__main">
-              Notificaciones
+              Avisos
               {/* key: the count cross-fades when it changes */}
               <span key={status} className={unread > 0 ? 'meta row__sub avisos-card__count yo-fade' : 'meta row__sub yo-fade'}>
                 {status}

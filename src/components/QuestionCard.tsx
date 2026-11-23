@@ -1,6 +1,5 @@
 // Question card for the ¿Alguien sabe? list (wiki #2): text in 3 lines, thumbnail, zone · time, «Urgente»
 // while it is active, the answer count and the status. The whole card opens the detail.
-import type { CSSProperties } from 'react';
 import type { Question } from '../data';
 import { CheckIcon } from './icons';
 import { useChangeTick } from './motion';
@@ -47,12 +46,7 @@ export function QuestionCard({ question, selected, spotlight, onOpen }: Question
         <p className="qcard__tags" aria-hidden="true">
           {urgent && <UrgentTag />}
           {status === 'Solucionada' && (
-            <span
-              key={statusChange.tick}
-              className={`tag tag--ok tag--shine${statusClass}`}
-              // Cards glint out of step, never all at once
-              style={{ ['--shine-delay' as string]: `${(question.id % 6) * 0.9}s` } as CSSProperties}
-            >
+            <span key={statusChange.tick} className={`tag tag--ok${statusClass}`}>
               <CheckIcon size={14} /> Solucionada
             </span>
           )}

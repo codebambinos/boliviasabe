@@ -27,7 +27,7 @@ export function BellButton({ unread, onClick }: { unread: number; onClick: () =>
       type="button"
       className="icon-btn shell__bell"
       onClick={onClick}
-      aria-label={unread > 0 ? `Notificaciones, ${unread} sin leer` : 'Notificaciones'}
+      aria-label={unread > 0 ? `Avisos, ${unread} sin leer` : 'Avisos'}
     >
       <span key={`bell-${arrival}`} className="shell__bell-icon" data-ring={celebrating || undefined}>
         <BellIcon />
