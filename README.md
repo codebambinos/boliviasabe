@@ -60,7 +60,7 @@ En Bolivia, para saber dónde hay almuerzo barato, quién repara una laptop o si
 1. **Mira el recorrido completo** en el [video de la demo](https://youtu.be/yh8rJxL-n_w) (2:58).
 2. **Abre la app:** [boliviasabe.vercel.app](https://boliviasabe.vercel.app) entra directo a Hoy; en «¿Alguien sabe?» está la pregunta del video («¿Quién arregla una tubería hoy en Queru Queru?»), Solucionada, con la respuesta que sirvió.
 3. **Verifica ese premio en Stellar:** el [pago de 5 YAPITA](https://stellar.expert/explorer/testnet/tx/b80fecb1727ce232c0ed889563c54cd7d833ee4a152c4a8846e5af54aa80eca3) a quien respondió, con el memo `ayuda:56` (stellar.expert lo muestra codificado como `YXl1ZGE6NTY=`).
-4. **Mira el canje de prueba:** [10 YAPITA de un vecino a un negocio de ejemplo](https://stellar.expert/explorer/testnet/tx/e0342ea4571fa493bc9ba7c6a5126f0e74f46d4af2f71ef80823640ac9cc9767), con el memo `canje:10`.
+4. **Mira el canje de prueba:** [10 YAPITA de un vecino a un negocio de ejemplo](https://stellar.expert/explorer/testnet/tx/e0342ea4571fa493bc9ba7c6a5126f0e74f46d4af2f71ef80823640ac9cc9767), con el memo `canje:10`. Los memos son texto: stellar.expert a veces los muestra en base64, y [Horizon](https://horizon-testnet.stellar.org/transactions/e0342ea4571fa493bc9ba7c6a5126f0e74f46d4af2f71ef80823640ac9cc9767) los muestra tal cual.
 5. **Mira todos los pagos** de la [cuenta distribuidora](https://stellar.expert/explorer/testnet/account/GDOSWRMZMWPSDJ26YBSWUDF527QEXXXAIUAUAKFDAXXTY5QUMLUZHFEY) y la [emisora de YAPITA](https://stellar.expert/explorer/testnet/account/GDNTFTPY6D36V2OH4S2UTZ6OK6UW7PEGJZP7MIHY27JFKZDHUDFYNLGW).
 
 ## Cómo se ganan y se gastan las yapitas
@@ -73,12 +73,13 @@ En Bolivia, para saber dónde hay almuerzo barato, quién repara una laptop o si
 | Que quien preguntó marque «Me sirvió» en tu respuesta | +5 |
 | Cerrar tu propia pregunta | +1 |
 | Marcar una pregunta como urgente | −5 |
+| Canjear una oferta de un negocio aliado | −el costo de la oferta (lo recibe el negocio) |
 
 Hay topes contra el abuso (por ejemplo, 10 letreros con premio por día y 3 «Me sirvió» con premio por pregunta). Si una acción pasa un tope se hace igual, pero sin premio.
 
 ## Cómo usa Stellar
 
-- **Activo `YAPITA`** emitido en testnet. Cada premio es un pago de la cuenta distribuidora a la persona; gastar es un pago de la persona a la distribuidora. Todos llevan un memo que dice de qué acción vienen (por ejemplo `letrero:5` o `ayuda:5`).
+- **Activo `YAPITA`** emitido en testnet. Cada premio es un pago de la cuenta distribuidora a la persona; marcar una urgente es un pago de la persona a la distribuidora, y **canjear es un pago de la persona a la cuenta del negocio aliado** (memo `canje:<id>`). Todos llevan un memo que dice de qué acción vienen (por ejemplo `letrero:5` o `ayuda:5`).
 - **Una cuenta por vecino**, creada al terminar «Tu barrio»: se fondea con Friendbot, se le agrega la línea de confianza de YAPITA y recibe la bienvenida. Es una cuenta de prueba custodiada por la app: su clave se guarda cifrada (AES-256-GCM) y solo el servidor la usa.
 - **El saldo es el de la cadena.** El navegador lo lee directamente de Horizon, no de nuestra base de datos.
 - **Si Stellar falla, la persona no se queda sin hacer lo suyo.** Publicar, responder y calificar siguen funcionando y el premio queda pendiente hasta que se paga.
@@ -101,7 +102,21 @@ Hoy todo es **custodiado**, y lo decimos tal cual:
 - Las cuentas de los vecinos también son custodiadas: la app guarda su clave cifrada (AES-256-GCM) y firma por ellos. Hoy **86 cuentas** tienen la línea de confianza de YAPITA (las de prueba del equipo y del seed incluidas).
 - `npm run stellar:reset` solo sirve si testnet se borra: recrea las mismas cuentas y vuelve a pagar, con el mismo memo, cada premio que ya estaba confirmado en la base. No crea premios nuevos.
 
-**Antes de la red principal:** cada vecino pasa a su propia billetera con Pollar y el canje se paga desde el fondo que llenan los negocios. La emisora ya está cerrada en la red de pruebas, y en la principal se cierra igual desde el primer día.
+**Antes de la red principal:** cada vecino pasa a su propia billetera con Pollar. La emisora ya está cerrada en la red de pruebas, y en la principal se cierra igual desde el primer día.
+
+### Cuánto cuesta en la red principal
+
+En la red principal cada cuenta tiene que guardar XLM como reserva. Con la reserva base actual de Stellar (0,5 XLM):
+
+| Qué | XLM |
+|---|---|
+| Una cuenta (2 reservas base) | 1 |
+| La línea de confianza de YAPITA | 0,5 |
+| **Por vecino o negocio** | **1,5** (queda guardado en la cuenta, no se gasta) |
+| Cada pago (comisión base de 100 stroops) | 0,00001 |
+| **150 cuentas al día 30** | **225** en reservas, más centavos de comisiones |
+
+No lo pasamos a bolivianos porque el precio del XLM cambia cada día. **Quién lo paga:** la idea es que el vecino nunca tenga que comprar XLM. Hay dos caminos: que la distribuidora patrocine las reservas (`beginSponsoringFutureReserves` de Stellar, que el código todavía no usa) o que lo resuelva Pollar al crear la billetera, algo que estamos consultando con su equipo.
 
 ## Qué construimos en este hackathon
 
@@ -119,36 +134,37 @@ Para los vecinos es gratis: ver, publicar, responder y premiar. Marcar una pregu
 
 Pagan los **negocios de barrio**: por **Bs 20 al mes** (precio a validar en el piloto), sus letreros salen primero en Hoy para los vecinos de su zona, con la marca «Destacado». En la encuesta, Bs 20 fue la respuesta más común (4 de 10 dueños) y 6 de 10 pagarían Bs 20 o más; solo 2 pagarían Bs 50. En el piloto se paga fuera de la app (QR o transferencia); más adelante, con Pollar.
 
-Ese ingreso llena el fondo del **canje**: el vecino cambia sus yapitas por un descuento en un negocio aliado y va a ese negocio a usarlo. Así el negocio que paga recibe clientes. En la app nunca se muestran bolivianos: el vecino solo ve yapitas.
+**El canje no lo pagamos nosotros:** el vecino cambia sus yapitas por una oferta que **pone el propio negocio aliado** (por ejemplo, un refresco gratis con el almuerzo) y va a ese negocio a usarla. Las yapitas pasan de la cuenta del vecino a la del negocio, y el negocio recibe un cliente. En la encuesta, 6 de 10 dueños darían un descuento por puntos y ninguno dijo que no. En la app nunca se muestran bolivianos: el vecino solo ve yapitas.
 
 Cómo lo validamos: los 5 negocios del piloto tienen el primer mes gratis (7 de los 10 dueños encuestados probarían gratis) y al final se les pregunta si pagarían Bs 20; la meta del día 30 es que **5 negocios paguen**.
 
-**Cuántos pueden pagar:** en el departamento de Cochabamba hay **66.170 empresas registradas** ([SEPREC, noviembre de 2025](https://www.seprec.gob.bo/wp-content/uploads/2025/12/Informacion-ESTADISTICA-WEB-NOV_v1.pdf)). Muchos negocios de barrio son informales y no están en ese registro, así que es un piso, no un techo. No encontramos un dato oficial de negocios por zona (Sarco y el Centro), así que no lo inventamos: el techo que sí se puede calcular es el del departamento. Si pagara el 1 % de esas empresas a Bs 20, serían unos Bs 13.200 al mes; con el 5 %, unos Bs 66.200 al mes, antes de pagar el canje.
+**Cuántos pueden pagar:** en el departamento de Cochabamba hay **66.170 empresas registradas** ([SEPREC, noviembre de 2025](https://www.seprec.gob.bo/wp-content/uploads/2025/12/Informacion-ESTADISTICA-WEB-NOV_v1.pdf)). Muchos negocios de barrio son informales y no están en ese registro, así que es un piso, no un techo. No encontramos un dato oficial de negocios por zona (Sarco y el Centro), así que no lo inventamos: el techo que sí se puede calcular es el del departamento. Si pagara el 1 % de esas empresas a Bs 20, serían unos Bs 13.200 al mes; con el 5 %, unos Bs 66.200 al mes.
 
 **El nicho del piloto:** estudiantes y negocios cerca de las universidades, en Sarco y el Centro. La cifra más cercana a ese nicho es el grupo «¿Alguien sabe?» de la UMSS, con **15 mil miembros**; los 209 mil del grupo de todo Cochabamba muestran el tamaño del hábito, no el del nicho (y los miembros se repiten entre grupos).
 
-**La economía del canje (hipótesis para validar):**
+**La economía del canje (hipótesis para validar en el piloto):**
 
 | Supuesto | Valor |
 |---|---|
-| Valor de canje | 10 yapitas = Bs 1 de descuento en un negocio aliado (nunca se muestra en la app) |
+| Quién pone el descuento | El negocio aliado, a cambio de un cliente. BoliviaSabe no paga el canje en bolivianos |
+| De dónde salen las yapitas que se canjean | Del fondo fijo de 1.000.000 YAPITA, a través de los premios. No se emite más |
 | Lo que gana un vecino activo al mes con las reglas actuales | ~19 yapitas: sube 4 letreros (+4), a 4 personas les sirven (+4), 2 respuestas suyas sirven (+10) y cierra 1 pregunta (+1) |
-| Costo de canje por vecino activo | ~Bs 1,90 al mes, si canjea todo |
-| Vecinos activos que cubre un negocio a Bs 20 | ~10 |
-| Meta del día 30 | 45 activos por semana ≈ Bs 86 al mes de canje → lo cubren 5 negocios a Bs 20 |
+| Costo de cada oferta | Lo acuerda cada negocio; sugerimos 5 a 10 yapitas para que un vecino nuevo pueda canjear en su primera semana |
+| La bienvenida (5 yapitas por cuenta) | Sale del mismo fondo fijo: no es una deuda en bolivianos |
+| Lo que queda por validar | Que los negocios honren las ofertas y que el cliente que llega por un canje vuelva |
 
-**Un canje de prueba, en la cadena:** un vecino de ejemplo (Jorge, de Sarco) pagó 10 YAPITA a una cuenta de negocio de ejemplo, «Cafetería de Sarco (demo)», con el memo `canje:10`: [la transacción](https://stellar.expert/explorer/testnet/tx/e0342ea4571fa493bc9ba7c6a5126f0e74f46d4af2f71ef80823640ac9cc9767) y [la cuenta del negocio](https://stellar.expert/explorer/testnet/account/GAY3M4NJLVGY34ANWDKJAFBLW5TFJBJYGJW5QCYOTMIF2VWT4URI5ESB). Es el ciclo vecino → negocio que tendrá el canje (10 yapitas = Bs 1 de descuento); todavía no hay negocios reales ni pantalla de canje en la app.
+**Un canje de prueba, en la cadena:** un vecino de ejemplo (Jorge, de Sarco) pagó 10 YAPITA a una cuenta de negocio de ejemplo, «Cafetería de Sarco (demo)», con el memo `canje:10`: [la transacción](https://stellar.expert/explorer/testnet/tx/e0342ea4571fa493bc9ba7c6a5126f0e74f46d4af2f71ef80823640ac9cc9767) y [la cuenta del negocio](https://stellar.expert/explorer/testnet/account/GAY3M4NJLVGY34ANWDKJAFBLW5TFJBJYGJW5QCYOTMIF2VWT4URI5ESB). Es el ciclo vecino → negocio del canje. **La pantalla de canje ya está en la app** (SPEC 29: botón «Canjear yapitas» en Yo y comprobante para el mostrador), apagada en producción hasta tener el primer negocio aliado real.
 
-Los topes contra el abuso (10 letreros con premio por día, 3 «Me sirvió» con premio por pregunta, 3 premios por día entre las mismas dos personas) evitan que una sola cuenta vacíe el fondo.
+Los topes contra el abuso (10 letreros con premio por día, 3 «Me sirvió» con premio por pregunta, 3 premios por día entre las mismas dos personas) evitan que una sola cuenta vacíe el fondo. El canje tiene su propio tope: cada vecino canjea cada oferta una vez por día.
 
 
 ## Plan de 30 días
 
 | Fechas | Objetivo | Qué hacemos | Cómo lo medimos |
 |---|---|---|---|
-| 23 al 29 nov | Piloto en Cochabamba | Aplicar lo que diga el jurado. Construir la marca «Destacado» para los letreros de negocios. Visitar 5 negocios de barrio cerca de las universidades, en Sarco y el Centro, para que suban sus ofertas, y responder preguntas reales en los grupos «¿Alguien sabe?», también el de la UMSS | 30 cuentas y 5 negocios con letreros |
-| 30 nov al 13 dic | Confianza y crecer en Cochabamba | Confirmación de correo, verificación con terceros, normativa de datos y reglas de moderación; seguir respondiendo en los grupos y sumar negocios | 20 perfiles verificados |
-| 14 al 22 dic | Siguientes implementaciones | Billeteras propias con Pollar, canje de yapitas con negocios aliados, paso a la red principal de Stellar y las primeras ciudades del eje troncal | 1 canje real y 5 negocios que pagan |
+| 23 al 29 nov | Piloto en Cochabamba | Aplicar lo que diga el jurado. Activar el canje con los primeros negocios aliados. Visitar 5 negocios de barrio cerca de las universidades, en Sarco y el Centro, para que suban sus ofertas, y responder preguntas reales en los grupos «¿Alguien sabe?», también el de la UMSS | 30 cuentas, 5 negocios con letreros y 1 canje real |
+| 30 nov al 13 dic | Confianza y crecer en Cochabamba | La marca «Destacado» para los letreros de negocios. Confirmación de correo, verificación con terceros, normativa de datos y reglas de moderación; seguir respondiendo en los grupos y sumar negocios | 20 perfiles verificados |
+| 14 al 22 dic | Siguientes implementaciones | Billeteras propias con Pollar, paso a la red principal de Stellar y las primeras ciudades del eje troncal | 5 negocios que pagan |
 
 **Cómo llegamos a los primeros usuarios:** empezamos por los estudiantes y los negocios cerca de las universidades, sin publicidad pagada. Respondemos preguntas reales en los grupos «¿Alguien sabe?» de Cochabamba y de la UMSS y pedimos permiso a sus administradores para presentar la app (sus reglas prohíben la publicidad). En grupos de compra y venta como [«Cala Cala - Ciudad Cochabamba»](https://www.facebook.com/groups/calacala/) (633 miembros) compartimos letreros con su enlace. Antes cargamos letreros reales para que nadie encuentre la app vacía, y cada cuenta nueva recibe 5 yapitas de bienvenida.
 
@@ -156,7 +172,14 @@ Los topes contra el abuso (10 letreros con premio por día, 3 «Me sirvió» con
 
 ## Qué mejoramos después de los análisis de Atlas
 
-El primer análisis de Atlas dio 67/100 y el segundo, 73/100. Después del segundo:
+El primer análisis de Atlas dio 67/100, y el segundo y el tercero, 73/100. Después del tercero, rumbo a la final:
+
+- **El canje, en la app:** botón «Canjear yapitas», comprobante para el mostrador y pago real del vecino a la cuenta del negocio con el memo `canje:<id>` (SPEC 29). Se enciende cuando esté el primer negocio aliado real.
+- **Usuarios reales, contados aparte:** `npm run stats:pilot` cuenta solo personas reales (sin las cuentas de ejemplo, de prueba ni del equipo). Al empezar el piloto, el 23 de noviembre, eran **3 cuentas reales y 0 acciones**: lo decimos así, y los números del piloto se publican tal como salgan.
+- **El canje ya no tiene «margen negativo»:** el descuento lo pone el negocio, no BoliviaSabe (ver «La economía del canje»).
+- **El costo en la red principal, calculado:** 1,5 XLM de reserva por cuenta (ver «Cuánto cuesta en la red principal»).
+
+Después del segundo:
 
 - **Encuestas reales, con los datos crudos:** 28 respuestas anónimas del 19 al 22 de noviembre ([docs/encuesta-2026-11-22.md](docs/encuesta-2026-11-22.md)). **Corrección:** una versión anterior de este README mostraba una «encuesta a 24 personas» que en realidad eran perfiles simulados, no respuestas reales. La quitamos del README, el deck, el video y la wiki.
 - **El nicho, con su propia cifra:** 15 mil miembros en el grupo de la UMSS, y el techo de ingresos calculado sobre las 66.170 empresas de SEPREC, sin inventar un dato por zona.
