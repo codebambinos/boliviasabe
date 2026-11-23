@@ -13,6 +13,7 @@ export * from './hooks/refresh';
 export * from './hooks/push';
 export * from './hooks/notices';
 export * from './hooks/redemptions';
+export * from './hooks/ownWallet';
 
 export type * from './types';
 export type { ListQuery, NewQuestion, NewSign, NotifPrefs, ProfileInput, PushSubscriptionInput, SavedItems } from './api';

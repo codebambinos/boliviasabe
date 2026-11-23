@@ -12,6 +12,8 @@ import type {
   Movement,
   NoticePage,
   Offer,
+  OwnRedeemStart,
+  OwnWalletStatus,
   Page,
   Question,
   Redemption,
@@ -166,6 +168,18 @@ export interface DataApi {
     redeem(offerId: Id): Promise<Redemption>;
     /** The receipt, for the neighbor who paid or the partner who received. */
     get(id: Id): Promise<Redemption>;
+  };
+  /** The own Pollar wallet on the configured network (SPEC 31, wiki #221). Invited accounts only. */
+  ownWallet: {
+    status(): Promise<OwnWalletStatus>;
+    /** Verifies the Pollar token on the server, links the address and pays the 5-yapita welcome once. */
+    link(pollarToken: string): Promise<{ address: string; welcomeTxHash: string | null }>;
+    /** Offers of partners that linked their own wallet. */
+    offers(): Promise<Offer[]>;
+    /** Rejects like `redemptions.redeem`; nothing is charged by starting. */
+    startRedeem(offerId: Id): Promise<OwnRedeemStart>;
+    /** After the neighbor signed with Pollar: the server verifies the payment on Horizon, then returns the receipt. */
+    confirmRedeem(redemptionId: Id, txHash: string): Promise<Redemption>;
   };
   activity: {
     myQuestions(): Promise<Question[]>;
