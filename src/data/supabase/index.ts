@@ -7,6 +7,7 @@ import { supabaseReports, supabaseSaved } from './saved';
 import { supabaseSigns } from './signs';
 import { supabaseNotices } from './notices';
 import { supabasePush } from './push';
+import { supabaseRedemptions } from './redemptions';
 import { supabaseComments, supabaseContact, supabaseLive } from './threads';
 
 export const supabaseData = {
@@ -22,4 +23,5 @@ export const supabaseData = {
   movements: supabaseMovements,
   notices: supabaseNotices,
   push: supabasePush,
+  redemptions: supabaseRedemptions,
 };

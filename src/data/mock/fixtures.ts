@@ -74,7 +74,14 @@ export type MovementRec = {
   txHash: string | null;
   /** Who triggered the reward (for the 3-per-day-per-pair rule). */
   sourceUserId: Id | null;
+  /** The redemption a `canje` movement belongs to (SPEC 29). */
+  redemptionId?: Id;
 };
+
+/** A partner business: an app user linked by the partner script (SPEC 29). */
+export type PartnerRec = { id: Id; userId: Id; name: string; city: City; zone: string };
+export type OfferRec = { id: Id; partnerId: Id; title: string; cost: number; active: boolean };
+export type RedemptionRec = { id: Id; offerId: Id; userId: Id; partnerId: Id; cost: number; createdAt: string; txHash: string };
 
 export type CommentRec = { id: Id; answerId: Id; authorId: Id; text: string; createdAt: string };
 
@@ -258,6 +265,21 @@ export const movements: MovementRec[] = [
   mv(MARCO, 'bienvenida', 5, 210), mv(MARCO, 'letrero', 1, 75),
   mv(ROSA, 'bienvenida', 5, 200),
 ];
+
+/**
+ * Two sample partners in Cochabamba (SPEC 29), so the redemption can be tried with the mock. Lucía (17) can redeem
+ * the two cheap offers; the 30-yapita one shows «Te faltan 13 yapitas».
+ */
+export const partners: PartnerRec[] = [
+  { id: 1, userId: MARCO, name: 'Salteñería Don Marco', city: 'Cochabamba', zone: 'Centro' },
+  { id: 2, userId: JORGE, name: 'Fotocopias Sarco', city: 'Cochabamba', zone: 'Sarco' },
+];
+export const offers: OfferRec[] = [
+  { id: 1, partnerId: 1, title: 'Un refresco gratis con tu salteña', cost: 10, active: true },
+  { id: 2, partnerId: 2, title: 'Anillado gratis de un trabajo', cost: 5, active: true },
+  { id: 3, partnerId: 2, title: '50 fotocopias gratis', cost: 30, active: true },
+];
+export const redemptions: RedemptionRec[] = [];
 
 export const saved: ContentRef[] = [{ userId: LUCIA, kind: 'sign', itemId: 2 }];
 export const reports: ReportRec[] = [];

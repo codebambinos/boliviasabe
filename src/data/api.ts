@@ -11,8 +11,10 @@ import type {
   Id,
   Movement,
   NoticePage,
+  Offer,
   Page,
   Question,
+  Redemption,
   ReportKind,
   ReportReason,
   RewardCap,
@@ -151,6 +153,19 @@ export interface DataApi {
     get(): Promise<Wallet>;
     movements(query?: { cursor?: string | null }): Promise<Page<Movement>>;
     retry(movementId: Id): Promise<Movement>;
+  };
+  /** Redemption with partner businesses (SPEC 29, wiki #219). */
+  redemptions: {
+    /** The active offers in the caller's city, cheapest first, without the caller's own. */
+    offers(): Promise<Offer[]>;
+    /**
+     * Pays the offer from the caller's account to the partner's, all or nothing. Rejects with `limit`
+     * (`insufficient_balance` or `redeem_per_day`), `forbidden` (the switch is off, own or inactive offer) or
+     * `server` (Stellar failed): in every case nothing was charged.
+     */
+    redeem(offerId: Id): Promise<Redemption>;
+    /** The receipt, for the neighbor who paid or the partner who received. */
+    get(id: Id): Promise<Redemption>;
   };
   activity: {
     myQuestions(): Promise<Question[]>;

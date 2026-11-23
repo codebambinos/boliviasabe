@@ -3,9 +3,9 @@ import { DEFAULT_NOTIF_PREFS, type DataApi } from '../api';
 import { CITIES, DEFAULT_CITY, PAGE_SIZE } from '../catalog';
 import { DataError } from '../errors';
 import { cleanPhone } from '../phone';
-import type { Answer, City, Comment, ContactState, ContentKind, Id, Movement, Notice, Page, Question, ReportKind, Session, Sign } from '../types';
+import type { Answer, City, Comment, ContactState, ContentKind, Id, Movement, Notice, Offer, Page, Question, Redemption, ReportKind, Session, Sign } from '../types';
 import { mockMode, simulate } from './behavior';
-import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type CommentRec, type ContactRec, type MovementRec, type NoticeRec, type QuestionRec, type SignRec } from './fixtures';
+import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type CommentRec, type ContactRec, type MovementRec, type NoticeRec, type QuestionRec, type RedemptionRec, type SignRec } from './fixtures';
 import {
   assertCanAsk,
   assertCanComment,
@@ -690,7 +690,14 @@ function toMovement(rec: MovementRec): Movement {
     status: rec.status,
     txHash: rec.txHash,
     explorerUrl: rec.txHash ? EXPLORER_TX + rec.txHash : null,
+    ...(rec.redemptionId !== undefined ? { redemption: redemptionRef(rec) } : {}),
   };
+}
+
+function redemptionRef(rec: MovementRec): NonNullable<Movement['redemption']> {
+  const redemption = store.redemptions.find((r) => r.id === rec.redemptionId);
+  const partner = store.partners.find((p) => p.id === redemption?.partnerId);
+  return { id: rec.redemptionId as Id, partnerName: partner?.name ?? '', side: rec.amount < 0 ? 'paid' : 'received' };
 }
 
 const newestFirst = <T extends { createdAt: string }>(a: T, b: T) => Date.parse(b.createdAt) - Date.parse(a.createdAt);
@@ -781,6 +788,74 @@ export const mockWallet: DataApi['wallet'] = {
       rec.status = 'pending';
       settle(rec, 'confirmed');
       return toMovement(rec);
+    }),
+};
+
+/** Start of the Bolivian day (UTC−4 all year), as in SQL `bolivia_day_start`. */
+function boliviaDayStart(now = Date.now()): number {
+  const day = 24 * 3600 * 1000;
+  const offset = 4 * 3600 * 1000;
+  return Math.floor((now - offset) / day) * day + offset;
+}
+
+function toReceipt(rec: RedemptionRec, viewerId: Id): Redemption {
+  const offer = store.offers.find((o) => o.id === rec.offerId);
+  const partner = store.partners.find((p) => p.id === rec.partnerId);
+  return {
+    id: rec.id,
+    offerTitle: offer?.title ?? '',
+    partnerName: partner?.name ?? '',
+    partnerZone: partner?.zone ?? '',
+    cost: rec.cost,
+    createdAt: rec.createdAt,
+    txHash: rec.txHash,
+    side: rec.userId === viewerId ? 'paid' : 'received',
+  };
+}
+
+const redeemedToday = (userId: Id, offerId: Id) =>
+  store.redemptions.some((r) => r.userId === userId && r.offerId === offerId && Date.parse(r.createdAt) >= boliviaDayStart());
+
+/** SPEC 29 on the mock: all or nothing, paid at once (no pending). `?mock=stellar-error` makes it fail. */
+export const mockRedemptions: DataApi['redemptions'] = {
+  offers: () =>
+    simulate(() => {
+      const user = requireUser();
+      return store.offers
+        .filter((o) => o.active)
+        .flatMap((o): Offer[] => {
+          const partner = store.partners.find((p) => p.id === o.partnerId);
+          if (!partner || partner.city !== user.city || partner.userId === user.id) return [];
+          return [{ id: o.id, title: o.title, cost: o.cost, partner: { name: partner.name, city: partner.city, zone: partner.zone }, redeemedToday: redeemedToday(user.id, o.id) }];
+        })
+        .sort((a, b) => a.cost - b.cost || a.partner.name.localeCompare(b.partner.name));
+    }),
+
+  redeem: (offerId) =>
+    simulate(() => {
+      const user = requireUser();
+      const offer = store.offers.find((o) => o.id === offerId && o.active);
+      const partner = store.partners.find((p) => p.id === offer?.partnerId);
+      if (!offer || !partner || partner.userId === user.id) throw new DataError('forbidden', 'Redemption not available');
+      if (redeemedToday(user.id, offer.id)) throw new DataError('limit', 'Offer already redeemed today', { limit: 'redeem_per_day' });
+      if (confirmedBalance(user.id) < offer.cost) throw new DataError('limit', 'Not enough yapitas', { limit: 'insufficient_balance' });
+      if (mockMode === 'stellar-error') throw new DataError('server', 'Stellar payment failed');
+      const id = nextId('redemption');
+      const rec: RedemptionRec = { id, offerId: offer.id, userId: user.id, partnerId: partner.id, cost: offer.cost, createdAt: new Date().toISOString(), txHash: fakeTxHash(5000 + id) };
+      store.redemptions.push(rec);
+      for (const [userId, amount] of [[user.id, -offer.cost], [partner.userId, offer.cost]] as const) {
+        store.movements.push({ id: nextId('movement'), userId, reason: 'canje', amount, createdAt: rec.createdAt, status: 'confirmed', txHash: rec.txHash, sourceUserId: null, redemptionId: id });
+      }
+      return toReceipt(rec, user.id);
+    }),
+
+  get: (id) =>
+    simulate(() => {
+      const user = requireUser();
+      const rec = store.redemptions.find((r) => r.id === id);
+      const partner = store.partners.find((p) => p.id === rec?.partnerId);
+      if (!rec || (rec.userId !== user.id && partner?.userId !== user.id)) throw new DataError('not_found', 'Redemption not found');
+      return toReceipt(rec, user.id);
     }),
 };
 
@@ -937,6 +1012,7 @@ export const mockAdapter: DataApi = {
   saved: mockSaved,
   reports: mockReports,
   wallet: mockWallet,
+  redemptions: mockRedemptions,
   activity: mockActivity,
   notices: mockNotices,
   push: mockPush,

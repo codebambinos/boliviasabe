@@ -13,7 +13,14 @@ export type DataErrorCode =
   /** Sign-in with e-mail: the e-mail belongs to an account that enters with Google. */
   | 'google_account';
 
-export type LimitReason = 'questions_per_day' | 'open_questions' | 'urgent_active' | 'insufficient_balance' | 'comments_per_hour';
+export type LimitReason =
+  | 'questions_per_day'
+  | 'open_questions'
+  | 'urgent_active'
+  | 'insufficient_balance'
+  | 'comments_per_hour'
+  /** SPEC 29: the same offer was already redeemed today. */
+  | 'redeem_per_day';
 
 type DataErrorDetails = {
   /** Which limit was hit (only with code "limit"). */

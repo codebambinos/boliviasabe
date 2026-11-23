@@ -8,13 +8,14 @@ import { useOpenEmailSignIn } from '../components/AuthGate';
 import { InstallRow } from '../components/InstallRow';
 import { MovementsCard } from '../components/MovementsCard';
 import { ProfileCard } from '../components/ProfileCard';
+import { RedeemSheet } from '../components/RedeemSheet';
 import { TestAccountCard } from '../components/TestAccountCard';
 import { Toast } from '../components/Toast';
 import { TuBarrioSheet } from '../components/TuBarrioSheet';
 import { GoogleIcon, MailIcon } from '../components/icons';
 import { privacyClick, SettingsCard } from '../components/SettingsCard';
 import { useShell } from '../components/useShell';
-import { useSession, useWallet } from '../data';
+import { useSession, useWallet, type Id } from '../data';
 import '../components/yo.css';
 
 export function YoPage() {
@@ -24,6 +25,8 @@ export function YoPage() {
   const wallet = useWallet({ enabled: signedIn });
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState<number | null>(null);
+  // «Canjear» (SPEC 29): the offers, or one receipt opened from Movimientos
+  const [redeem, setRedeem] = useState<{ receiptId: Id | null } | null>(null);
 
   if (session.isPending) {
     return (
@@ -46,12 +49,12 @@ export function YoPage() {
       {/* Two columns on a wide frame; on a phone the wrappers step aside and CSS `order` gives the wiki order */}
       <div className="yo-grid">
         <div className="yo-col">
-          <ProfileCard profile={profile} wallet={wallet.data} onEdit={() => setEditing(true)} />
+          <ProfileCard profile={profile} wallet={wallet.data} onEdit={() => setEditing(true)} onRedeem={() => setRedeem({ receiptId: null })} />
           <TestAccountCard wallet={wallet.data} onRetry={() => wallet.refetch()} />
           <SettingsCard onAbout={shell.openAbout} onPrivacy={shell.openPrivacy} />
         </div>
         <div className="yo-col">
-          <MovementsCard />
+          <MovementsCard onOpenReceipt={(receiptId) => setRedeem({ receiptId })} />
           <ActivityCard onAsk={() => shell.openAsk()} onUpload={shell.openUpload} />
           <AvisosCard onOpen={shell.openAvisos} />
         </div>
@@ -67,6 +70,7 @@ export function YoPage() {
           onClose={() => setEditing(false)}
         />
       )}
+      {redeem && <RedeemSheet balance={wallet.data?.balance ?? null} receiptId={redeem.receiptId} onClose={() => setRedeem(null)} />}
       {saved !== null && <Toast key={saved} message="Guardado" onDone={() => setSaved(null)} />}
     </>
   );

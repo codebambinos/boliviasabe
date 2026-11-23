@@ -1,7 +1,8 @@
 // Yo › profile card (wiki › 3 · Yo, SPEC 21): name, city and zone, stars, badge, balance, the bar toward the
 // exchange and «Editar». While the balance loads it shows the pulsing bar, never an old number (#195).
+// With the redemption switched on (SPEC 29, #219) the bar toward 100 gives way to «Canjear yapitas».
 import { useEffect, useState } from 'react';
-import type { Profile, Wallet } from '../data';
+import { REDEEM_ENABLED, type Profile, type Wallet } from '../data';
 import { StarIcon } from './icons';
 import { CANJE_GOAL, formatStars } from './movements';
 import { Yapita } from './Yapita';
@@ -10,9 +11,11 @@ type ProfileCardProps = {
   profile: Profile | null;
   wallet: Wallet | undefined;
   onEdit: () => void;
+  /** Opens «Canjear» (only with the switch on). */
+  onRedeem?: () => void;
 };
 
-export function ProfileCard({ profile, wallet, onEdit }: ProfileCardProps) {
+export function ProfileCard({ profile, wallet, onEdit, onRedeem }: ProfileCardProps) {
   const balance = wallet?.balance ?? null;
   const progress = Math.min(100, Math.round(((balance ?? 0) / CANJE_GOAL) * 100));
   // The bar animates only once a balance has been shown: loading → first number lands in place (SPEC 28, A2)
@@ -58,19 +61,27 @@ export function ProfileCard({ profile, wallet, onEdit }: ProfileCardProps) {
           <p className="meta">yapitas</p>
         </div>
       </div>
-      <div
-        className={barLive ? 'progress progress--live' : 'progress'}
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={CANJE_GOAL}
-        aria-valuenow={balance ?? 0}
-        aria-label="Yapitas hacia el canje"
-      >
-        <span style={{ transform: `scaleX(${progress / 100})` }} />
-      </div>
-      <p className="meta profile__goal">
-        {balance ?? 0} de {CANJE_GOAL} · Canje con negocios, próximamente
-      </p>
+      {REDEEM_ENABLED ? (
+        <button type="button" className="btn btn--full profile__redeem" onClick={onRedeem} disabled={!onRedeem || balance === null}>
+          Canjear yapitas
+        </button>
+      ) : (
+        <>
+          <div
+            className={barLive ? 'progress progress--live' : 'progress'}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={CANJE_GOAL}
+            aria-valuenow={balance ?? 0}
+            aria-label="Yapitas hacia el canje"
+          >
+            <span style={{ transform: `scaleX(${progress / 100})` }} />
+          </div>
+          <p className="meta profile__goal">
+            {balance ?? 0} de {CANJE_GOAL} · Canje con negocios, próximamente
+          </p>
+        </>
+      )}
       <p className="profile__why">Ganas yapitas cuando un letrero o una respuesta tuya le sirve a alguien.</p>
     </div>
   );

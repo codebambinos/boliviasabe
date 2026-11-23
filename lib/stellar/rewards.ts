@@ -218,3 +218,105 @@ export async function chargeUrgent(store: WalletStore, plan: RewardPlan, env: Wa
     return notCharged('stellar');
   }
 }
+
+// ---------------------------------------------------------------------------
+// Redemption with a partner business (SPEC 29, wiki #219). The neighbor pays an offer's cost from their own
+// custodial account to the partner's account, memo `canje:<redemption id>`. All or nothing: a redemption is never
+// pending, because the business is waiting at the counter.
+// ---------------------------------------------------------------------------
+
+export type RedeemOffer = { id: number; partnerId: number; partnerProfileId: number; cost: number; active: boolean };
+
+/** The rows a redemption reads and writes. Each id is a numeric table id. */
+export interface RedeemFacts {
+  offer(id: number): Promise<RedeemOffer | null>;
+  /** Whether the neighbor has a confirmed redemption of this offer since the Bolivian midnight. */
+  redeemedToday(profileId: number, offerId: number): Promise<boolean>;
+  createRedemption(redemption: { offerId: number; profileId: number; partnerId: number; cost: number }): Promise<number>;
+  settleRedemption(id: number, patch: { status: 'confirmed' | 'error'; txHash?: string }): Promise<void>;
+}
+
+export type RedeemPlan = { offerId: number; payerId: number; partnerId: number; partnerProfileId: number; cost: number };
+/** Why a redemption was refused before any payment. */
+export type RedeemRefusal = 'unavailable' | 'own' | 'limit';
+export type RedeemResult =
+  | { status: 'confirmed'; txHash: string; redemptionId: number }
+  | { status: 'not_charged'; why: RedeemRefusal | 'balance' | 'stellar' };
+
+/** The neighbor's memo; the partner's row uses `canje-r:` only because `rewards.memo_key` is unique. */
+export const redeemMemo = (redemptionId: number) => `canje:${redemptionId}`;
+export const redeemReceivedKey = (redemptionId: number) => `canje-r:${redemptionId}`;
+
+/** Whether `callerId` may redeem `offerId` now: the plan, or why not. */
+export async function planRedeem(facts: RedeemFacts, callerId: number, offerId: number): Promise<RedeemPlan | { refused: RedeemRefusal }> {
+  const offer = await facts.offer(offerId);
+  if (!offer || !offer.active) return { refused: 'unavailable' };
+  if (offer.partnerProfileId === callerId) return { refused: 'own' };
+  if (await facts.redeemedToday(callerId, offerId)) return { refused: 'limit' };
+  return { offerId, payerId: callerId, partnerId: offer.partnerId, partnerProfileId: offer.partnerProfileId, cost: offer.cost };
+}
+
+export const isRefused = (plan: RedeemPlan | { refused: RedeemRefusal }): plan is { refused: RedeemRefusal } => 'refused' in plan;
+
+/**
+ * Pays a redemption, all or nothing. The balance and the daily limit are checked again right before paying, so two
+ * taps or two devices cannot redeem the same offer twice in a day. Each attempt is its own redemption id, so a memo
+ * is never reused. On success the partner gets a confirmed `canje-r:` row with the same transaction.
+ */
+export async function chargeRedeem(store: WalletStore, facts: RedeemFacts, plan: RedeemPlan, env: WalletEnv): Promise<RedeemResult> {
+  const payer = await store.getStellar(plan.payerId);
+  const key = await store.getKey(plan.payerId);
+  const partner = await store.getStellar(plan.partnerProfileId);
+  if (!payer.publicKey || payer.status !== 'ready' || !key || !partner.publicKey || partner.status !== 'ready') {
+    return { status: 'not_charged', why: 'stellar' };
+  }
+
+  try {
+    if (Number(await pointsBalance(payer.publicKey, env.issuerPublic)) < plan.cost) return { status: 'not_charged', why: 'balance' };
+  } catch (error) {
+    console.error(`redeem offer ${plan.offerId}: balance not read`, error);
+    return { status: 'not_charged', why: 'stellar' };
+  }
+  if (await facts.redeemedToday(plan.payerId, plan.offerId)) return { status: 'not_charged', why: 'limit' };
+
+  const redemptionId = await facts.createRedemption({ offerId: plan.offerId, profileId: plan.payerId, partnerId: plan.partnerId, cost: plan.cost });
+  const memo = redeemMemo(redemptionId);
+  memoFor(memo); // throws if it does not fit in 28 bytes
+  const paid = await store.ensureReward({ profileId: plan.payerId, memoKey: memo, amount: -plan.cost, reason: 'canje', redemptionId });
+
+  const payerPublic = payer.publicKey;
+  const partnerPublic = partner.publicKey;
+  let hash: string;
+  try {
+    hash = await withRetry(async () => {
+      const onChain = await findOnChain(payerPublic, env, 'out', memo);
+      if (onChain) return onChain;
+      const result = await payPoints({
+        from: Keypair.fromSecret(decryptSecret(key, env.encryptionKey)),
+        to: partnerPublic,
+        amount: String(plan.cost),
+        issuerPublicKey: env.issuerPublic,
+        memo,
+      });
+      return result.hash;
+    });
+  } catch (error) {
+    console.error(`redeem ${memo} not charged:`, error);
+    await store.settleReward(paid.id, { status: 'error' });
+    await facts.settleRedemption(redemptionId, { status: 'error' });
+    return { status: 'not_charged', why: 'stellar' };
+  }
+
+  await store.settleReward(paid.id, { status: 'confirmed', txHash: hash });
+  await facts.settleRedemption(redemptionId, { status: 'confirmed', txHash: hash });
+  // Written only now and only as confirmed: «Reintentar» never pays it (it also refuses every `canje` row)
+  const received = await store.ensureReward({
+    profileId: plan.partnerProfileId,
+    memoKey: redeemReceivedKey(redemptionId),
+    amount: plan.cost,
+    reason: 'canje',
+    redemptionId,
+  });
+  await store.settleReward(received.id, { status: 'confirmed', txHash: hash });
+  return { status: 'confirmed', txHash: hash, redemptionId };
+}

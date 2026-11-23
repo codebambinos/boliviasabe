@@ -12,6 +12,12 @@ export const REASON_LABEL: Record<Movement['reason'], string> = {
   canje: 'Canje',
 };
 
+/** «Canje en Pensión Doña Rosa» for who paid, «Canje recibido» for the partner (SPEC 29); the wiki label otherwise. */
+export function movementLabel(m: Movement): string {
+  if (m.redemption) return m.redemption.side === 'paid' ? `Canje en ${m.redemption.partnerName}` : 'Canje recibido';
+  return REASON_LABEL[m.reason];
+}
+
 export const STATUS_LABEL: Record<Movement['status'], string> = {
   confirmed: 'Confirmado',
   pending: 'Pendiente',
