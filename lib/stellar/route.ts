@@ -2,12 +2,15 @@
  * What /api/stellar/premiar and /gastar share (SPEC 09): who is calling, what they ask for, and the answers.
  * The body names the action only (`reason`, `refId`); amount, memo and recipient come from the database.
  */
-import { adminClient, markUrgent, supabaseRewardFacts, supabaseWalletStore, userFromRequest } from '../supabase/server.ts';
+import { adminClient, markUrgent, supabaseRedeemFacts, supabaseRewardFacts, supabaseWalletStore, userFromRequest } from '../supabase/server.ts';
 import {
+  chargeRedeem,
   chargeUrgent,
   isCapped,
+  isRefused,
   payReward,
   planCharge,
+  planRedeem,
   planReward,
   PREMIAR_REASONS,
   type GastarReason,
@@ -73,8 +76,12 @@ export function premiar(request: Request): Promise<Response> {
   });
 }
 
+/** The redemption switch (SPEC 29): only the exact value `true` turns it on. */
+export const redeemEnabled = () => process.env.CANJE_ENABLED === 'true';
+
 export function gastar(request: Request): Promise<Response> {
   return handle(request, 'gastar', async ({ db, env, callerId, reason, refId }) => {
+    if (reason === 'canje') return redeem(db, env, callerId, refId);
     if (reason !== ('urgente' satisfies GastarReason)) return json({ error: 'bad_request' }, 400);
     const plan = await planCharge(supabaseRewardFacts(db), callerId, reason, refId);
     if (!plan) return json({ error: 'not_allowed' }, 403);
@@ -83,6 +90,19 @@ export function gastar(request: Request): Promise<Response> {
     await markUrgent(db, refId); // only now, so an unpaid question never rises to the top
     return json(result);
   });
+}
+
+/**
+ * A redemption (SPEC 29): `refId` is the offer. All or nothing; 200 with the redemption when it is paid, 409 with
+ * why nothing was charged (`disabled`, `unavailable`, `own`, `limit`, `balance`, `stellar`).
+ */
+async function redeem(db: ReturnType<typeof adminClient>, env: ReturnType<typeof walletEnv>, callerId: number, offerId: number): Promise<Response> {
+  if (!redeemEnabled()) return json({ status: 'not_charged', why: 'disabled' }, 409);
+  const facts = supabaseRedeemFacts(db);
+  const plan = await planRedeem(facts, callerId, offerId);
+  if (isRefused(plan)) return json({ status: 'not_charged', why: plan.refused }, 409);
+  const result = await chargeRedeem(supabaseWalletStore(db), facts, plan, env);
+  return json(result, result.status === 'confirmed' ? 200 : 409);
 }
 
 /**

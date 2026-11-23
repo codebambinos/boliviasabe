@@ -10,9 +10,17 @@ import { retryReward } from './rewards';
 import { offsetOf, rpc, toDataError } from './rpc';
 
 const EXPLORER_TX = 'https://stellar.expert/explorer/testnet/tx/';
-const COLUMNS = 'id, reason, amount, created_at, status, tx_hash';
+const COLUMNS = 'id, reason, amount, created_at, status, tx_hash, redemption:redemptions(id, partner:partners(name))';
 
-type RewardRow = { id: number; reason: Movement['reason']; amount: number; created_at: string; status: Movement['status']; tx_hash: string | null };
+type RewardRow = {
+  id: number;
+  reason: Movement['reason'];
+  amount: number;
+  created_at: string;
+  status: Movement['status'];
+  tx_hash: string | null;
+  redemption: { id: number; partner: { name: string } | null } | null;
+};
 
 const toMovement = (row: RewardRow): Movement => ({
   id: row.id,
@@ -22,6 +30,9 @@ const toMovement = (row: RewardRow): Movement => ({
   status: row.status,
   txHash: row.tx_hash,
   explorerUrl: row.tx_hash ? EXPLORER_TX + row.tx_hash : null,
+  ...(row.redemption?.partner
+    ? { redemption: { id: row.redemption.id, partnerName: row.redemption.partner.name, side: row.amount < 0 ? 'paid' : 'received' } }
+    : {}),
 });
 
 export const supabaseActivity: DataApi['activity'] = {
@@ -39,7 +50,7 @@ export const supabaseMovements: Pick<DataApi['wallet'], 'movements' | 'retry'> =
       .from('rewards')
       .select(COLUMNS)
       .eq('profile_id', me.id)
-      .or('reason.neq.urgente,status.neq.error')
+      .or('reason.not.in.(urgente,canje),status.neq.error') // a charge that failed charged nothing
       .order('created_at', { ascending: false })
       .order('id', { ascending: false })
       .range(from, from + PAGE_SIZE) // one extra row tells whether there is a next page

@@ -8,14 +8,17 @@ import type {
   ContentRef,
   MovementRec,
   NoticeRec,
+  OfferRec,
+  PartnerRec,
   QuestionRec,
+  RedemptionRec,
   ReportRec,
   SignRec,
   SignVoteRec,
   UserRec,
 } from './fixtures';
 
-type Counter = 'user' | 'sign' | 'question' | 'answer' | 'comment' | 'contact' | 'movement';
+type Counter = 'user' | 'sign' | 'question' | 'answer' | 'comment' | 'contact' | 'movement' | 'redemption';
 
 export type MockStore = {
   /** null = guest. */
@@ -32,6 +35,9 @@ export type MockStore = {
   comments: CommentRec[];
   contacts: ContactRec[];
   movements: MovementRec[];
+  partners: PartnerRec[];
+  offers: OfferRec[];
+  redemptions: RedemptionRec[];
   notices: NoticeRec[];
   saved: ContentRef[];
   reports: ReportRec[];
@@ -53,6 +59,9 @@ function createStore(): MockStore {
     comments: copy(seed.comments),
     contacts: copy(seed.contacts),
     movements: copy(seed.movements),
+    partners: copy(seed.partners),
+    offers: copy(seed.offers),
+    redemptions: copy(seed.redemptions),
     notices: copy(seed.notices),
     saved: copy(seed.saved),
     reports: copy(seed.reports),
@@ -65,6 +74,7 @@ function createStore(): MockStore {
       comment: maxId(seed.comments),
       contact: maxId(seed.contacts),
       movement: maxId(seed.movements),
+      redemption: maxId(seed.redemptions),
     },
   };
 }

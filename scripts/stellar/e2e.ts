@@ -11,6 +11,9 @@
  *   5. Balances and memos are read from the chain.
  *   6. Caps (SPEC 13): the 4th «Me sirvió» of a question and the 4th reward of a pair in a day are saved but
  *      not paid, and a second active urgent question is not charged.
+ *   8. Redemption with a partner (SPEC 29): the neighbor pays the offer's cost to the partner's account with memo
+ *      `canje:<id>`; a second one the same day, the partner's own offer, an inactive offer, a short balance and a
+ *      Stellar failure are all refused without charging.
  *
  *   npm run stellar:e2e
  */
@@ -25,11 +28,18 @@ import {
   txLink,
 } from '../../lib/stellar/points.ts';
 import {
+  chargeRedeem,
   chargeUrgent,
   isCapped,
+  isRefused,
   payReward,
   planCharge,
+  planRedeem,
   planReward,
+  redeemMemo,
+  redeemReceivedKey,
+  type RedeemFacts,
+  type RedeemOffer,
   type RewardCap,
   type RewardFacts,
   type RewardPlan,
@@ -115,6 +125,25 @@ function memoryFacts(rewards: ReturnType<typeof memoryStore>['rewards'], activeU
     },
     otherActiveUrgent: async (_authorId, exceptQuestionId) => [...activeUrgent].some((id) => id !== exceptQuestionId),
   };
+}
+
+/** In-memory `RedeemFacts`: the offers given, and every redemption made (all of them are «today»). */
+function memoryRedeemFacts(offers: RedeemOffer[]) {
+  const redemptions: { id: number; offerId: number; profileId: number; status: 'pending' | 'confirmed' | 'error'; txHash: string | null }[] = [];
+  const facts: RedeemFacts = {
+    offer: async (id) => offers.find((o) => o.id === id) ?? null,
+    redeemedToday: async (profileId, offerId) => redemptions.some((r) => r.profileId === profileId && r.offerId === offerId && r.status === 'confirmed'),
+    createRedemption: async ({ offerId, profileId }) => {
+      const id = 100 + redemptions.length + Math.floor(Math.random() * 1_000_000) * 1000; // unique per run: memos stay new on testnet
+      redemptions.push({ id, offerId, profileId, status: 'pending', txHash: null });
+      return id;
+    },
+    settleRedemption: async (id, patch) => {
+      const row = redemptions.find((r) => r.id === id);
+      if (row) Object.assign(row, { status: patch.status, txHash: patch.txHash ?? null });
+    },
+  };
+  return { facts, redemptions };
 }
 
 function check(condition: boolean, message: string): asserts condition {
@@ -247,6 +276,48 @@ async function main() {
   const welcomed = await balanceOf(failing.account(3).publicKey!);
   check(failing.account(3).status === 'ready' && failing.rewards.get(welcomeKey(3))?.status === 'confirmed' && welcomed === 5, `The retry should finish the account: balance ${welcomed}`);
   console.log('7. A failed welcome left status "error" + reward "pending"; the retry paid it once (balance 5)');
+
+  // 8. Redemption with a partner (SPEC 29): ASKER is the partner, HELPER (18) redeems a 3-yapita offer
+  const PARTNER = ASKER;
+  const offers: RedeemOffer[] = [
+    { id: 1, partnerId: 7, partnerProfileId: PARTNER, cost: 3, active: true },
+    { id: 2, partnerId: 7, partnerProfileId: PARTNER, cost: 500, active: true },
+    { id: 3, partnerId: 7, partnerProfileId: PARTNER, cost: 1, active: false },
+    { id: 4, partnerId: 7, partnerProfileId: PARTNER, cost: 1, active: true },
+  ];
+  const redeem = memoryRedeemFacts(offers);
+  const partnerBefore = await balanceOf(askerKey);
+  const plan = await planRedeem(redeem.facts, HELPER, 1);
+  check(!isRefused(plan), 'The redemption of offer 1 should be allowed');
+  const redeemed = await chargeRedeem(store, redeem.facts, plan, env);
+  check(redeemed.status === 'confirmed', `The redemption should be confirmed, got ${JSON.stringify(redeemed)}`);
+  const memo = redeemMemo(redeemed.redemptionId);
+  check((await balanceOf(helperKey)) === 18 - 3, 'The neighbor should hold 15 after redeeming 3');
+  check((await balanceOf(askerKey)) === partnerBefore + 3, 'The partner should receive the 3 yapitas');
+  check(rewards.get(memo)?.status === 'confirmed' && rewards.get(memo)?.profileId === HELPER, 'The neighbor row should be confirmed');
+  const received = rewards.get(redeemReceivedKey(redeemed.redemptionId));
+  check(received?.status === 'confirmed' && received.profileId === PARTNER && received.txHash === redeemed.txHash, 'The partner row should be confirmed with the same transaction');
+  const onChain = (await pointsMovements(askerKey, issuerPublic, 10)).filter((m) => m.memo === memo && m.direction === 'in');
+  check(onChain.length === 1, `The memo "${memo}" should reach the partner once`);
+  console.log(`8. Redemption −3 to the partner → ${txLink(redeemed.txHash)}`);
+
+  const second = await planRedeem(redeem.facts, HELPER, 1);
+  check(isRefused(second) && second.refused === 'limit', 'A second redemption of the same offer today should be refused');
+  const own = await planRedeem(redeem.facts, PARTNER, 1);
+  check(isRefused(own) && own.refused === 'own', 'The partner cannot redeem its own offer');
+  const inactive = await planRedeem(redeem.facts, HELPER, 3);
+  check(isRefused(inactive) && inactive.refused === 'unavailable', 'An inactive offer cannot be redeemed');
+  const expensive = await planRedeem(redeem.facts, HELPER, 2);
+  check(!isRefused(expensive), 'The plan for offer 2 should exist');
+  const shortBalance = await chargeRedeem(store, redeem.facts, expensive, env);
+  check(shortBalance.status === 'not_charged' && shortBalance.why === 'balance', 'A 500-yapita offer should be refused for balance');
+  const cheap = await planRedeem(redeem.facts, HELPER, 4);
+  check(!isRefused(cheap), 'The plan for offer 4 should exist');
+  const failedRedeem = await chargeRedeem(store, redeem.facts, cheap, { ...env, encryptionKey: randomBytes(32).toString('base64') });
+  check(failedRedeem.status === 'not_charged' && failedRedeem.why === 'stellar', 'A Stellar failure should charge nothing');
+  check(redeem.redemptions.at(-1)?.status === 'error', 'The failed redemption should be in error');
+  check((await balanceOf(helperKey)) === 15 && (await balanceOf(askerKey)) === partnerBefore + 3, 'Refused redemptions must not move yapitas');
+  console.log('8b. Same offer twice, own offer, inactive offer, short balance and a Stellar failure: nothing charged');
 
   console.log(`\n✓ ${ASSET_CODE} flow works end to end on testnet.`);
 }

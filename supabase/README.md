@@ -11,6 +11,7 @@ The schema, row-level security and reputation view for BoliviaSabe (SPEC 03).
 | `migrations/0004_auth_method.sql` | `auth_method(email)` for the sign-in sheet. |
 | `migrations/0005_data_adapter.sql` | `photos` bucket, read functions (JSON shaped like `src/data/types.ts`), `rate_answer`, `close_question`, `remove_sign`, saved/report/hide functions (SPEC 11). |
 | `migrations/0006_threads_and_contact.sql` | Comments can be reported and go with their answer, `contact_requests.answer_id`, private `contact_phones`, `request_contact` / `respond_contact`, comments and contact in `get_question`, Realtime publication (SPEC 12). |
+| `migrations/0012_redemptions.sql` | Partners, offers and redemptions, `rewards.redemption_id`, RLS, `list_offers` / `get_redemption` (SPEC 29). |
 | `tests/rls.sql` | Checks for every table and rule trigger. Runs in one transaction that is rolled back. |
 
 Migrations run in file-name order. Do not edit a migration that is already on the remote project: add a new one.

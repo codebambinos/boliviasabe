@@ -29,7 +29,15 @@ export function invalidate(client: QueryClient, ...queryKeys: QueryKey[]): void 
 }
 
 /** What belongs to one person: dropped when the session changes and never persisted on the device (#195, #197). */
-export const PERSONAL_KEYS: readonly QueryKey[] = [keys.wallet(), keys.activity(), keys.saved(), keys.myPhone(), keys.notifPrefs(), keys.notices()];
+export const PERSONAL_KEYS: readonly QueryKey[] = [
+  keys.wallet(),
+  keys.activity(),
+  keys.saved(),
+  keys.myPhone(),
+  keys.notifPrefs(),
+  keys.notices(),
+  keys.redemptions(),
+];
 
 /** True for a personal key or anything under one. */
 export function isPersonalKey(key: readonly unknown[]): boolean {

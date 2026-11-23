@@ -116,6 +116,11 @@ function supabaseAdapter(): DataApi {
       movements: (query) => read(loadData().then((data) => data.movements.movements(query))),
       retry: (movementId) => loadData().then((data) => data.movements.retry(movementId)),
     },
+    redemptions: {
+      offers: () => read(loadData().then((data) => data.redemptions.offers())),
+      redeem: (offerId) => loadData().then((data) => data.redemptions.redeem(offerId)),
+      get: (id) => read(loadData().then((data) => data.redemptions.get(id))),
+    },
     activity: {
       myQuestions: () => read(loadData().then((data) => data.activity.myQuestions())),
       myAnswers: () => read(loadData().then((data) => data.activity.myAnswers())),

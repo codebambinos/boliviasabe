@@ -1064,6 +1064,11 @@ textarea {
   margin: var(--s-2) 0 0;
 }
 
+/* «Canjear yapitas» takes the place of the bar toward 100 (SPEC 29) */
+.profile__redeem {
+  margin-top: var(--s-3);
+}
+
 .profile__actions {
   clear: both;
   display: grid;

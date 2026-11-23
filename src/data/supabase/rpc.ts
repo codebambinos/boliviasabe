@@ -5,7 +5,7 @@ import { supabase } from './client';
 
 type PgError = { code?: string; message?: string; details?: string | null; hint?: string | null };
 
-const LIMITS: readonly LimitReason[] = ['questions_per_day', 'open_questions', 'urgent_active', 'insufficient_balance', 'comments_per_hour'];
+const LIMITS: readonly LimitReason[] = ['questions_per_day', 'open_questions', 'urgent_active', 'insufficient_balance', 'comments_per_hour', 'redeem_per_day'];
 
 /** Postgres, PostgREST and network failures become the DataError the screens know. */
 export function toDataError(error: unknown): DataError {

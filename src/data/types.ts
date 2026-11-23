@@ -128,6 +128,31 @@ export type Movement = {
   status: 'confirmed' | 'pending' | 'error';
   txHash: string | null;
   explorerUrl: string | null;
+  /** A redemption with a partner (SPEC 29): `paid` for the neighbor, `received` for the partner. */
+  redemption?: { id: Id; partnerName: string; side: 'paid' | 'received' };
+};
+
+/** An active offer of a partner business in the caller's city (SPEC 29). The caller's own offers never come. */
+export type Offer = {
+  id: Id;
+  title: string;
+  /** In yapitas. */
+  cost: number;
+  partner: { name: string; city: string; zone: string };
+  /** The caller already redeemed it since the Bolivian midnight (1 per offer per day). */
+  redeemedToday: boolean;
+};
+
+/** A confirmed redemption: the receipt shown at the counter, for the neighbor (`paid`) or the partner (`received`). */
+export type Redemption = {
+  id: Id;
+  offerTitle: string;
+  partnerName: string;
+  partnerZone: string;
+  cost: number;
+  createdAt: string;
+  txHash: string;
+  side: 'paid' | 'received';
 };
 
 /** `balance` counts confirmed movements only (the chain is the source of truth). */

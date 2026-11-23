@@ -3,7 +3,7 @@
  * never import this from src/. The functions validate who is calling before they touch any data.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { RewardCap, RewardFacts } from '../stellar/rewards.ts';
+import type { RedeemFacts, RewardCap, RewardFacts } from '../stellar/rewards.ts';
 import type { EncryptedSecret, RewardRow, WalletStore } from '../stellar/wallet.ts';
 
 function env(name: string): string {
@@ -76,11 +76,11 @@ export function supabaseWalletStore(db: SupabaseClient): WalletStore {
       return { publicKey: data?.stellar_pk ?? null, status: data?.stellar_status ?? 'preparing' };
     },
 
-    async ensureReward({ profileId, sourceId, memoKey, amount, reason }) {
+    async ensureReward({ profileId, sourceId, memoKey, amount, reason, redemptionId }) {
       const { error } = await db
         .from('rewards')
         .upsert(
-          { profile_id: profileId, source_id: sourceId ?? null, memo_key: memoKey, amount, reason },
+          { profile_id: profileId, source_id: sourceId ?? null, memo_key: memoKey, amount, reason, redemption_id: redemptionId ?? null },
           { onConflict: 'memo_key', ignoreDuplicates: true },
         );
       fail('rewards', error);
@@ -167,6 +167,58 @@ export function supabaseRewardFacts(db: SupabaseClient): RewardFacts {
         .limit(1);
       fail('questions', error);
       return (data ?? []).length > 0;
+    },
+  };
+}
+
+const DAY_MS = 24 * 3600 * 1000;
+/** Bolivia is UTC−4 all year (no daylight saving). */
+const BOLIVIA_OFFSET_MS = 4 * 3600 * 1000;
+
+/** The last Bolivian midnight, as an ISO date (same rule as SQL `bolivia_day_start`). */
+export function boliviaDayStart(now = Date.now()): string {
+  return new Date(Math.floor((now - BOLIVIA_OFFSET_MS) / DAY_MS) * DAY_MS + BOLIVIA_OFFSET_MS).toISOString();
+}
+
+/** `RedeemFacts` on the SPEC 29 tables (service role). */
+export function supabaseRedeemFacts(db: SupabaseClient): RedeemFacts {
+  return {
+    async offer(id) {
+      const { data, error } = await db
+        .from('offers')
+        .select('id, cost, active, partner_id, partners!inner(profile_id)')
+        .eq('id', id)
+        .maybeSingle<{ id: number; cost: number; active: boolean; partner_id: number; partners: { profile_id: number } }>();
+      fail('offers', error);
+      return data ? { id: data.id, partnerId: data.partner_id, partnerProfileId: data.partners.profile_id, cost: data.cost, active: data.active } : null;
+    },
+
+    async redeemedToday(profileId, offerId) {
+      const { data, error } = await db
+        .from('redemptions')
+        .select('id')
+        .eq('profile_id', profileId)
+        .eq('offer_id', offerId)
+        .eq('status', 'confirmed')
+        .gte('created_at', boliviaDayStart())
+        .limit(1);
+      fail('redemptions', error);
+      return (data ?? []).length > 0;
+    },
+
+    async createRedemption({ offerId, profileId, partnerId, cost }) {
+      const { data, error } = await db
+        .from('redemptions')
+        .insert({ offer_id: offerId, profile_id: profileId, partner_id: partnerId, cost })
+        .select('id')
+        .single<{ id: number }>();
+      fail('redemptions', error);
+      return data!.id;
+    },
+
+    async settleRedemption(id, patch) {
+      const { error } = await db.from('redemptions').update({ status: patch.status, tx_hash: patch.txHash ?? null }).eq('id', id);
+      fail('redemptions', error);
     },
   };
 }

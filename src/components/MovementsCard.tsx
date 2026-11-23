@@ -4,9 +4,9 @@
 // another, and the rows that go fade out while the list closes over them.
 import { useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { useMovements, useRetryMovement, type Movement } from '../data';
+import { useMovements, useRetryMovement, type Id, type Movement } from '../data';
 import { ExternalIcon } from './icons';
-import { formatAmount, REASON_LABEL, shortHash, STATUS_LABEL } from './movements';
+import { formatAmount, movementLabel, shortHash, STATUS_LABEL } from './movements';
 import { timeAgo } from './time';
 import { Yapita } from './Yapita';
 
@@ -27,7 +27,8 @@ function resize(list: HTMLElement, from: number, to: number): Animation {
   return list.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: RESIZE_MS, easing: RESIZE_EASE, fill: 'forwards' });
 }
 
-export function MovementsCard() {
+/** `onOpenReceipt`: «Ver comprobante» on a redemption (SPEC 29). */
+export function MovementsCard({ onOpenReceipt }: { onOpenReceipt?: (redemptionId: Id) => void } = {}) {
   const movements = useMovements();
   const retry = useRetryMovement();
   const first = FIRST;
@@ -139,6 +140,7 @@ export function MovementsCard() {
               stagger={revealFrom !== null && i >= revealFrom ? Math.min(i - revealFrom, STAGGER_CAP) : null}
               leaving={leaving && i >= first}
               retrying={retry.isPending && retry.variables === m.id}
+              onOpenReceipt={onOpenReceipt}
               onRetry={() => retry.mutate(m.id)}
             />
           ))}
@@ -170,10 +172,11 @@ type MovementRowProps = {
   /** «Ver menos» is closing the list over this row: it fades out. */
   leaving: boolean;
   retrying: boolean;
+  onOpenReceipt?: (redemptionId: Id) => void;
   onRetry: () => void;
 };
 
-function MovementRow({ movement: m, stagger, leaving, retrying, onRetry }: MovementRowProps) {
+function MovementRow({ movement: m, stagger, leaving, retrying, onOpenReceipt, onRetry }: MovementRowProps) {
   const stateClass = m.status === 'confirmed' ? 'state' : m.status === 'pending' ? 'state state--pending' : 'state state--error';
   return (
     <li
@@ -182,7 +185,7 @@ function MovementRow({ movement: m, stagger, leaving, retrying, onRetry }: Movem
     >
       <Yapita />
       <span className="row__main">
-        {REASON_LABEL[m.reason]}
+        {movementLabel(m)}
         <span className="meta row__sub">
           {timeAgo(m.createdAt)}
           {m.explorerUrl && m.txHash && (
@@ -190,6 +193,11 @@ function MovementRow({ movement: m, stagger, leaving, retrying, onRetry }: Movem
               Registro {shortHash(m.txHash)}
               <ExternalIcon size={12} />
             </a>
+          )}
+          {m.redemption && onOpenReceipt && (
+            <button type="button" className="link-btn row__record" onClick={() => onOpenReceipt(m.redemption!.id)}>
+              Ver comprobante
+            </button>
           )}
         </span>
       </span>
