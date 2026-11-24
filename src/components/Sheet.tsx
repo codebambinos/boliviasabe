@@ -123,7 +123,9 @@ export function Sheet({ labelledBy, variant = 'page', onClose, canClose, classNa
     panel.current?.focus();
 
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && stack[stack.length - 1] === entry) entry.requestClose(false);
+      // Escape inside a Pollar window (OwnWalletPollar) closes that window, not the sheet under it
+      const inPollar = event.target instanceof Element && event.target.closest('#pollar-layer');
+      if (event.key === 'Escape' && !inPollar && stack[stack.length - 1] === entry) entry.requestClose(false);
     };
     document.addEventListener('keydown', onKey);
     return () => {

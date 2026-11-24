@@ -13,8 +13,23 @@ const RELOAD_KEY = 'bs-own-wallet-reload';
 
 /**
  * After a deploy, a page still running the previous version asks for a Pollar chunk the server no longer has (it is
- * not precached on purpose). Then the service worker is updated and the page reloads once, on the new version.
+ * not precached on purpose). Then the new service worker takes over (it would otherwise wait until every tab is
+ * closed, and the reload would load the old version again) and the page reloads once, on the new version.
  */
+async function takeNewVersion(): Promise<void> {
+  const sw = navigator.serviceWorker;
+  const registration = await sw?.getRegistration().catch(() => undefined);
+  if (!sw || !registration) return;
+  await registration.update().catch(() => undefined);
+  const next = registration.waiting ?? registration.installing;
+  if (!next) return;
+  const took = new Promise<void>((resolve) => sw.addEventListener('controllerchange', () => resolve(), { once: true }));
+  const installed = next.state === 'installed' ? Promise.resolve() : new Promise<void>((resolve) => next.addEventListener('statechange', () => next.state === 'installed' && resolve()));
+  await Promise.race([installed, new Promise((r) => setTimeout(r, 4000))]);
+  next.postMessage({ type: 'SKIP_WAITING' });
+  await Promise.race([took, new Promise((r) => setTimeout(r, 3000))]);
+}
+
 const OwnWalletPollar = lazy(() =>
   import('./OwnWalletPollar').then(
     (module) => {
@@ -34,8 +49,7 @@ const OwnWalletPollar = lazy(() =>
         /* private mode: reload anyway, once per page load */
       }
       if (reloaded) throw error;
-      const registration = await navigator.serviceWorker?.getRegistration().catch(() => undefined);
-      await registration?.update().catch(() => undefined);
+      await takeNewVersion().catch(() => undefined);
       window.location.reload();
       return new Promise<never>(() => undefined);
     },
