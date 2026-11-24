@@ -1,4 +1,4 @@
-// Yo › «Mi billetera propia · Stellar (red principal)» (SPEC 31, wiki › flujo-final › Yo, #221). Only with
+// Yo › «Red principal (beta)» (SPEC 31, wiki › flujo-final › Yo, #221, #222). Only with
 // VITE_MAINNET_ENABLED and for invited accounts (the server decides). Not linked: «Conectar mi billetera». Linked:
 // address, balance read from Horizon, explorer and «Canjear en la red principal». Pollar's SDK lives in
 // OwnWalletPollar and loads only when one of the two buttons is used, so the pilot never downloads it.
@@ -67,8 +67,8 @@ export function OwnWalletCard() {
 
   return (
     <div className="card own-wallet yo-grid__own">
-      <h2 className="card__title">Mi billetera propia</h2>
-      <p className="meta own-wallet__net">Stellar ({networkName})</p>
+      <h2 className="card__title">{network === 'mainnet' ? 'Red principal' : 'Red de pruebas'} (beta)</h2>
+      <p className="meta own-wallet__net">Aparte de tus yapitas del piloto</p>
 
       {address ? (
         <>
