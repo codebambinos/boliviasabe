@@ -48,6 +48,7 @@ function Connect({ issuer, onDone }: Props & { issuer: string }) {
   const [step, setStep] = useState<'login' | 'creating' | 'linking'>('login');
   const opened = useRef(false);
   const running = useRef(false);
+  const creating = useRef(false);
   const provisioning = pollar.wallet?.provisioning;
 
   // Open Pollar's login once; the person may close it and use «Reintentar»
@@ -57,6 +58,19 @@ function Connect({ issuer, onDone }: Props & { issuer: string }) {
       pollar.openLoginModal();
     }
   }, [pollar, pollar.isAuthenticated, pollar.configStatus]);
+
+  // An app set to create wallets «on demand» (or to let the user choose custody) gives no wallet at login:
+  // ask for it. createWallet is idempotent, so a user who already has one gets it back.
+  useEffect(() => {
+    if (!pollar.isAuthenticated || pollar.wallet || creating.current) return;
+    creating.current = true;
+    setStep('creating');
+    void pollar.createWallet().catch((error: unknown) => {
+      console.error('Pollar createWallet failed', error);
+      setError(CONNECT_ERROR);
+      creating.current = false;
+    });
+  }, [pollar, pollar.isAuthenticated, pollar.wallet]);
 
   useEffect(() => {
     if (!pollar.isAuthenticated || !pollar.wallet || running.current) return;
@@ -72,13 +86,20 @@ function Connect({ issuer, onDone }: Props & { issuer: string }) {
     setStep('linking');
     void (async () => {
       try {
-        const trust = await pollar.setTrustline({ code: 'YAPITA', issuer });
-        if (trust.status === 'cosign_pending') throw new Error('cosign');
+        // Pollar adds the app's enabled tokens (YAPITA) when it creates the wallet; asking again may fail because the
+        // trustline already exists. Go on either way: the server checks the trustline on Horizon before paying.
+        try {
+          const trust = await pollar.setTrustline({ code: 'YAPITA', issuer });
+          if (trust.status === 'cosign_pending') console.warn('YAPITA trustline waits for a co-signature');
+        } catch (error) {
+          console.warn('YAPITA trustline request failed; the server will check it', error);
+        }
         const token = accessToken(pollar);
         if (!token) throw new Error('no token');
         const result = await link.mutateAsync(token);
         onDone(result.welcomeTxHash ? 'Billetera conectada: +5 yapitas de bienvenida' : 'Billetera conectada');
-      } catch {
+      } catch (error) {
+        console.error('Own wallet link failed', error);
         setError(CONNECT_ERROR);
         running.current = false;
       }
@@ -113,7 +134,49 @@ function Connect({ issuer, onDone }: Props & { issuer: string }) {
 
 type View = { name: 'list' } | { name: 'confirm'; offer: Offer } | { name: 'receipt'; receipt: Redemption };
 
-function Redeem({ network, balance, onDone }: Props) {
+/**
+ * Redeeming needs a Pollar session in this browser (the wallet may have been connected on another device). Without
+ * one, Pollar's login opens here, before the sheet: inside the sheet it would sit hidden behind it.
+ */
+function Redeem(props: Props) {
+  const pollar = usePollar();
+  const [waited, setWaited] = useState(false);
+  const opened = useRef(false);
+
+  // A saved session restores in a moment: give it that moment before asking to sign in
+  useEffect(() => {
+    const t = window.setTimeout(() => setWaited(true), 1500);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (waited && !pollar.isAuthenticated && !opened.current && pollar.configStatus === 'ready') {
+      opened.current = true;
+      pollar.openLoginModal();
+    }
+  }, [waited, pollar, pollar.isAuthenticated, pollar.configStatus]);
+
+  if (pollar.isAuthenticated && pollar.wallet) return <RedeemSheet {...props} />;
+  return (
+    <div className="own-wallet__status">
+      <p className="meta" role="status">
+        <span className="spinner" aria-hidden="true" /> {waited ? 'Inicia sesión en tu billetera para canjear' : 'Abriendo tu billetera…'}
+      </p>
+      {waited && (
+        <>
+          <button type="button" className="btn btn--secondary btn--small" onClick={() => pollar.openLoginModal()}>
+            Iniciar sesión
+          </button>
+          <button type="button" className="link-btn" onClick={() => props.onDone(null)}>
+            Cancelar
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function RedeemSheet({ network, balance, onDone }: Props) {
   const titleId = useId();
   const pollar = usePollar();
   const offers = useOwnOffers();
@@ -128,21 +191,30 @@ function Redeem({ network, balance, onDone }: Props) {
     setPaying(true);
     setFailure(null);
     try {
-      if (!pollar.isAuthenticated) {
-        pollar.openLoginModal();
-        throw new Error('login');
-      }
+      // This sheet mounts its own Pollar provider: the saved session may still be restoring. Wait for it instead of
+      // opening Pollar's login, which would sit hidden behind this sheet.
+      const client = pollar.getClient();
+      for (let i = 0; i < 20 && client.getAuthState().step !== 'authenticated'; i++) await new Promise((r) => setTimeout(r, 250));
+      if (client.getAuthState().step !== 'authenticated') throw new Error('pollar_session_missing');
+      if (!client.getWallet()) throw new Error('pollar_wallet_missing');
+
       const started = await start.mutateAsync(offer.id);
       const outcome = await pollar.runTx(
         'payment',
-        { destination: started.destination, amount: started.amount, asset: { type: 'credit_alphanum4', code: 'YAPITA', issuer: started.issuer } },
+        // YAPITA has 6 letters: Stellar calls codes of 5 to 12 letters alphanum12 (1 to 4 is alphanum4)
+        { destination: started.destination, amount: started.amount, asset: { type: 'credit_alphanum12', code: 'YAPITA', issuer: started.issuer } },
         { memo: { type: 'text', value: started.memo } },
       );
-      if (outcome.status !== 'success' && outcome.status !== 'pending') throw new Error('cosign');
+      if (outcome.status !== 'success' && outcome.status !== 'pending') throw new Error(`pollar_outcome:${JSON.stringify(outcome).slice(0, 160)}`);
       const receipt = await confirm.mutateAsync({ redemptionId: started.redemptionId, txHash: outcome.hash });
       setView({ name: 'receipt', receipt });
     } catch (error) {
-      setFailure(isDataError(error) ? redeemError(error) : { text: 'No se pudo canjear, intenta de nuevo', retry: true });
+      console.error('Own wallet redemption failed', error);
+      const base = isDataError(error) ? redeemError(error) : { text: 'No se pudo canjear, intenta de nuevo', retry: true };
+      // On testnet, say exactly what failed so the gate test can be fixed from the phone (never on mainnet)
+      const e = error as { code?: unknown; message?: unknown } | null;
+      const detail = network === 'testnet' ? ` (${String(e?.code ?? e?.message ?? error).slice(0, 200)})` : '';
+      setFailure({ ...base, text: base.text + detail });
     } finally {
       setPaying(false);
     }
@@ -160,7 +232,7 @@ function Redeem({ network, balance, onDone }: Props) {
                 <button type="button" className="icon-btn" aria-label="Volver a las ofertas" disabled={paying} onClick={() => setView({ name: 'list' })}>
                   <ArrowLeftIcon />
                 </button>
-                <h2 id={titleId} className="sheet__bar-title">Canjear en la red principal</h2>
+                <h2 id={titleId} className="sheet__bar-title">Canjear en la {network === 'mainnet' ? 'red principal' : 'red de pruebas'}</h2>
               </header>
               <div className="sheet__body">
                 <div className="sheet__content redeem__content">
@@ -202,7 +274,7 @@ function Redeem({ network, balance, onDone }: Props) {
         return (
           <>
             <header className="sheet__bar">
-              <h2 id={titleId} className="sheet__bar-title">Canjear en la red principal</h2>
+              <h2 id={titleId} className="sheet__bar-title">Canjear en la {network === 'mainnet' ? 'red principal' : 'red de pruebas'}</h2>
               <button type="button" className="icon-btn" aria-label="Cerrar" onClick={close}>
                 <CloseIcon />
               </button>
