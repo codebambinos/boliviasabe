@@ -4,7 +4,7 @@ import type { ListQuery, NewSign } from '../api';
 import { keys } from '../keys';
 import { invalidate, queryClient } from '../query';
 import { api } from '../source';
-import type { Id } from '../types';
+import type { City, Id } from '../types';
 
 /** Pages of 30 signs for a city, newest first. Use fetchNextPage() for «Ver más». */
 export function useSigns(filters: Omit<ListQuery, 'cursor'>) {
@@ -18,6 +18,11 @@ export function useSigns(filters: Omit<ListQuery, 'cursor'>) {
     placeholderData: (previous, previousQuery) =>
       (previousQuery?.queryKey[3] as Omit<ListQuery, 'cursor'> | undefined)?.city === filters.city ? previous : undefined,
   });
+}
+
+/** «Destacados» in Hoy (SPEC 30): up to 4 featured partner letreros of the city. */
+export function useFeaturedSigns(city: City, options: { enabled?: boolean } = {}) {
+  return useQuery({ queryKey: keys.featured(city), queryFn: () => api.signs.featured(city), enabled: options.enabled ?? true });
 }
 
 /** Loads one letrero outside a component (a pending action coming back from Google opens its sheet). */

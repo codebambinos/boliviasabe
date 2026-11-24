@@ -5,7 +5,10 @@
  * name, city, zone, cost or active flag instead of adding duplicates.
  *
  *   npm run partner:add -- --profile <id> --name "Pensión Doña Rosa" --city Cochabamba --zone Centro \
- *     --offer "Un refresco gratis con tu almuerzo" --cost 10 [--inactive] [--dry-run]
+ *     --offer "Un refresco gratis con tu almuerzo" --cost 10 [--inactive] [--featured-days N] [--dry-run]
+ *
+ * `--featured-days N` puts the partner in Hoy's «Destacados» for N days from now (SPEC 30, wiki #220); `0` clears it.
+ * Without it, the featured period stays as it was.
  *
  * `--profile` also accepts the owner's e-mail.
  */
@@ -23,6 +26,7 @@ const { values } = parseArgs({
     offer: { type: 'string' },
     cost: { type: 'string' },
     inactive: { type: 'boolean', default: false },
+    'featured-days': { type: 'string' },
     'dry-run': { type: 'boolean', default: false },
   },
 });
@@ -43,6 +47,13 @@ if (!CITIES.includes(city)) fail(`--city must be one of: ${CITIES.join(', ')}`);
 if (!zone) fail('Missing --zone');
 if (title.length < 3 || title.length > 80) fail('--offer must have 3 to 80 characters');
 if (!Number.isInteger(cost) || cost < 1 || cost > 1000) fail('--cost must be a whole number from 1 to 1000');
+const featuredDays = values['featured-days'] === undefined ? null : Number(values['featured-days']);
+if (featuredDays !== null && (!Number.isInteger(featuredDays) || featuredDays < 0 || featuredDays > 365)) {
+  fail('--featured-days must be a whole number from 0 to 365');
+}
+/** undefined: leave the period as it is; null: clear it. */
+const featuredUntil =
+  featuredDays === null ? undefined : featuredDays === 0 ? null : new Date(Date.now() + featuredDays * 86_400_000).toISOString();
 
 async function main() {
   const db = adminClient();
@@ -73,6 +84,7 @@ async function main() {
 
   console.log(`Profile ${profile.id} (${profile.display_name}) → partner «${name}», ${zone}, ${city}`);
   console.log(`Offer «${title}» · ${cost} yapitas · ${values.inactive ? 'inactive' : 'active'}`);
+  if (featuredUntil !== undefined) console.log(featuredUntil ? `Featured until ${featuredUntil}` : 'Featured period cleared');
   if (values['dry-run']) {
     console.log('Dry run: nothing written.');
     return;
@@ -80,7 +92,10 @@ async function main() {
 
   const { data: partner, error: partnerError } = await db
     .from('partners')
-    .upsert({ profile_id: profileId, name, city, zone }, { onConflict: 'profile_id' })
+    .upsert(
+      { profile_id: profileId, name, city, zone, ...(featuredUntil !== undefined && { featured_until: featuredUntil }) },
+      { onConflict: 'profile_id' },
+    )
     .select('id')
     .single<{ id: number }>();
   if (partnerError) fail(`partners: ${partnerError.message}`);

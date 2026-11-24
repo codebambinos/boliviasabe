@@ -107,10 +107,17 @@
   text-overflow: ellipsis;
 }
 
-.tile__helped {
+.tile__helped,
+.tile__accepts {
   display: flex;
   align-items: center;
   gap: var(--s-1);
+}
+
+/* «Acepta yapitas» (SPEC 30): ink, not muted, so it reads as a fact about the business */
+.tile__accepts {
+  color: var(--color-ink);
+  font-weight: 500;
 }
 
 /* Guardar on the photo's top-right corner: 36 px disc, 44 px tap area, above the stretched button */
