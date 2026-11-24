@@ -26,6 +26,8 @@ type Props = {
 const EXPLORER_TX = { testnet: 'https://stellar.expert/explorer/testnet/tx/', mainnet: 'https://stellar.expert/explorer/public/tx/' } as const;
 const CONNECT_ERROR = 'No se pudo conectar tu billetera, intenta de nuevo';
 const RECOVERY_FIRST = 'Antes de canjear, elige cómo recuperar tu billetera si pierdes este teléfono. Luego toca Reintentar';
+/** Link attempts 3 s apart while the YAPITA trustline waits for the person's confirmation (about a minute). */
+const TRUSTLINE_TRIES = 20;
 
 /**
  * Pollar renders its windows (login, signature confirmation, co-sign, recovery) next to its provider, with no portal.
@@ -129,9 +131,22 @@ function Connect({ issuer, onDone }: Props & { issuer: string }) {
         } catch (error) {
           console.warn('YAPITA trustline request failed; the server will check it', error);
         }
-        const token = accessToken(pollar);
-        if (!token) throw new Error('no token');
-        const result = await link.mutateAsync(token);
+        // The trustline may still wait for the person's «Confirm» in Pollar's window (or its co-signature) when we get
+        // here: until it is on the ledger the server refuses with no_trustline. Keep trying for a minute instead of
+        // showing an error over Pollar's window.
+        let result;
+        for (let attempt = 0; ; attempt++) {
+          const token = accessToken(pollar);
+          if (!token) throw new Error('no token');
+          try {
+            result = await link.mutateAsync(token);
+            break;
+          } catch (error) {
+            const waitingTrustline = String((error as { message?: unknown } | null)?.message ?? '').includes('no_trustline');
+            if (!waitingTrustline || attempt >= TRUSTLINE_TRIES) throw error;
+            await new Promise((r) => setTimeout(r, 3000));
+          }
+        }
         onDone(result.welcomeTxHash ? 'Billetera conectada: +5 yapitas de bienvenida' : 'Billetera conectada');
       } catch (error) {
         console.error('Own wallet link failed', error);
