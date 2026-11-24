@@ -94,6 +94,18 @@ function Connect({ issuer, onDone }: Props & { issuer: string }) {
     });
   }, [pollar, pollar.isAuthenticated, pollar.wallet]);
 
+  // A co-signed wallet only lands on the ledger after the person approves its account creation. The SDK reads the
+  // pending approvals when a session starts with a wallet, not after createWallet, so a wallet made «on demand» waited
+  // forever until the next visit. Ask for them while the wallet is being created; Pollar then shows its approval window.
+  useEffect(() => {
+    if (!pollar.isAuthenticated || provisioning !== 'CREATING') return;
+    const client = pollar.getClient();
+    const ask = () => void client.cosign.pending().catch((error: unknown) => console.warn('Pollar pending approvals failed', error));
+    ask();
+    const timer = window.setInterval(ask, 5000);
+    return () => window.clearInterval(timer);
+  }, [pollar, pollar.isAuthenticated, provisioning]);
+
   useEffect(() => {
     if (!pollar.isAuthenticated || !pollar.wallet || running.current) return;
     if (provisioning === 'FAILED') {
