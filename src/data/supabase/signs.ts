@@ -21,6 +21,8 @@ export const supabaseSigns: DataApi['signs'] = {
 
   get: getSign,
 
+  featured: (city) => rpc<Sign[]>('featured_signs', { p_city: city }),
+
   /** Upload first, insert second; a failed insert removes the uploaded files. The +1 is asked after saving. */
   async create(input) {
     const me = await requireMe();

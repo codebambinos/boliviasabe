@@ -45,6 +45,8 @@ export const supabaseRedemptions: DataApi['redemptions'] = {
     throw new DataError('server', `gastar answered ${res.status}`);
   },
 
+  offersForSign: (signId) => rpc<Offer[]>('sign_offers', { p_sign_id: signId }),
+
   async get(id) {
     const receipt = await rpc<Redemption | null>('get_redemption', { p_id: id });
     if (!receipt) throw new DataError('not_found', 'Redemption not found');

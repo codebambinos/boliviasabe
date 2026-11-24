@@ -1,10 +1,11 @@
 // Letrero tile for the Hoy grid (wiki #138-139): photo with the price on it, Guardar on the photo,
 // title, zone · time and «A N les sirvió». The whole tile opens the detail; other actions live there.
-import type { Sign } from '../data';
+import { REDEEM_ENABLED, type Sign } from '../data';
 import { ThumbIcon } from './icons';
 import { SavedMark } from './SavedMark';
 import { helpedText } from './messages';
 import { timeAgo } from './time';
+import { Yapita } from './Yapita';
 import './sign-tile.css';
 import { FadeImage } from './FadeImage';
 
@@ -17,7 +18,8 @@ type SignTileProps = {
 export function SignTile({ sign, onOpen, onToggleSave }: SignTileProps) {
   const when = timeAgo(sign.createdAt);
   // One sentence for screen readers, in the order a sighted person reads the tile
-  const label = [sign.title, sign.price, sign.zone, when, sign.helpfulCount > 0 ? helpedText(sign.helpfulCount) : null]
+  const accepts = REDEEM_ENABLED && sign.acceptsYapitas;
+  const label = [sign.title, sign.price, sign.zone, when, sign.helpfulCount > 0 ? helpedText(sign.helpfulCount) : null, accepts ? 'Acepta yapitas' : null]
     .filter(Boolean)
     .join(', ');
 
@@ -40,6 +42,12 @@ export function SignTile({ sign, onOpen, onToggleSave }: SignTileProps) {
       {sign.helpfulCount > 0 && (
         <p className="tile__meta tile__helped" aria-hidden="true">
           <ThumbIcon size={14} /> {helpedText(sign.helpfulCount)}
+        </p>
+      )}
+      {/* A partner with active offers (SPEC 30): the only extra mark a tile has */}
+      {accepts && (
+        <p className="tile__meta tile__accepts" aria-hidden="true">
+          <Yapita size="sm" /> Acepta yapitas
         </p>
       )}
       <button

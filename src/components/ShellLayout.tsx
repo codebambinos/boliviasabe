@@ -2,12 +2,13 @@
 // survive a tab change. The tab comes from the URL; pages render in the <Outlet /> (SPEC 04).
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { DEFAULT_CITY, fetchQuestion, fetchSign, isDataError, useCreateAnswer, useCreateComment, useRefresh, useSession, useSignInWithGoogle, useToggleSaved, useUnreadNotices, useWallet, type City, type Id, type Question, type Sign } from '../data';
+import { DEFAULT_CITY, REDEEM_ENABLED, fetchQuestion, fetchSign, fetchSignOffers, isDataError, useCreateAnswer, useCreateComment, useRefresh, useSession, useSignInWithGoogle, useToggleSaved, useUnreadNotices, useWallet, type City, type Id, type Offer, type Question, type Sign } from '../data';
 import { AboutSheet } from './AboutSheet';
 import { AskQuestionSheet } from './AskQuestionSheet';
 import { sendDraftAnswer } from './AnswerBox';
 import { sendDraftComment } from './AnswerThread';
 import { QuestionDetail } from './QuestionDetail';
+import { RedeemSheet } from './RedeemSheet';
 import { AppShell, type Tab } from './AppShell';
 import { AuthGate, useOpenPasswordRecovery, useRegisterPendingHandlers, useRequireAccount } from './AuthGate';
 import { afterSheetPop } from './Sheet';
@@ -54,6 +55,8 @@ function Shell() {
   const [asking, setAsking] = useState<{ text: string } | null>(null);
   const [notice, setNotice] = useState<{ id: number; rewarded: boolean } | null>(null);
   const [freshSignId, setFreshSignId] = useState<Id | null>(null);
+  // «Canjear» from a letrero's «Acepta yapitas» box (SPEC 30): the confirmation of that offer
+  const [redeeming, setRedeeming] = useState<Offer | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const session = useSession();
   const signedIn = session.data?.status === 'signed-in';
@@ -150,6 +153,11 @@ function Shell() {
     'send-comment': ({ answerId, questionId }) => sendDraftComment(answerId, questionId, createComment.mutateAsync),
     'open-new-sign': () => setUploading(true),
     'open-ask': ({ text }) => setAsking({ text }),
+    'redeem-offer': async ({ signId, offerId }) => {
+      if (!REDEEM_ENABLED) return;
+      const offer = (await fetchSignOffers(signId)).find((o) => o.id === offerId);
+      if (offer) setRedeeming(offer);
+    },
   });
 
   // Lupa (wiki #140): only while Hoy's own search is off screen
@@ -336,7 +344,11 @@ function Shell() {
             setResumeVote(null);
           }}
           onSave={saveSign}
+          onRedeem={(offer) => afterSheetPop(() => setRedeeming(offer))}
         />
+      )}
+      {redeeming && (
+        <RedeemSheet balance={wallet.data?.balance ?? null} initialOffer={redeeming} onClose={() => setRedeeming(null)} />
       )}
       {asking && (
         <AskQuestionSheet

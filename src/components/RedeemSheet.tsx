@@ -35,14 +35,16 @@ type RedeemSheetProps = {
   balance: number | null;
   /** Open on this receipt only (from Movimientos). */
   receiptId?: Id | null;
+  /** Open on the confirmation of this offer (from a letrero's «Acepta yapitas» box, SPEC 30). */
+  initialOffer?: Offer | null;
   onClose: () => void;
 };
 
 type View = { name: 'list' } | { name: 'confirm'; offer: Offer } | { name: 'receipt'; receipt: Redemption };
 
-export function RedeemSheet({ balance, receiptId = null, onClose }: RedeemSheetProps) {
+export function RedeemSheet({ balance, receiptId = null, initialOffer = null, onClose }: RedeemSheetProps) {
   const titleId = useId();
-  const [view, setView] = useState<View>({ name: 'list' });
+  const [view, setView] = useState<View>(initialOffer ? { name: 'confirm', offer: initialOffer } : { name: 'list' });
   const redeem = useRedeem();
   const busy = redeem.isPending;
 

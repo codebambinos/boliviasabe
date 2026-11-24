@@ -83,6 +83,60 @@
   margin: var(--s-3) 0 0;
 }
 
+/* «Acepta yapitas» (SPEC 30): the partner's offers, one card with hairline rows, below the letrero's facts */
+.accepts {
+  margin-top: var(--s-5);
+  padding: var(--s-3) var(--s-4);
+  border: var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--color-card);
+}
+
+.accepts__title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-1);
+  font-size: var(--t-body);
+}
+
+.accepts__offers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.accepts__offer {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) 0;
+}
+
+.accepts__offer + .accepts__offer {
+  border-top: var(--hairline);
+}
+
+.accepts__main {
+  display: grid;
+  flex: 1;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.accepts__name {
+  overflow-wrap: anywhere;
+}
+
+.accepts__why {
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+.accepts__offer .btn {
+  flex: none;
+}
+
 /* «¡Gracias, pues!»: the reward line rises once above the actions */
 .sheet__thanks {
   gap: var(--s-3);
