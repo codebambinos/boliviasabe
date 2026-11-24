@@ -149,21 +149,29 @@ function Redeem({ network, balance, onDone }: Props) {
     setPaying(true);
     setFailure(null);
     try {
-      if (!pollar.isAuthenticated) {
-        pollar.openLoginModal();
-        throw new Error('login');
-      }
+      // This sheet mounts its own Pollar provider: the saved session may still be restoring. Wait for it instead of
+      // opening Pollar's login, which would sit hidden behind this sheet.
+      const client = pollar.getClient();
+      for (let i = 0; i < 20 && client.getAuthState().step !== 'authenticated'; i++) await new Promise((r) => setTimeout(r, 250));
+      if (client.getAuthState().step !== 'authenticated') throw new Error('pollar_session_missing');
+      if (!client.getWallet()) throw new Error('pollar_wallet_missing');
+
       const started = await start.mutateAsync(offer.id);
       const outcome = await pollar.runTx(
         'payment',
         { destination: started.destination, amount: started.amount, asset: { type: 'credit_alphanum4', code: 'YAPITA', issuer: started.issuer } },
         { memo: { type: 'text', value: started.memo } },
       );
-      if (outcome.status !== 'success' && outcome.status !== 'pending') throw new Error('cosign');
+      if (outcome.status !== 'success' && outcome.status !== 'pending') throw new Error(`pollar_outcome:${JSON.stringify(outcome).slice(0, 160)}`);
       const receipt = await confirm.mutateAsync({ redemptionId: started.redemptionId, txHash: outcome.hash });
       setView({ name: 'receipt', receipt });
     } catch (error) {
-      setFailure(isDataError(error) ? redeemError(error) : { text: 'No se pudo canjear, intenta de nuevo', retry: true });
+      console.error('Own wallet redemption failed', error);
+      const base = isDataError(error) ? redeemError(error) : { text: 'No se pudo canjear, intenta de nuevo', retry: true };
+      // On testnet, say exactly what failed so the gate test can be fixed from the phone (never on mainnet)
+      const e = error as { code?: unknown; message?: unknown } | null;
+      const detail = network === 'testnet' ? ` (${String(e?.code ?? e?.message ?? error).slice(0, 200)})` : '';
+      setFailure({ ...base, text: base.text + detail });
     } finally {
       setPaying(false);
     }
