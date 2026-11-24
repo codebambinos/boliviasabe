@@ -3,7 +3,23 @@
 // neighbor a yapita, so it answers with the reward. On your own letrero the main action is
 // sharing it (WhatsApp is how neighbors arrive).
 import { useEffect, useId, useRef, useState } from 'react';
-import { REPORT_REASONS, useHideForMe, useRemoveSign, useReport, useSign, useVoteSign, type Id, type ReportReason, type RewardCap, type Sign } from '../data';
+import {
+  REDEEM_ENABLED,
+  REPORT_REASONS,
+  useHideForMe,
+  useRemoveSign,
+  useReport,
+  useSession,
+  useSign,
+  useSignOffers,
+  useVoteSign,
+  useWallet,
+  type Id,
+  type Offer,
+  type ReportReason,
+  type RewardCap,
+  type Sign,
+} from '../data';
 import { useRequireAccount } from './AuthGate';
 import {
   ArrowLeftIcon,
@@ -34,6 +50,8 @@ type SignSheetProps = {
   onClose: () => void;
   /** Saves or unsaves the letrero (no wall: the sheet asks for the account first). Resolves to whether it changed. */
   onSave?: (id: Id) => Promise<boolean>;
+  /** «Canjear» in the «Acepta yapitas» box (SPEC 30): the sheet has closed; open the confirmation of `offer`. */
+  onRedeem?: (offer: Offer) => void;
 };
 
 type View = 'detail' | 'photo' | 'report' | 'reported' | 'hidden' | 'confirm-delete' | 'deleted';
@@ -50,7 +68,7 @@ function whatsappHref(sign: Sign): string {
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
 
-export function SignSheet({ sign: initial, resumeVote, onClose, onSave }: SignSheetProps) {
+export function SignSheet({ sign: initial, resumeVote, onClose, onSave, onRedeem }: SignSheetProps) {
   const titleId = useId();
   const viewHeading = useRef<HTMLHeadingElement>(null);
   const fresh = useSign(initial.id);
@@ -290,6 +308,22 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onSave }: SignSh
                     ))}
                   </p>
                 )}
+                {REDEEM_ENABLED && sign.acceptsYapitas && !sign.isMine && onRedeem && (
+                  <AcceptsYapitas
+                    sign={sign}
+                    onRedeem={(offer) =>
+                      requireAccount(
+                        `Así canjeas tus yapitas en ${offer.partner.name}.`,
+                        () => {
+                          close();
+                          onRedeem(offer);
+                        },
+                        undefined,
+                        { kind: 'redeem-offer', signId: sign.id, offerId: offer.id },
+                      )
+                    }
+                  />
+                )}
               </div>
             </div>
           )}
@@ -383,6 +417,53 @@ export function SignSheet({ sign: initial, resumeVote, onClose, onSave }: SignSh
         </>
       )}
     </Sheet>
+  );
+}
+
+const yapitas = (n: number) => `${n} ${n === 1 ? 'yapita' : 'yapitas'}`;
+
+/**
+ * «Acepta yapitas» (SPEC 30, wiki #220): the active offers of the letrero's author, each with its cost and Canjear,
+ * under the same rules as the «Canjear» list. Nothing shows while it loads with nothing to say, or if it fails.
+ */
+function AcceptsYapitas({ sign, onRedeem }: { sign: Sign; onRedeem: (offer: Offer) => void }) {
+  const offers = useSignOffers(sign.id);
+  const signedIn = useSession().data?.status === 'signed-in';
+  const wallet = useWallet({ enabled: signedIn });
+  const balance = signedIn ? (wallet.data?.balance ?? null) : null;
+  const titleId = useId();
+
+  if (!offers.data?.length) return null;
+  return (
+    <section className="accepts" aria-labelledby={titleId}>
+      <h3 id={titleId} className="accepts__title">
+        <Yapita size="sm" /> Acepta yapitas
+      </h3>
+      <ul className="accepts__offers">
+        {offers.data.map((offer) => {
+          const missing = balance === null ? 0 : Math.max(0, offer.cost - balance);
+          const why = offer.redeemedToday ? 'Ya la canjeaste hoy' : missing > 0 ? `Te faltan ${yapitas(missing)}` : null;
+          return (
+            <li key={offer.id} className="accepts__offer">
+              <span className="accepts__main">
+                <span className="accepts__name">{offer.title}</span>
+                <span className="meta">{yapitas(offer.cost)}</span>
+                {why && <span className="meta accepts__why">{why}</span>}
+              </span>
+              <button
+                type="button"
+                className="btn btn--secondary btn--small"
+                disabled={why !== null}
+                aria-label={`Canjear «${offer.title}» por ${yapitas(offer.cost)}`}
+                onClick={() => onRedeem(offer)}
+              >
+                Canjear
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

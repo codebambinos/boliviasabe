@@ -11,7 +11,8 @@ export type PendingAction =
   | { kind: 'send-answer'; questionId: number }
   | { kind: 'send-comment'; answerId: number; questionId: number }
   | { kind: 'open-new-sign' }
-  | { kind: 'open-ask'; text: string };
+  | { kind: 'open-ask'; text: string }
+  | { kind: 'redeem-offer'; signId: number; offerId: number };
 
 /** Registered by ShellLayout, which owns what a kind needs (sheets, city, navigation). */
 export type PendingHandlers = {
@@ -29,7 +30,7 @@ export type PendingRecord = {
 
 const KEY = 'bs:pending:v1';
 const MAX_AGE_MS = 10 * 60 * 1000;
-const KINDS: readonly PendingAction['kind'][] = ['save-sign', 'vote-sign', 'save-question', 'save-answer', 'send-answer', 'send-comment', 'open-new-sign', 'open-ask'];
+const KINDS: readonly PendingAction['kind'][] = ['save-sign', 'vote-sign', 'save-question', 'save-answer', 'send-answer', 'send-comment', 'open-new-sign', 'open-ask', 'redeem-offer'];
 
 export function savePending(record: PendingRecord): void {
   try {

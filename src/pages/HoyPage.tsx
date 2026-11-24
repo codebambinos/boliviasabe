@@ -11,7 +11,7 @@ import { SignTile, SignTileSkeleton } from '../components/SignTile';
 import { feedSection, type FeedSection } from '../components/time';
 import { usePullToRefresh } from '../components/usePullToRefresh';
 import { useShell } from '../components/useShell';
-import { DEFAULT_CITY, TAGS, useSigns, type Sign, type Tag } from '../data';
+import { DEFAULT_CITY, REDEEM_ENABLED, TAGS, useFeaturedSigns, useSigns, type Sign, type Tag } from '../data';
 
 const SECTION_TITLE: Record<FeedSection, string> = { hoy: 'Hoy', semana: 'Esta semana', antes: 'Antes' };
 
@@ -20,7 +20,11 @@ export function HoyPage() {
   const [search, setSearch] = useState('');
   const [tags, setTags] = useState<Tag[]>([]);
   const signs = useSigns({ city, search, tags });
-  const pull = usePullToRefresh(() => signs.refetch(), { enabled: !signs.isPending });
+  // «Destacados» (SPEC 30): only with the redemption on; hidden while searching or filtering
+  const featured = useFeaturedSigns(city, { enabled: REDEEM_ENABLED });
+  const pull = usePullToRefresh(() => Promise.all([signs.refetch(), REDEEM_ENABLED ? featured.refetch() : null]), {
+    enabled: !signs.isPending,
+  });
 
   // While Hoy is on screen the browser's own pull-to-reload stays off (our pull refreshes the list)
   useEffect(() => {
@@ -118,6 +122,20 @@ export function HoyPage() {
               <button type="button" className="btn btn--secondary" onClick={() => onCity(DEFAULT_CITY)}>Ver {DEFAULT_CITY}</button>
             )}
           </div>
+        )}
+        {REDEEM_ENABLED && !filtering && signs.isSuccess && (featured.data?.length ?? 0) > 0 && (
+          <section className="feed-section" aria-labelledby="sec-destacados">
+            <div className="feed-section__head">
+              <h2 id="sec-destacados" className="feed-section__title">Destacados</h2>
+            </div>
+            <ul className="tile-grid">
+              {featured.data?.map((sign) => (
+                <li key={sign.id}>
+                  <SignTile sign={sign} onOpen={onOpen} onToggleSave={onToggleSave} />
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
         {sections.map((section) => (
           <section key={section.id} className="feed-section" aria-labelledby={`sec-${section.id}`}>

@@ -1,7 +1,7 @@
 // Redemption with partner businesses (SPEC 29): the offers, paying one, and a receipt.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { keys } from '../keys';
-import { invalidate } from '../query';
+import { invalidate, queryClient } from '../query';
 import { api } from '../source';
 import type { Id } from '../types';
 
@@ -31,6 +31,11 @@ export function useSignOffers(signId: Id, options: { enabled?: boolean } = {}) {
     queryFn: () => api.redemptions.offersForSign(signId),
     enabled: options.enabled ?? true,
   });
+}
+
+/** The offers of a letrero outside a component (a «Canjear» coming back from Google, SPEC 30). */
+export function fetchSignOffers(signId: Id) {
+  return queryClient.fetchQuery({ queryKey: keys.signOffers(signId), queryFn: () => api.redemptions.offersForSign(signId), staleTime: 0 });
 }
 
 /** One receipt, opened again from Movimientos. */
