@@ -134,7 +134,49 @@ function Connect({ issuer, onDone }: Props & { issuer: string }) {
 
 type View = { name: 'list' } | { name: 'confirm'; offer: Offer } | { name: 'receipt'; receipt: Redemption };
 
-function Redeem({ network, balance, onDone }: Props) {
+/**
+ * Redeeming needs a Pollar session in this browser (the wallet may have been connected on another device). Without
+ * one, Pollar's login opens here, before the sheet: inside the sheet it would sit hidden behind it.
+ */
+function Redeem(props: Props) {
+  const pollar = usePollar();
+  const [waited, setWaited] = useState(false);
+  const opened = useRef(false);
+
+  // A saved session restores in a moment: give it that moment before asking to sign in
+  useEffect(() => {
+    const t = window.setTimeout(() => setWaited(true), 1500);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (waited && !pollar.isAuthenticated && !opened.current && pollar.configStatus === 'ready') {
+      opened.current = true;
+      pollar.openLoginModal();
+    }
+  }, [waited, pollar, pollar.isAuthenticated, pollar.configStatus]);
+
+  if (pollar.isAuthenticated && pollar.wallet) return <RedeemSheet {...props} />;
+  return (
+    <div className="own-wallet__status">
+      <p className="meta" role="status">
+        <span className="spinner" aria-hidden="true" /> {waited ? 'Inicia sesión en tu billetera para canjear' : 'Abriendo tu billetera…'}
+      </p>
+      {waited && (
+        <>
+          <button type="button" className="btn btn--secondary btn--small" onClick={() => pollar.openLoginModal()}>
+            Iniciar sesión
+          </button>
+          <button type="button" className="link-btn" onClick={() => props.onDone(null)}>
+            Cancelar
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function RedeemSheet({ network, balance, onDone }: Props) {
   const titleId = useId();
   const pollar = usePollar();
   const offers = useOwnOffers();
@@ -159,7 +201,8 @@ function Redeem({ network, balance, onDone }: Props) {
       const started = await start.mutateAsync(offer.id);
       const outcome = await pollar.runTx(
         'payment',
-        { destination: started.destination, amount: started.amount, asset: { type: 'credit_alphanum4', code: 'YAPITA', issuer: started.issuer } },
+        // YAPITA has 6 letters: Stellar calls codes of 5 to 12 letters alphanum12 (1 to 4 is alphanum4)
+        { destination: started.destination, amount: started.amount, asset: { type: 'credit_alphanum12', code: 'YAPITA', issuer: started.issuer } },
         { memo: { type: 'text', value: started.memo } },
       );
       if (outcome.status !== 'success' && outcome.status !== 'pending') throw new Error(`pollar_outcome:${JSON.stringify(outcome).slice(0, 160)}`);
