@@ -6,6 +6,7 @@
 import '@pollar/react/styles.css';
 import { PollarProvider, usePollar } from '@pollar/react';
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { isDataError, useConfirmOwnRedeem, useLinkOwnWallet, useOwnOffers, useStartOwnRedeem, type Offer, type Redemption } from '../data';
 import { ArrowLeftIcon, CloseIcon } from './icons';
 import { OfferListView, ReceiptView, redeemError } from './RedeemSheet';
@@ -25,13 +26,34 @@ type Props = {
 const EXPLORER_TX = { testnet: 'https://stellar.expert/explorer/testnet/tx/', mainnet: 'https://stellar.expert/explorer/public/tx/' } as const;
 const CONNECT_ERROR = 'No se pudo conectar tu billetera, intenta de nuevo';
 
+/**
+ * Pollar renders its windows (login, signature confirmation, co-sign, recovery) next to its provider, with no portal.
+ * Inside #root they would sit behind our sheets: Sheet makes #root inert and, on a phone, hides it. So the provider
+ * lives in its own layer on <body>, which no sheet touches, and our own UI goes back into the card through a portal.
+ */
+function pollarLayer(): HTMLElement {
+  let layer = document.getElementById('pollar-layer');
+  if (!layer) {
+    layer = document.createElement('div');
+    layer.id = 'pollar-layer';
+    document.body.append(layer);
+  }
+  return layer;
+}
+
 export default function OwnWalletPollar(props: Props) {
+  const [slot, setSlot] = useState<HTMLDivElement | null>(null);
   const apiKey = import.meta.env.VITE_POLLAR_PUBLISHABLE_KEY as string | undefined;
   if (!apiKey || !props.issuer) return <p className="field__error" role="alert">{CONNECT_ERROR}</p>;
+  const flow = props.mode === 'connect' ? <Connect {...props} issuer={props.issuer} /> : <Redeem {...props} />;
   return (
-    <PollarProvider client={{ apiKey, stellarNetwork: props.network }}>
-      {props.mode === 'connect' ? <Connect {...props} issuer={props.issuer} /> : <Redeem {...props} />}
-    </PollarProvider>
+    <>
+      <div ref={setSlot} />
+      {createPortal(
+        <PollarProvider client={{ apiKey, stellarNetwork: props.network }}>{slot && createPortal(flow, slot)}</PollarProvider>,
+        pollarLayer(),
+      )}
+    </>
   );
 }
 
@@ -136,7 +158,7 @@ type View = { name: 'list' } | { name: 'confirm'; offer: Offer } | { name: 'rece
 
 /**
  * Redeeming needs a Pollar session in this browser (the wallet may have been connected on another device). Without
- * one, Pollar's login opens here, before the sheet: inside the sheet it would sit hidden behind it.
+ * one, Pollar's login opens here, before the sheet, so the person signs in first and then picks the offer.
  */
 function Redeem(props: Props) {
   const pollar = usePollar();
@@ -192,7 +214,7 @@ function RedeemSheet({ network, balance, onDone }: Props) {
     setFailure(null);
     try {
       // This sheet mounts its own Pollar provider: the saved session may still be restoring. Wait for it instead of
-      // opening Pollar's login, which would sit hidden behind this sheet.
+      // opening Pollar's login in the middle of the payment.
       const client = pollar.getClient();
       for (let i = 0; i < 20 && client.getAuthState().step !== 'authenticated'; i++) await new Promise((r) => setTimeout(r, 250));
       if (client.getAuthState().step !== 'authenticated') throw new Error('pollar_session_missing');
