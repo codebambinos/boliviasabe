@@ -19,7 +19,17 @@ export function useRedeem() {
   return useMutation({
     mutationFn: (offerId: Id) => api.redemptions.redeem(offerId),
     onSuccess: (receipt) => client.setQueryData(keys.redemption(receipt.id), receipt),
-    onSettled: () => invalidate(client, keys.wallet(), keys.offers()),
+    // keys.redemptions() covers the offers list and every letrero's offers box (SPEC 30)
+    onSettled: () => invalidate(client, keys.wallet(), keys.redemptions(), keys.featuredSigns()),
+  });
+}
+
+/** The «Acepta yapitas» box of a letrero (SPEC 30): its author's active offers. */
+export function useSignOffers(signId: Id, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: keys.signOffers(signId),
+    queryFn: () => api.redemptions.offersForSign(signId),
+    enabled: options.enabled ?? true,
   });
 }
 

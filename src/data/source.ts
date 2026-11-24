@@ -45,6 +45,7 @@ function supabaseAdapter(): DataApi {
     signs: {
       list: (query) => read(loadData().then((data) => data.signs.list(query))),
       get: (id) => read(loadData().then((data) => data.signs.get(id))),
+      featured: (city) => read(loadData().then((data) => data.signs.featured(city))),
       create: (input) => loadData().then((data) => data.signs.create(input)),
       vote: (id, value) => loadData().then((data) => data.signs.vote(id, value)),
       remove: (id) => loadData().then((data) => data.signs.remove(id)),
@@ -120,6 +121,7 @@ function supabaseAdapter(): DataApi {
       offers: () => read(loadData().then((data) => data.redemptions.offers())),
       redeem: (offerId) => loadData().then((data) => data.redemptions.redeem(offerId)),
       get: (id) => read(loadData().then((data) => data.redemptions.get(id))),
+      offersForSign: (signId) => read(loadData().then((data) => data.redemptions.offersForSign(signId))),
     },
     ownWallet: {
       status: () => read(loadData().then((data) => data.ownWallet.status())),

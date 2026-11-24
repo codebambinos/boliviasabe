@@ -48,6 +48,8 @@ export type Sign = {
   savedByMe: boolean;
   isMine: boolean;
   inReview: boolean;
+  /** The author is a partner business with at least one active offer: «Acepta yapitas» (SPEC 30). */
+  acceptsYapitas: boolean;
 };
 
 export type QuestionStatus = 'open' | 'solved' | 'closed';

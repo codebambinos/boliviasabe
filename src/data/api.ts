@@ -89,6 +89,8 @@ export interface DataApi {
   signs: {
     list(query: ListQuery): Promise<Page<Sign>>;
     get(id: Id): Promise<Sign>;
+    /** «Destacados»: up to 4 featured partner letreros of the city, last 7 days, the caller's zone first (SPEC 30). */
+    featured(city: City): Promise<Sign[]>;
     /** Publishes even past 10 per day; then `rewarded` is false (wiki rule, not an error). */
     create(input: NewSign): Promise<{ sign: Sign; rewarded: boolean }>;
     /** `rewardCap` says why a «Me sirvió» paid nothing (null when it pays, or for «No me sirvió»). */
@@ -168,6 +170,8 @@ export interface DataApi {
     redeem(offerId: Id): Promise<Redemption>;
     /** The receipt, for the neighbor who paid or the partner who received. */
     get(id: Id): Promise<Redemption>;
+    /** The redemption offers of a letrero's author (SPEC 30); [] for the caller's own letrero or a non-partner. */
+    offersForSign(signId: Id): Promise<Offer[]>;
   };
   /** The own Pollar wallet on the configured network (SPEC 31, wiki #221). Invited accounts only. */
   ownWallet: {

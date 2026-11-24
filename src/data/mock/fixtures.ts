@@ -79,7 +79,8 @@ export type MovementRec = {
 };
 
 /** A partner business: an app user linked by the partner script (SPEC 29). */
-export type PartnerRec = { id: Id; userId: Id; name: string; city: City; zone: string };
+/** `featuredUntil`: in Hoy's «Destacados» until then (SPEC 30); null when not featured. */
+export type PartnerRec = { id: Id; userId: Id; name: string; city: City; zone: string; featuredUntil: string | null };
 export type OfferRec = { id: Id; partnerId: Id; title: string; cost: number; active: boolean };
 export type RedemptionRec = { id: Id; offerId: Id; userId: Id; partnerId: Id; cost: number; createdAt: string; txHash: string };
 
@@ -268,11 +269,12 @@ export const movements: MovementRec[] = [
 
 /**
  * Two sample partners in Cochabamba (SPEC 29), so the redemption can be tried with the mock. Lucía (17) can redeem
- * the two cheap offers; the 30-yapita one shows «Te faltan 13 yapitas».
+ * the two cheap offers; the 30-yapita one shows «Te faltan 13 yapitas». Marco is featured in «Destacados» (SPEC 30);
+ * Jorge is not, but his letreros still accept yapitas.
  */
 export const partners: PartnerRec[] = [
-  { id: 1, userId: MARCO, name: 'Salteñería Don Marco', city: 'Cochabamba', zone: 'Centro' },
-  { id: 2, userId: JORGE, name: 'Fotocopias Sarco', city: 'Cochabamba', zone: 'Sarco' },
+  { id: 1, userId: MARCO, name: 'Salteñería Don Marco', city: 'Cochabamba', zone: 'Centro', featuredUntil: new Date(NOW + 30 * 24 * HOUR).toISOString() },
+  { id: 2, userId: JORGE, name: 'Fotocopias Sarco', city: 'Cochabamba', zone: 'Sarco', featuredUntil: null },
 ];
 export const offers: OfferRec[] = [
   { id: 1, partnerId: 1, title: 'Un refresco gratis con tu salteña', cost: 10, active: true },

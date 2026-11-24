@@ -5,7 +5,7 @@ import { DataError } from '../errors';
 import { cleanPhone } from '../phone';
 import type { Answer, City, Comment, ContactState, ContentKind, Id, Movement, Notice, Offer, Page, Question, Redemption, ReportKind, Session, Sign } from '../types';
 import { mockMode, simulate } from './behavior';
-import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type CommentRec, type ContactRec, type MovementRec, type NoticeRec, type QuestionRec, type RedemptionRec, type SignRec } from './fixtures';
+import { LUCIA, fakeAddress, fakeTxHash, type AnswerRec, type CommentRec, type ContactRec, type MovementRec, type NoticeRec, type OfferRec, type PartnerRec, type QuestionRec, type RedemptionRec, type SignRec } from './fixtures';
 import {
   assertCanAsk,
   assertCanComment,
@@ -103,8 +103,23 @@ export function toSign(rec: SignRec): Sign {
     savedByMe: store.saved.some((s) => s.userId === viewer && s.kind === 'sign' && s.itemId === rec.id),
     isMine: rec.authorId === viewer,
     inReview: isInReview('sign', rec.id),
+    acceptsYapitas: acceptsYapitas(rec.authorId),
   };
 }
+
+/** The user is a partner with at least one active offer (SPEC 30). */
+function acceptsYapitas(userId: Id): boolean {
+  const partner = store.partners.find((p) => p.userId === userId);
+  return !!partner && store.offers.some((o) => o.partnerId === partner.id && o.active);
+}
+
+const toOffer = (o: OfferRec, partner: PartnerRec, viewerId: Id | null): Offer => ({
+  id: o.id,
+  title: o.title,
+  cost: o.cost,
+  partner: { name: partner.name, city: partner.city, zone: partner.zone },
+  redeemedToday: viewerId !== null && redeemedToday(viewerId, o.id),
+});
 
 function signScore(rec: SignRec): number {
   const votes = store.signVotes.filter((v) => v.signId === rec.id);
@@ -236,6 +251,23 @@ export const mockSigns: DataApi['signs'] = {
     }),
 
   get: (id) => simulate(() => toSign(findVisibleSign(id))),
+
+  featured: (city) =>
+    simulate(() => {
+      const viewer = currentUserId();
+      const zone = normalize(store.users.find((u) => u.id === viewer)?.zone ?? '');
+      const since = Date.now() - 7 * 24 * 3600 * 1000;
+      const featured = new Set(
+        store.partners.filter((p) => p.featuredUntil !== null && Date.parse(p.featuredUntil) > Date.now()).map((p) => p.userId),
+      );
+      const mine = (s: SignRec) => (zone !== '' && normalize(s.zone) === zone ? 1 : 0);
+      return store.signs
+        .filter((s) => s.city === city && featured.has(s.authorId) && Date.parse(s.createdAt) >= since)
+        .filter((s) => !isHiddenFor(viewer, 'sign', s.id, s.authorId))
+        .sort((a, b) => mine(b) - mine(a) || Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id - a.id)
+        .slice(0, 4)
+        .map(toSign);
+    }),
 
   create: (input) =>
     simulate(() => {
@@ -826,7 +858,7 @@ export const mockRedemptions: DataApi['redemptions'] = {
         .flatMap((o): Offer[] => {
           const partner = store.partners.find((p) => p.id === o.partnerId);
           if (!partner || partner.city !== user.city || partner.userId === user.id) return [];
-          return [{ id: o.id, title: o.title, cost: o.cost, partner: { name: partner.name, city: partner.city, zone: partner.zone }, redeemedToday: redeemedToday(user.id, o.id) }];
+          return [toOffer(o, partner, user.id)];
         })
         .sort((a, b) => a.cost - b.cost || a.partner.name.localeCompare(b.partner.name));
     }),
@@ -847,6 +879,18 @@ export const mockRedemptions: DataApi['redemptions'] = {
         store.movements.push({ id: nextId('movement'), userId, reason: 'canje', amount, createdAt: rec.createdAt, status: 'confirmed', txHash: rec.txHash, sourceUserId: null, redemptionId: id });
       }
       return toReceipt(rec, user.id);
+    }),
+
+  offersForSign: (signId) =>
+    simulate(() => {
+      const viewer = currentUserId();
+      const sign = findVisibleSign(signId);
+      const partner = store.partners.find((p) => p.userId === sign.authorId);
+      if (!partner || sign.authorId === viewer) return [];
+      return store.offers
+        .filter((o) => o.partnerId === partner.id && o.active)
+        .sort((a, b) => a.cost - b.cost || a.id - b.id)
+        .map((o) => toOffer(o, partner, viewer));
     }),
 
   get: (id) =>
