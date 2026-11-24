@@ -13,6 +13,7 @@ The schema, row-level security and reputation view for BoliviaSabe (SPEC 03).
 | `migrations/0006_threads_and_contact.sql` | Comments can be reported and go with their answer, `contact_requests.answer_id`, private `contact_phones`, `request_contact` / `respond_contact`, comments and contact in `get_question`, Realtime publication (SPEC 12). |
 | `migrations/0012_redemptions.sql` | Partners, offers and redemptions, `rewards.redemption_id`, RLS, `list_offers` / `get_redemption` (SPEC 29). |
 | `migrations/0014_mainnet_wallets.sql` | `profiles.mainnet_address`, `redemptions.network`, `mainnet_payments` (one welcome per profile), `list_offers(p_network)` (SPEC 31). |
+| `migrations/0015_featured_partners.sql` | `partners.featured_until`, `acceptsYapitas` in `sign_json`, `featured_signs(city)` and `sign_offers(sign)` for guests too (SPEC 30). |
 | `tests/rls.sql` | Checks for every table and rule trigger. Runs in one transaction that is rolled back. |
 
 Migrations run in file-name order. Do not edit a migration that is already on the remote project: add a new one.
