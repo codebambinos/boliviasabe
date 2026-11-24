@@ -25,6 +25,7 @@ type Props = {
 
 const EXPLORER_TX = { testnet: 'https://stellar.expert/explorer/testnet/tx/', mainnet: 'https://stellar.expert/explorer/public/tx/' } as const;
 const CONNECT_ERROR = 'No se pudo conectar tu billetera, intenta de nuevo';
+const RECOVERY_FIRST = 'Antes de canjear, elige cómo recuperar tu billetera si pierdes este teléfono. Luego toca Reintentar';
 
 /**
  * Pollar renders its windows (login, signature confirmation, co-sign, recovery) next to its provider, with no portal.
@@ -220,8 +221,19 @@ function RedeemSheet({ network, balance, onDone }: Props) {
   const [paying, setPaying] = useState(false);
   const [failure, setFailure] = useState<{ text: string; retry: boolean } | null>(null);
 
+  // A co-signed wallet signs nothing but its own setup until it has a way to be recovered without this device
+  // (SDK_WALLET_RECOVERY_REQUIRED). Pollar's own window sets it up; the person comes back and taps «Reintentar».
+  const askRecovery = () => {
+    pollar.openRecoveryModal();
+    setFailure({ text: RECOVERY_FIRST, retry: true });
+  };
+
   const pay = async (offer: Offer) => {
     if (paying) return;
+    if (pollar.recoveryLocked) {
+      askRecovery();
+      return;
+    }
     setPaying(true);
     setFailure(null);
     try {
@@ -244,6 +256,11 @@ function RedeemSheet({ network, balance, onDone }: Props) {
       setView({ name: 'receipt', receipt });
     } catch (error) {
       console.error('Own wallet redemption failed', error);
+      if (String((error as { message?: unknown } | null)?.message ?? '').includes('SDK_WALLET_RECOVERY_REQUIRED')) {
+        pollar.refreshRecovery();
+        askRecovery();
+        return;
+      }
       const base = isDataError(error) ? redeemError(error) : { text: 'No se pudo canjear, intenta de nuevo', retry: true };
       // On testnet, say exactly what failed so the gate test can be fixed from the phone (never on mainnet)
       const e = error as { code?: unknown; message?: unknown } | null;
