@@ -2,6 +2,7 @@
 // It precaches the app shell and serves index.html for every app route, so the installed app opens without signal.
 // Photos and fonts get runtime caches below. Data is not cached here: the last lists come from the persisted TanStack Query cache (src/data/persist.ts).
 // A new version installs in the background and takes over on the next open: no skipWaiting, no reload (#200).
+// The one exception: a page asks for it (`SKIP_WAITING`) when the old version can no longer load the Pollar chunk.
 // Push and notificationclick (T27) are at the end.
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
@@ -12,6 +13,11 @@ import { ExpirationPlugin } from 'workbox-expiration';
 declare const self: ServiceWorkerGlobalScope;
 
 precacheAndRoute(self.__WB_MANIFEST);
+
+// OwnWalletCard: the previous version asked for a Pollar chunk the server no longer has. Only then take over now.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') void self.skipWaiting();
+});
 cleanupOutdatedCaches();
 
 registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/^\/api\//] }));
