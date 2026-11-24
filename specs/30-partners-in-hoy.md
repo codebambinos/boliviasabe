@@ -100,19 +100,19 @@ Hooks: `useFeaturedSigns(city, { enabled })` and `useSignOffers(signId, { enable
 
 ## Acceptance criteria
 
-- [ ] With `VITE_CANJE_ENABLED` off, Hoy, the tiles and the letrero sheet look exactly as before this spec.
-- [ ] With it on, no search and no tags, Hoy shows «Destacados» with up to 4 letreros of featured partners of that city from the last 7 days. Those of the viewer's zone come first, and each group is newest first.
-- [ ] With a search or a tag active, or with no featured letreros, there is no «Destacados» title at all.
-- [ ] A featured letrero also appears in its normal date group below.
-- [ ] A partner's letrero shows «Acepta yapitas» on its tile, in the section and in the grid. A non-partner's letrero does not.
-- [ ] A partner whose `featured_until` passed is not in «Destacados» but still shows «Acepta yapitas», and its offers can be redeemed.
-- [ ] The letrero sheet of a partner's letrero lists its active offers. **Canjear** opens the «Canjear» confirmation of that offer, and the redemption works as in SPEC 29.
-- [ ] «Te faltan N yapitas» and «Ya la canjeaste hoy» turn the box's button off.
-- [ ] A guest who taps Canjear is asked to sign in and then reaches the confirmation.
-- [ ] The partner does not see the box on its own letrero.
-- [ ] `partner:add --featured-days 30` sets the period, and `--featured-days 0` clears it.
-- [ ] No screen shows bolivianos, «XLM», «tokens» or «cripto».
-- [ ] `npm run typecheck` and `npm run build` pass. Tested at 360 px, in light and dark, text at 130 %.
+- [x] With `VITE_CANJE_ENABLED` off, Hoy, the tiles and the letrero sheet look exactly as before this spec.
+- [x] With it on, no search and no tags, Hoy shows «Destacados» with up to 4 letreros of featured partners of that city from the last 7 days. Those of the viewer's zone come first, and each group is newest first.
+- [x] With a search or a tag active, or with no featured letreros, there is no «Destacados» title at all.
+- [x] A featured letrero also appears in its normal date group below.
+- [x] A partner's letrero shows «Acepta yapitas» on its tile, in the section and in the grid. A non-partner's letrero does not.
+- [x] A partner whose `featured_until` passed is not in «Destacados» but still shows «Acepta yapitas», and its offers can be redeemed.
+- [x] The letrero sheet of a partner's letrero lists its active offers. **Canjear** opens the «Canjear» confirmation of that offer, and the redemption works as in SPEC 29.
+- [x] «Te faltan N yapitas» and «Ya la canjeaste hoy» turn the box's button off.
+- [x] A guest who taps Canjear is asked to sign in and then reaches the confirmation.
+- [x] The partner does not see the box on its own letrero.
+- [x] `partner:add --featured-days 30` sets the period, and `--featured-days 0` clears it.
+- [x] No screen shows bolivianos, «XLM», «tokens» or «cripto».
+- [x] `npm run typecheck` and `npm run build` pass. Tested at 360 px, in light and dark, text at 130 %.
 
 ## Decisions
 
