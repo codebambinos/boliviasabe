@@ -9,7 +9,38 @@ import { shortHash } from './movements';
 import { Toast } from './Toast';
 import { Yapita } from './Yapita';
 
-const OwnWalletPollar = lazy(() => import('./OwnWalletPollar'));
+const RELOAD_KEY = 'bs-own-wallet-reload';
+
+/**
+ * After a deploy, a page still running the previous version asks for a Pollar chunk the server no longer has (it is
+ * not precached on purpose). Then the service worker is updated and the page reloads once, on the new version.
+ */
+const OwnWalletPollar = lazy(() =>
+  import('./OwnWalletPollar').then(
+    (module) => {
+      try {
+        sessionStorage.removeItem(RELOAD_KEY);
+      } catch {
+        /* private mode */
+      }
+      return module;
+    },
+    async (error: unknown) => {
+      let reloaded = false;
+      try {
+        reloaded = sessionStorage.getItem(RELOAD_KEY) === '1';
+        sessionStorage.setItem(RELOAD_KEY, '1');
+      } catch {
+        /* private mode: reload anyway, once per page load */
+      }
+      if (reloaded) throw error;
+      const registration = await navigator.serviceWorker?.getRegistration().catch(() => undefined);
+      await registration?.update().catch(() => undefined);
+      window.location.reload();
+      return new Promise<never>(() => undefined);
+    },
+  ),
+);
 
 const EXPLORER = { testnet: 'https://stellar.expert/explorer/testnet', mainnet: 'https://stellar.expert/explorer/public' } as const;
 
