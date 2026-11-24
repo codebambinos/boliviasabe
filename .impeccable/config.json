@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-11-20T23:21:50.500Z",
         "reason": "Claude (UI/UX owner by Diego's delegation): .letrero-price::after is a 3px full-width aguayo stripe under the price sign, not a side border on a card; documented in DESIGN.md and wiki #148"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-22T05:14:56.661Z",
+        "reason": "Claude: index.html only holds a plain-text fallback for readers that do not run JavaScript (Atlas AI); React replaces it on load, so people never see it"
       }
     ]
   }
