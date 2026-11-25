@@ -9,6 +9,12 @@ import { errorMessage } from './messages';
 import { afterSheetPop, Sheet } from './Sheet';
 import './push-prompt.css';
 
+/** Where the notice arrives: «celular» on a phone, this browser on a computer (wiki #205, #225). */
+const WHY =
+  typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
+    ? 'Te llega un aviso al celular, aunque la app esté cerrada.'
+    : 'Te llega un aviso en este navegador, aunque cierres la pestaña.';
+
 const TITLE: Record<PublishedKind, string> = {
   question: '¿Te avisamos cuando te respondan?',
   answer: '¿Te avisamos cuando le sirva o te comenten?',
@@ -60,7 +66,7 @@ function PromptSheet({ kind, onSteps }: { kind: PublishedKind; onSteps: () => vo
               <div className="sheet__content push-prompt">
                 <p className="push-prompt__why">
                   <span className="push-prompt__glyph"><BellIcon size={22} /></span>
-                  Te llega un aviso al celular, aunque la app esté cerrada. Lo cambias cuando quieras en Yo › Ajustes.
+                  {WHY} Lo cambias cuando quieras en Yo › Ajustes.
                 </p>
                 {error && <p className="field__error" role="alert">{error}</p>}
                 <div className="push-prompt__actions">
