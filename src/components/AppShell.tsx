@@ -201,7 +201,7 @@ export function AppShell({ tab, onTabChange, city, onCityChange, account, onSign
       {/* Desktop only, ¿Alguien sabe? only (hidden on phones, where details open full screen) */}
       {LAYOUT[tab] === 'split' && (
         <section ref={detailRef} className="shell__detail" aria-label="Conversación">
-          {detail ?? <p className="shell__detail-empty">{detailEmpty ?? 'Toca una pregunta para ver su conversación aquí.'}</p>}
+          {detail ?? <p className="shell__detail-empty">{detailEmpty ?? 'Elige una pregunta para ver su conversación aquí.'}</p>}
         </section>
       )}
     </div>

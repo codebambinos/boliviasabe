@@ -330,7 +330,7 @@ function Shell() {
           ) : undefined
         }
         detailKey={selectedQuestion ?? undefined}
-        detailEmpty="Toca una pregunta para ver su conversación aquí."
+        detailEmpty="Elige una pregunta para ver su conversación aquí."
       >
         <Outlet context={context} />
       </AppShell>
