@@ -245,10 +245,14 @@ export function UploadSignSheet({ viewingCity, onClose, onPublished }: UploadSig
                         id={`${fieldId}-price`}
                         className="input input--box"
                         type="text"
-                        placeholder="Ej.: Bs 38"
+                        placeholder="Ej.: Bs 8"
+                        aria-describedby={`${fieldId}-price-note`}
                         value={text.price}
                         onChange={(e) => set('price', e.target.value)}
                       />
+                      <p id={`${fieldId}-price-note`} className="meta">
+                        Escríbelo como quieres que se vea: «Bs 8», «Desde Bs 12», «3 por Bs 20» o «A convenir».
+                      </p>
                     </div>
                     <div className="field">
                       <label htmlFor={`${fieldId}-zone`}>Zona</label>
