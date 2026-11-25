@@ -25,7 +25,9 @@ type Props = {
 
 const EXPLORER_TX = { testnet: 'https://stellar.expert/explorer/testnet/tx/', mainnet: 'https://stellar.expert/explorer/public/tx/' } as const;
 const CONNECT_ERROR = 'No se pudo conectar tu billetera, intenta de nuevo';
-const RECOVERY_FIRST = 'Antes de canjear, elige cómo recuperar tu billetera si pierdes este teléfono. Luego toca Reintentar';
+/** «celular» on a phone, «computadora» on a computer (wiki #228). */
+const THIS_DEVICE = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches ? 'este celular' : 'esta computadora';
+const RECOVERY_FIRST = `Antes de canjear, elige cómo recuperar tu billetera si pierdes ${THIS_DEVICE}. Luego usa Reintentar`;
 /** Link attempts 3 s apart while the YAPITA trustline waits for the person's confirmation (about a minute). */
 const TRUSTLINE_TRIES = 20;
 
