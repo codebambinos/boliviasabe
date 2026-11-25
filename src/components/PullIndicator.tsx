@@ -11,7 +11,8 @@ const TEXT: Record<Exclude<PullState, 'idle'>, string> = {
   refreshing: 'Actualizando…',
 };
 
-export function PullIndicator({ state, distance }: { state: PullState; distance: number }) {
+/** `what` is read aloud while refreshing: «Actualizando letreros…» on Hoy, «Actualizando preguntas…» on ¿Alguien sabe? */
+export function PullIndicator({ state, distance, what }: { state: PullState; distance: number; what: string }) {
   const progress = Math.min(1, distance / PULL_THRESHOLD);
   const style = {
     '--ptr-y': `${distance}px`,
@@ -35,7 +36,7 @@ export function PullIndicator({ state, distance }: { state: PullState; distance:
         </span>
       </div>
       <p className="sr-only" role="status">
-        {state === 'refreshing' ? 'Actualizando letreros…' : ''}
+        {state === 'refreshing' ? `Actualizando ${what}…` : ''}
       </p>
     </>
   );

@@ -12,7 +12,7 @@ export const PULL_THRESHOLD = 64;
 /** The indicator never travels further than this. */
 export const PULL_MAX = 96;
 /** Where the indicator rests while the list refreshes. */
-const REST = 56;
+export const PULL_REST = 56;
 /** Finger travel before the gesture decides it is a vertical pull. */
 const SLOP = 6;
 
@@ -86,7 +86,7 @@ export function usePullToRefresh(
         return;
       }
       busy.current = true;
-      setDistance(REST);
+      setDistance(PULL_REST);
       setState('refreshing');
       refreshRef.current().finally(() => {
         busy.current = false;
@@ -109,4 +109,9 @@ export function usePullToRefresh(
   }, [enabled]);
 
   return { state, distance };
+}
+
+/** The pull, or the same «Actualizando…» chip while a tap on the tab refreshes the list (wiki #226). */
+export function withTabRefresh(pull: { state: PullState; distance: number }, tabRefreshing: boolean): { state: PullState; distance: number } {
+  return pull.state === 'idle' && tabRefreshing ? { state: 'refreshing', distance: PULL_REST } : pull;
 }

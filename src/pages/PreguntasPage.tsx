@@ -9,9 +9,9 @@ import { SearchIcon } from '../components/icons';
 import { errorMessage } from '../components/messages';
 import { PullIndicator } from '../components/PullIndicator';
 import { QuestionCard, QuestionCardSkeleton } from '../components/QuestionCard';
-import { usePullToRefresh } from '../components/usePullToRefresh';
+import { usePullToRefresh, withTabRefresh } from '../components/usePullToRefresh';
 import { useShell } from '../components/useShell';
-import { TAGS, useQuestions, type Id, type Tag } from '../data';
+import { TAGS, useQuestions, useTabRefreshing, type Id, type Tag } from '../data';
 
 /** How long a question from Avisos stays framed before the frame fades (SPEC 24). */
 const SPOTLIGHT_MS = 2800;
@@ -22,6 +22,7 @@ export function PreguntasPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const questions = useQuestions({ city, search, tags });
   const pull = usePullToRefresh(() => questions.refetch(), { enabled: !questions.isPending });
+  const indicator = withTabRefresh(pull, useTabRefreshing('questions'));
 
   // While the list is on screen the browser's own pull-to-reload stays off (our pull refreshes the list)
   useEffect(() => {
@@ -84,7 +85,7 @@ export function PreguntasPage() {
   return (
     <>
       <h1 className="screen-title">¿Alguien sabe?</h1>
-      <PullIndicator state={pull.state} distance={pull.distance} />
+      <PullIndicator state={indicator.state} distance={indicator.distance} what="preguntas" />
       <Hint id="preguntas">Pregunta lo que necesites saber: quien te ayude gana yapitas.</Hint>
       <div className="search">
         <label className="sr-only" htmlFor="question-search">Buscar preguntas</label>

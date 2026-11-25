@@ -9,9 +9,9 @@ import { errorMessage } from '../components/messages';
 import { PullIndicator } from '../components/PullIndicator';
 import { SignTile, SignTileSkeleton } from '../components/SignTile';
 import { feedSection, type FeedSection } from '../components/time';
-import { usePullToRefresh } from '../components/usePullToRefresh';
+import { usePullToRefresh, withTabRefresh } from '../components/usePullToRefresh';
 import { useShell } from '../components/useShell';
-import { DEFAULT_CITY, REDEEM_ENABLED, TAGS, useFeaturedSigns, useSigns, type Sign, type Tag } from '../data';
+import { DEFAULT_CITY, REDEEM_ENABLED, TAGS, useFeaturedSigns, useSigns, useTabRefreshing, type Sign, type Tag } from '../data';
 
 const SECTION_TITLE: Record<FeedSection, string> = { hoy: 'Hoy', semana: 'Esta semana', antes: 'Antes' };
 
@@ -25,6 +25,7 @@ export function HoyPage() {
   const pull = usePullToRefresh(() => Promise.all([signs.refetch(), REDEEM_ENABLED ? featured.refetch() : null]), {
     enabled: !signs.isPending,
   });
+  const indicator = withTabRefresh(pull, useTabRefreshing('signs'));
 
   // While Hoy is on screen the browser's own pull-to-reload stays off (our pull refreshes the list)
   useEffect(() => {
@@ -56,7 +57,7 @@ export function HoyPage() {
     <>
       {/* The city is in the top bar and the first section says «Hoy» (DESIGN.md) */}
       <h1 className="sr-only">Hoy en {city}</h1>
-      <PullIndicator state={pull.state} distance={pull.distance} />
+      <PullIndicator state={indicator.state} distance={indicator.distance} what="letreros" />
       <Hint id="hoy">Si un letrero te sirve, ábrelo y dale «Me sirvió»: quien lo subió gana una yapita.</Hint>
       <div className="search">
         <label className="sr-only" htmlFor="search">Buscar letreros</label>
