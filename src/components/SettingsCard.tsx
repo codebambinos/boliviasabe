@@ -1,8 +1,9 @@
 // Yo › Ajustes (SPEC 23, wiki › 3 · Yo › Ajustes, #215), in this order: Instalar la app · Notificaciones ·
-// Mi celular · Tema · Acerca de · Privacidad · Cerrar sesión. «Cerrar sesión» is one tap (#152); without signal it
+// Mi celular · Tema · Acerca de · Privacidad · «Entraste como» + Cerrar sesión (wiki #227: which account this is,
+// inside Ajustes so it never shows on the Yo card during a demo). «Cerrar sesión» is one tap (#152); without signal it
 // says so under the button and changes nothing (#218, SPEC 25).
 import { useState, type MouseEvent } from 'react';
-import { useMyPhone, useSignOut } from '../data';
+import { useMyPhone, useSession, useSignOut } from '../data';
 import { ChevronRightIcon, EyeIcon, PhoneIcon, QuestionIcon } from './icons';
 import { InstallRow } from './InstallRow';
 import { MyPhoneSheet, type PhoneSaved } from './MyPhoneSheet';
@@ -15,6 +16,8 @@ type SettingsCardProps = { onAbout: () => void; onPrivacy: () => void };
 
 export function SettingsCard({ onAbout, onPrivacy }: SettingsCardProps) {
   const signOut = useSignOut();
+  const session = useSession();
+  const email = session.data?.status === 'signed-in' ? session.data.email : null;
   const myPhone = useMyPhone();
   const [editingPhone, setEditingPhone] = useState(false);
   const [toast, setToast] = useState<{ id: number; result: PhoneSaved } | null>(null);
@@ -44,6 +47,7 @@ export function SettingsCard({ onAbout, onPrivacy }: SettingsCardProps) {
       </ul>
       <ThemeSetting />
       <LegalRows onAbout={onAbout} onPrivacy={onPrivacy} />
+      {email && <p className="meta setting__account">Entraste como <span className="setting__email">{email}</span></p>}
       <button
         type="button"
         className="link-btn link-btn--ink setting__signout"
