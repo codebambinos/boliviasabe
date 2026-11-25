@@ -57,7 +57,7 @@ export function HoyPage() {
     <>
       {/* The city is in the top bar and the first section says «Hoy» (DESIGN.md) */}
       <h1 className="sr-only">Hoy en {city}</h1>
-      <PullIndicator state={indicator.state} distance={indicator.distance} />
+      <PullIndicator state={indicator.state} distance={indicator.distance} what="letreros" />
       <Hint id="hoy">Si un letrero te sirve, ábrelo y dale «Me sirvió»: quien lo subió gana una yapita.</Hint>
       <div className="search">
         <label className="sr-only" htmlFor="search">Buscar letreros</label>

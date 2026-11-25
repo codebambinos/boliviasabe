@@ -85,7 +85,7 @@ export function PreguntasPage() {
   return (
     <>
       <h1 className="screen-title">¿Alguien sabe?</h1>
-      <PullIndicator state={indicator.state} distance={indicator.distance} />
+      <PullIndicator state={indicator.state} distance={indicator.distance} what="preguntas" />
       <Hint id="preguntas">Pregunta lo que necesites saber: quien te ayude gana yapitas.</Hint>
       <div className="search">
         <label className="sr-only" htmlFor="question-search">Buscar preguntas</label>
