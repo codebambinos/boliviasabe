@@ -4,7 +4,8 @@
  *
  * Who is NOT counted, so the numbers can be shown as they are:
  *   - the seed neighbors (`@example.com`) and test accounts (`@test.local`);
- *   - the team: the e-mails in `CLEANUP_TEAM_EMAILS` (comma-separated, in `.env`; never committed).
+ *   - the team: the e-mails in `CLEANUP_TEAM_EMAILS` (comma-separated, in `.env`; never committed), and their
+ *     `+alias` versions (rehearsal accounts).
  * An action counts when its author is a real account, whoever it was for.
  *
  *   npm run stats:pilot [-- --since 2026-11-23]
@@ -24,7 +25,9 @@ const team = new Set(
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean),
 );
-const excluded = (email: string | undefined) => !email || /@(example\.com|test\.local)$/i.test(email) || team.has(email.toLowerCase());
+/** «name+ensayo1@gmail.com» is the team's «name@gmail.com»: rehearsal aliases are not pilot users. */
+const withoutAlias = (email: string) => email.toLowerCase().replace(/\+[^@]*@/, '@');
+const excluded = (email: string | undefined) => !email || /@(example\.com|test\.local)$/i.test(email) || team.has(withoutAlias(email));
 
 type Row = Record<string, unknown>;
 
